@@ -14,7 +14,9 @@ namespace shhf::sysinfo {
 namespace {
 
 constexpr std::uint64_t kMegabyte = 1024ull * 1024ull;
-constexpr DWORD kAnalyzedTimeDateStamp = 0;  // 0 : exécutable pas encore analysé
+// 0 : exécutable pas encore analysé. Volontairement non const : sinon /W4 /WX refuse la condition constante
+// tant que la valeur reste à zéro.
+DWORD g_analyzedTimeDateStamp = 0;
 
 using NtQueryTimerResolutionFn = LONG(NTAPI*)(PULONG minimum, PULONG maximum, PULONG current);
 using RtlGetVersionFn = LONG(NTAPI*)(PRTL_OSVERSIONINFOW info);
@@ -127,11 +129,11 @@ void LogStartupInfo(HMODULE gameModule) {
     const bool largeAddressAware = (nt->FileHeader.Characteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE) != 0;
     log::Info("SilentHill.exe : horodatage PE 0x{:08X}, taille image 0x{:X}, LARGE_ADDRESS_AWARE={}",
               nt->FileHeader.TimeDateStamp, nt->OptionalHeader.SizeOfImage, largeAddressAware ? "oui" : "non");
-    // Version analysée : à renseigner (kAnalyzedTimeDateStamp) dès que l'exécutable Steam aura été désassemblé.
+    // Version analysée : à renseigner (g_analyzedTimeDateStamp) dès que l'exécutable Steam aura été désassemblé.
     // Les correctifs qui visent des adresses vérifient aussi leurs octets (signature) avant de s'appliquer.
-    if (kAnalyzedTimeDateStamp != 0 && nt->FileHeader.TimeDateStamp != kAnalyzedTimeDateStamp) {
+    if (g_analyzedTimeDateStamp != 0 && nt->FileHeader.TimeDateStamp != g_analyzedTimeDateStamp) {
         log::Warn("Version de SilentHill.exe différente de celle analysée (horodatage PE 0x{:08X})",
-                  kAnalyzedTimeDateStamp);
+                  g_analyzedTimeDateStamp);
     }
 
     if (const auto getVersion = NtdllFunction<RtlGetVersionFn>("RtlGetVersion")) {

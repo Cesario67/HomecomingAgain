@@ -10,7 +10,7 @@ Installation Steam en cours (09/10/2026) dans `E:\SteamLibrary\steamapps\common\
    `docs/analyse-shh-exe.md`) : bitness, horodatage PE, SteamStub, imports (voir `docs/recherche-web.md`).
 2. **Choix du chargeur** d'après les imports : DLL proxy (`d3d9.dll`, `dinput8.dll`, `xinput1_3.dll`...) ou autre.
    Outil à écrire : générateur de redirections (exports de la vraie DLL de `SysWOW64`).
-3. Renseigner `kAnalyzedTimeDateStamp` dans `src/core/SystemInfo.cpp` et le nom exact de l'exécutable dans
+3. Renseigner `g_analyzedTimeDateStamp` dans `src/core/SystemInfo.cpp` et le nom exact de l'exécutable dans
    `src/dllmain.cpp`.
 
 ## Objectifs (demande du 09/10/2026)
