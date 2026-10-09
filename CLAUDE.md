@@ -9,8 +9,9 @@ rendre jouable sur les machines d'aujourd'hui. Objectifs, par priorité :
    la limite de ce que le moteur permet réellement.
 3. **Manettes Xbox 360 / Xbox** : lecture et correspondance des boutons correctes.
 
-- Jeu installé dans : `E:\SteamLibrary\steamapps\common\Silent Hill Homecoming` (installation en cours au
-  09/10/2026). Exécutable attendu : `Bin\SilentHill.exe` (d'après des témoignages, à confirmer).
+- Jeu installé dans : `E:\SteamLibrary\steamapps\common\Silent Hill Homecoming` (Steam, build 6.30). Deux
+  morceaux : le lanceur `Bin\SilentHill.exe` (33 Ko) et le moteur `Bin\g_SilentHill.sgl` (une DLL de 20 Mo, non
+  protégée). Voir `docs/analyse-shh-exe.md`.
 - Projet frère, même méthode et mêmes outils : `E:\DeadlyPremonitionFix` (DPStabilityFix). Y puiser le code
   et les leçons (hooks, proxy, manette, plantages), pas l'inverse.
 - Recherches web sur le jeu et le correctif communautaire existant : `docs/recherche-web.md`. Tout y est
@@ -25,8 +26,11 @@ Reprise de DPStabilityFix, adaptée (espace de noms `shhf`, projet `SHHFix`). Mo
 - `framepacing/` : mesures de cadence, statistiques de `Sleep`, résolution du minuteur, limiteur.
 - `graphics/` : `Direct3DCreate9` (IAT) -> `CreateDevice` -> `Present`/`Reset` (vtables). Journalise les
   paramètres de présentation et mesure la cadence, sans rien modifier pour l'instant.
-- À venir selon l'analyse : chargeur (DLL proxy), `input/` (manette), `patches/` (fonctions internes,
-  vérifiées par signature avant application).
+- `proxy/` : `version.dll`, première DLL importée par le lanceur, transmise à la vraie (17 exports). C'est ce qui
+  charge SHHFix. Nos hooks visent l'IAT du **moteur** `g_SilentHill.sgl` (d3d9, XINPUT1_3 par ordinaux 2/3/4,
+  DINPUT8), pas celle du lanceur.
+- À venir selon l'analyse : `input/` (manette XInput), `patches/` (fonctions internes du moteur, vérifiées par
+  signature avant application).
 - `DllMain` ne fait que des opérations sûres sous le verrou du chargeur ; ce qui charge des DLL est différé au
   premier `Direct3DCreate9` (`LateInit`).
 - Chaque fonctionnalité doit pouvoir être désactivée dans le `.ini` (`dist/SHHFix.ini`).
@@ -38,9 +42,9 @@ Reprise de DPStabilityFix, adaptée (espace de noms `shhf`, projet `SHHFix`). Mo
 
 ## État
 
-Premier jet : structure, modules génériques repris, documentation. **Jamais compilé ni lancé** (attente du feu
-vert de l'utilisateur et de l'installation du jeu). Le chargeur du mod dans le jeu n'est pas choisi : la DLL se
-compile sous le nom `SHHFix.dll` sans se charger toute seule. Points en attente : `docs/a-faire.md`.
+Le socle compile (premier build propre le 09/10/2026) ; le proxy `version.dll` et les hooks sur le moteur ont été
+écrits ensuite et **ne sont pas encore compilés**. Rien n'a été lancé en jeu : le code ne fait que journaliser.
+Prochaine étape et plan : `docs/a-faire.md`.
 
 ## Commandes
 
@@ -53,7 +57,7 @@ compile sous le nom `SHHFix.dll` sans se charger toute seule. Points en attente 
 
 - **Build Tools for Visual Studio 2022** : MSVC, SDK Windows, CMake et Ninja fournis par les Build Tools.
   Éditeur : VS Code.
-- Cible **Win32 (x86)** (le jeu est supposé 32 bits, à confirmer) : compiler depuis un environnement
+- Cible **Win32 (x86)** (lanceur et moteur 32 bits, vérifié) : compiler depuis un environnement
   `vcvarsall.bat x86` (ou `amd64_x86`).
 - C++20, `/W4`, avertissements traités comme des erreurs.
 - Dépendances non libres ou volumineuses : téléchargées par `FetchContent` avec empreinte SHA-256, jamais

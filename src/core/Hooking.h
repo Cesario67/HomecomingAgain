@@ -24,6 +24,21 @@ bool PatchImport(HMODULE module, const char* dllName, const char* functionName, 
     return true;
 }
 
+// Comme PatchImportRaw, pour un import par numéro d'ordre (ex. XINPUT1_3.dll, que le moteur de Silent Hill
+// importe par les ordinaux 2, 3 et 4, soit XInputGetState, XInputSetState et XInputGetCapabilities).
+bool PatchImportOrdinalRaw(HMODULE module, const char* dllName, WORD ordinal, void* replacement,
+                           void** original) noexcept;
+
+template <typename Fn>
+bool PatchImportOrdinal(HMODULE module, const char* dllName, WORD ordinal, Fn replacement, Fn* original) noexcept {
+    void* previous = nullptr;
+    if (!PatchImportOrdinalRaw(module, dllName, ordinal, reinterpret_cast<void*>(replacement), &previous)) {
+        return false;
+    }
+    *original = reinterpret_cast<Fn>(previous);
+    return true;
+}
+
 // Remplace l'entrée `index` de la vtable d'un objet COM. Renvoie false si la case pointe déjà
 // vers `replacement`.
 template <typename Fn>

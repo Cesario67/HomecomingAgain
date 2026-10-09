@@ -5,7 +5,7 @@
 namespace shhf::frames {
 
 // Intercepte Sleep dans SilentHill.exe pour mesurer la précision réelle de ses attentes.
-void Install(HMODULE gameModule);
+void Install(HMODULE gameModule, HMODULE engineModule);
 
 // Applique la résolution de minuteur demandée (TimerResolutionMs). Appelé hors de DllMain.
 void LateInit() noexcept;

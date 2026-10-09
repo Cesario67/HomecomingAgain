@@ -16,7 +16,7 @@ BEGIN
             VALUE "LegalCopyright", "Copyright (C) 2026 Cesar Schaal. Licence GPL-3.0-or-later."
             VALUE "ProductName", "SHHFix"
             VALUE "ProductVersion", "@PROJECT_VERSION@"
-            VALUE "OriginalFilename", "SHHFix.dll"
+            VALUE "OriginalFilename", "version.dll"
         END
     END
     BLOCK "VarFileInfo"

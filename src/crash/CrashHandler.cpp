@@ -264,11 +264,16 @@ LPTOP_LEVEL_EXCEPTION_FILTER WINAPI HookSetUnhandledExceptionFilter(LPTOP_LEVEL_
 
 }  // namespace
 
-void Install(HMODULE gameModule) {
+void Install(HMODULE gameModule, HMODULE engineModule) {
     PruneOldDumps();
     g_previousFilter = ::SetUnhandledExceptionFilter(&TopLevelFilter);
-    if (!hooking::PatchImport(gameModule, "kernel32.dll", "SetUnhandledExceptionFilter",
-                              &HookSetUnhandledExceptionFilter, &g_gameSetFilter)) {
+    // Le lanceur (SilentHill.exe) et le moteur (g_SilentHill.sgl) importent tous deux la fonction.
+    bool patched = false;
+    for (const HMODULE module : {gameModule, engineModule}) {
+        patched |= module != nullptr && hooking::PatchImport(module, "kernel32.dll", "SetUnhandledExceptionFilter",
+                                                              &HookSetUnhandledExceptionFilter, &g_gameSetFilter);
+    }
+    if (!patched) {
         log::Warn("Interception de SetUnhandledExceptionFilter impossible : le jeu pourrait remplacer notre filtre");
     }
     log::Info("Gestionnaire de plantage installé (dumps : {}, mode {})", GetConfig().crashDumps ? "oui" : "non",

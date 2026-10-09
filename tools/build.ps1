@@ -25,5 +25,5 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ''
-Write-Host "DLL      : $root\build\$Preset\SHHFix.dll"
+Write-Host "DLL      : $root\build\$Preset\version.dll"
 Write-Host "Paquet   : $root\build\$Preset\package"

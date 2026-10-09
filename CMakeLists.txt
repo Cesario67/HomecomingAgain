@@ -13,9 +13,8 @@ endif()
 # CRT statique : la DLL ne dépend d'aucun redistribuable Visual C++ installé.
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-# DLL du mod. Le mécanisme de chargement dans le jeu (DLL proxy, nom de la DLL) sera choisi après l'analyse
+# DLL du mod, sous le nom version.dll : SilentHill.exe importe VERSION.dll en premier (voir docs/analyse-shh-exe.md).
 # de la table d'imports de SilentHill.exe : voir docs/a-faire.md. En attendant, elle se compile sous son
-# propre nom et ne se charge pas toute seule.
 add_library(SHHFix SHARED
     src/dllmain.cpp
     src/core/Config.cpp
@@ -27,10 +26,15 @@ add_library(SHHFix SHARED
     src/crash/CrashHandler.cpp
     src/framepacing/FrameMonitor.cpp
     src/graphics/D3D9Hooks.cpp
+    src/proxy/VersionProxy.cpp
+    src/proxy/version.def
     "${CMAKE_CURRENT_BINARY_DIR}/version.rc"
 )
 
 configure_file(src/version.rc.in "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
+
+# Le jeu charge cette DLL à la place de la vraie version.dll (voir src/proxy/VersionProxy.cpp).
+set_target_properties(SHHFix PROPERTIES OUTPUT_NAME "version")
 
 target_include_directories(SHHFix PRIVATE src)
 target_compile_features(SHHFix PRIVATE cxx_std_20)

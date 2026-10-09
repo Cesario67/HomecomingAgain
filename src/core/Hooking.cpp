@@ -54,4 +54,34 @@ bool PatchImportRaw(HMODULE module, const char* dllName, const char* functionNam
     return false;
 }
 
+bool PatchImportOrdinalRaw(HMODULE module, const char* dllName, WORD ordinal, void* replacement,
+                           void** original) noexcept {
+    auto* base = reinterpret_cast<BYTE*>(module);
+    const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(base);
+    if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
+        return false;
+    }
+    const auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(base + dos->e_lfanew);
+    const IMAGE_DATA_DIRECTORY& directory = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+    if (directory.VirtualAddress == 0) {
+        return false;
+    }
+
+    for (auto* descriptor = reinterpret_cast<IMAGE_IMPORT_DESCRIPTOR*>(base + directory.VirtualAddress);
+         descriptor->Name != 0; ++descriptor) {
+        if (_stricmp(reinterpret_cast<const char*>(base + descriptor->Name), dllName) != 0 ||
+            descriptor->OriginalFirstThunk == 0) {
+            continue;
+        }
+        auto* nameThunk = reinterpret_cast<IMAGE_THUNK_DATA*>(base + descriptor->OriginalFirstThunk);
+        auto* addressThunk = reinterpret_cast<IMAGE_THUNK_DATA*>(base + descriptor->FirstThunk);
+        for (; nameThunk->u1.AddressOfData != 0; ++nameThunk, ++addressThunk) {
+            if (IMAGE_SNAP_BY_ORDINAL(nameThunk->u1.Ordinal) && IMAGE_ORDINAL(nameThunk->u1.Ordinal) == ordinal) {
+                return PatchPointer(reinterpret_cast<void**>(&addressThunk->u1.Function), replacement, original);
+            }
+        }
+    }
+    return false;
+}
+
 }  // namespace shhf::hooking

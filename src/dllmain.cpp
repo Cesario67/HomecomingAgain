@@ -51,10 +51,20 @@ void Startup() {
     }
 
     const HMODULE game = GetModuleHandleW(nullptr);
+    // Le moteur est une DLL (g_SilentHill.sgl, base 0x10000000) importée par le lanceur SilentHill.exe. Notre
+    // version.dll est la première importée par le lanceur : le moteur est déjà mappé et ses imports sont déjà
+    // résolus, mais il n'a pas encore démarré. On peut donc modifier son IAT ici (hypothèse à confirmer par le
+    // journal au premier lancement).
+    const HMODULE engine = GetModuleHandleW(L"g_SilentHill.sgl");
+    if (engine == nullptr) {
+        shhf::log::Warn("g_SilentHill.sgl pas encore chargé : Direct3D, entrées et attentes du moteur non interceptés");
+    }
     shhf::sysinfo::LogStartupInfo(game);
-    shhf::crash::Install(game);
-    shhf::frames::Install(game);
-    shhf::graphics::Install(game);
+    shhf::crash::Install(game, engine);
+    shhf::frames::Install(game, engine);
+    if (engine != nullptr) {
+        shhf::graphics::Install(engine);
+    }
     shhf::log::Info("Initialisation terminée");
 }
 

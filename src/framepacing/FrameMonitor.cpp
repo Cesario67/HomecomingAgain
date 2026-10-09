@@ -177,14 +177,21 @@ void Report(std::int64_t now) {
 
 }  // namespace
 
-void Install(HMODULE gameModule) {
+void Install(HMODULE gameModule, HMODULE engineModule) {
     QueryPerformanceFrequency(&g_frequency);
     g_installTime = Now();
     const Config& config = GetConfig();
     if (!config.frameStats) {
         log::Info("Mesures de cadence désactivées (FrameStats=0)");
-    } else if (!hooking::PatchImport(gameModule, "kernel32.dll", "Sleep", &HookSleep, &g_sleep)) {
-        log::Warn("Interception de Sleep impossible : pas de statistiques d'attente");
+    } else {
+        // Le lanceur (SilentHill.exe) et le moteur (g_SilentHill.sgl) importent tous deux Sleep.
+        bool patched = false;
+        for (const HMODULE module : {gameModule, engineModule}) {
+            patched |= module != nullptr && hooking::PatchImport(module, "kernel32.dll", "Sleep", &HookSleep, &g_sleep);
+        }
+        if (!patched) {
+            log::Warn("Interception de Sleep impossible : pas de statistiques d'attente");
+        }
     }
     if (config.frameLimitFps > 0) {
         g_limitPeriod = g_frequency.QuadPart / config.frameLimitFps;

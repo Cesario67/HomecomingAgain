@@ -1,0 +1,19 @@
+LIBRARY version
+EXPORTS
+    GetFileVersionInfoA = ShhfStubVersion_GetFileVersionInfoA
+    GetFileVersionInfoByHandle = ShhfStubVersion_GetFileVersionInfoByHandle
+    GetFileVersionInfoExA = ShhfStubVersion_GetFileVersionInfoExA
+    GetFileVersionInfoExW = ShhfStubVersion_GetFileVersionInfoExW
+    GetFileVersionInfoSizeA = ShhfStubVersion_GetFileVersionInfoSizeA
+    GetFileVersionInfoSizeExA = ShhfStubVersion_GetFileVersionInfoSizeExA
+    GetFileVersionInfoSizeExW = ShhfStubVersion_GetFileVersionInfoSizeExW
+    GetFileVersionInfoSizeW = ShhfStubVersion_GetFileVersionInfoSizeW
+    GetFileVersionInfoW = ShhfStubVersion_GetFileVersionInfoW
+    VerFindFileA = ShhfStubVersion_VerFindFileA
+    VerFindFileW = ShhfStubVersion_VerFindFileW
+    VerInstallFileA = ShhfStubVersion_VerInstallFileA
+    VerInstallFileW = ShhfStubVersion_VerInstallFileW
+    VerLanguageNameA = ShhfStubVersion_VerLanguageNameA
+    VerLanguageNameW = ShhfStubVersion_VerLanguageNameW
+    VerQueryValueA = ShhfStubVersion_VerQueryValueA
+    VerQueryValueW = ShhfStubVersion_VerQueryValueW

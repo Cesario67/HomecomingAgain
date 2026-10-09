@@ -162,8 +162,8 @@ IDirect3D9* WINAPI HookDirect3DCreate9(UINT sdkVersion) {
 
 }  // namespace
 
-void Install(HMODULE gameModule) {
-    if (!hooking::PatchImport(gameModule, "d3d9.dll", "Direct3DCreate9", &HookDirect3DCreate9, &g_direct3DCreate9)) {
+void Install(HMODULE engineModule) {
+    if (!hooking::PatchImport(engineModule, "d3d9.dll", "Direct3DCreate9", &HookDirect3DCreate9, &g_direct3DCreate9)) {
         log::Error("Interception de Direct3DCreate9 impossible : pas de mesure de cadence");
     }
 }

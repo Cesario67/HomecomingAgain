@@ -37,4 +37,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: SHHFix-symboles
-          path: build/x86-release/SHHFix.pdb
+          path: build/x86-release/version.pdb
