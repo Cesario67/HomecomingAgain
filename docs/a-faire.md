@@ -7,9 +7,8 @@ Points en attente, avec ce que l'on sait déjà. À tenir à jour : retirer un p
 Le code actuel ne modifie rien dans le jeu : il journalise. Il sert à confirmer deux hypothèses de
 `docs/analyse-shh-exe.md` avant d'aller plus loin.
 
-1. Compiler (`tools\build.ps1`, sur confirmation) puis copier `build\x86-release\version.dll` à côté de
-   `SilentHill.exe` (dans `Bin\`), **sur confirmation de l'utilisateur** (c'est une modification du dossier du jeu,
-   réversible en supprimant le fichier).
+1. FAIT (09/10/2026, sur confirmation) : compilation propre, `version.dll` (17 exports) et `SHHFix.ini` copiés dans
+   `Bin\` à côté de `SilentHill.exe`. Retour en arrière : supprimer ces deux fichiers (et le dossier `Bin\SHHFix`).
 2. Lancer le jeu, jouer deux minutes, quitter, puis lire `Bin\SHHFix\logs\SHHFix_*.log` et vérifier :
    - la ligne de démarrage de SHHFix (le proxy `version.dll` est bien chargé) ;
    - l'absence de l'avertissement « g_SilentHill.sgl pas encore chargé » (le moteur est mappé à ce moment-là) ;
