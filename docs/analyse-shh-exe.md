@@ -67,3 +67,31 @@ Ordinaux de `XINPUT1_3.dll` (vérifié sur la DLL du système) : 2 = `XInputGetS
 4. Boucle de lecture XInput : conversion en commandes, zones mortes, sensibilité de la caméra.
 5. Gestion du périphérique perdu (Alt-Tab) : `Reset` et ressources.
 6. Constantes de résolution 720p (interface, carte, objets).
+
+## Premier lancement de vérification (09/10/2026, journal SHHFix 0.1.0, Windows 11 build 26300)
+
+Tout ce qui suit est **vérifié par le journal** (le mod ne faisait que journaliser, aucun réglage modifié).
+
+- **Le proxy `version.dll` est chargé** et le jeu démarre normalement, sans plantage (aucun minidump).
+- **Hypothèse confirmée** : à l'exécution de notre `DllMain`, `g_SilentHill.sgl` est déjà mappé (pas d'avertissement)
+  et les hooks de son IAT (`Direct3DCreate9`, `Sleep`, `SetUnhandledExceptionFilter`) ont fonctionné.
+- `Direct3DCreate9` du moteur passe d'abord par `apphelp.dll` (shim de compatibilité de Windows) : sans conséquence,
+  mais à garder en tête si un correctif doit lire l'IAT.
+- **Création du périphérique par défaut** : 800x600, format 22 (X8R8G8B8), 1 tampon, MSAA 0, swap 3 (COPY),
+  **plein écran**, 120 Hz, intervalle de présentation 0 (immédiat), comportement 0x40 (HARDWARE_VERTEXPROCESSING).
+- **Cadence verrouillée à 30 i/s** : 29,8 i/s mesurés, images de 33,5 ms (p99 ~35 ms). Le fichier `Engine\vars_pc.cfg`
+  créé au premier lancement contient `fpsLimit=30` et `maxFPSLimit=30` (les deux réglages sont donc bien la source
+  du plafond, ce qui reste à confirmer en les changeant), ainsi que `FullScreen=true`, `LowQualityShaders=true`,
+  `AutoDownResTextures=512`, `mousespeed=1.0` et `controlscheme=0`.
+- **Deux threads présentent des images** et alternent (chargement / jeu) ; le thread de rendu garde une précision x87
+  de 53 bits, le thread principal de 24 bits (simple précision) après `CreateDevice` sans `D3DCREATE_FPU_PRESERVE`.
+  Même situation que Deadly Premonition (caméra saccadée en simple précision) : piste à tester avec le drapeau.
+- **Mémoire** : espace d'adressage limité à 2047 Mo (pas LARGE_ADDRESS_AWARE), 810 à 840 Mo utilisés après 6 minutes
+  dans le menu et les premiers niveaux : marge confortable pour l'instant, la limite 4 Go pèsera surtout avec des
+  textures plus grandes ou des résolutions élevées.
+- **Saccades** : quelques pointes de 80 à 200 ms aux changements de thread de rendu (chargements), aucune en jeu
+  continu.
+- **Alt-Tab en plein écran** : `Present` renvoie `0x88760868` (`D3DERR_DEVICELOST`), puis `Reset` (800x600 plein écran)
+  réussit et `Present` refonctionne. **Sur cette machine, le jeu d'origine survit donc à l'Alt-Tab** (interruption de
+  14 s, le temps de l'avoir quitté), contrairement à ce que dit la réputation du jeu ; les plantages signalés sont
+  peut-être liés au contexte (résolution élevée, mode fenêtré, alt-tab en menu, autre GPU). À re-tester dans ces cas.
