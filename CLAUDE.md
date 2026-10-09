@@ -80,8 +80,11 @@ compile sous le nom `SHHFix.dll` sans se charger toute seule. Points en attente 
 
 - Projet sous **GPL-3.0-or-later** (`LICENSE`, copyright Cesar Schaal). Le paquet distribué doit contenir
   `LICENSE.txt`.
-- Le correctif communautaire existant (Steam006, 2018) sert de **liste de ce qui est possible** : ne jamais
-  copier ni redistribuer son binaire ou son code.
+- Les correctifs communautaires existants (Steam006 2018, **unknownproject** jusqu'à la v3.10 de 2024, voir
+  `docs/recherche-web.md`) servent de **liste de ce qui est possible**. Ils sont sans licence et leur auteur
+  s'oppose à toute réutilisation : ne jamais copier ni redistribuer leurs binaires ou leur code, ne pas les
+  télécharger ni les désassembler pour en tirer des adresses. Nos adresses viennent de notre seule analyse de
+  l'exécutable d'origine, et nos tests se font sur un jeu d'origine (sans leur patch, qui bloque les wrappers).
 - Ne jamais intégrer de code ou de shader sans licence libre vérifiée.
 
 ## Sécurité des données du joueur et du jeu
