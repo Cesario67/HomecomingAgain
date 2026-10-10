@@ -115,6 +115,14 @@ void TrackVoice(void* voice, UINT32 channels) {
 // Énergie de chaque canal de chaque voix (flottants entrelacés), journalisée toutes les 5 s : montre par quelle voix et
 // dans quel canal passent les sons.
 HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer, const void* wma) {
+    // Correction : canaux du flux 5.1 remis dans l'ordre directement dans les échantillons (voir RotateSurroundFrames).
+    if (voice == g_surroundVoice && buffer != nullptr && GetConfig().audioChannelFix) {
+        const auto* b = static_cast<const XAudio2Buffer*>(buffer);
+        if (b->audioData != nullptr) {
+            RotateSurroundFrames(const_cast<float*>(reinterpret_cast<const float*>(b->audioData)),
+                                 b->audioBytes / (6 * sizeof(float)));
+        }
+    }
     if (buffer != nullptr && g_energyLogs < 12) {
         for (VoiceMeter& meter : g_meters) {
             if (meter.voice != voice || meter.channels == 0 || meter.channels > 8) {
@@ -156,22 +164,6 @@ HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer
 }
 UINT32 g_masterChannels = 2;
 
-// Le flux 6 canaux du moteur arrive décalé d'un canal (mesuré le 10/10/2026 : canal 0 toujours vide, sons « à droite »).
-// Hypothèse retenue : source 1 = avant gauche, 2 = avant droit, 3 = centre, 4 = basses, 5 = arrière gauche,
-// 0 = arrière droit. Matrice de sortie construite pour 2, 6 ou 8 canaux (voir ChannelFixMatrix).
-void ApplyChannelFix(void* voice) {
-    float matrix[6 * 8]{};
-    if (!ChannelFixMatrix(g_masterChannels, matrix)) {
-        log::Warn("Audio : correction des canaux non appliquée ({} canaux de sortie non gérés)", g_masterChannels);
-        return;
-    }
-    using SetMatrixFn = HRESULT(STDMETHODCALLTYPE*)(void*, void*, UINT32, UINT32, const float*, UINT32);
-    const auto setMatrix = reinterpret_cast<SetMatrixFn>((*reinterpret_cast<void***>(voice))[kSetOutputMatrixIndex]);
-    const HRESULT result = setMatrix(voice, nullptr, 6, g_masterChannels, matrix, 0);
-    log::Info("Audio : ordre des canaux du flux 5.1 corrigé (sortie {} canaux) -> 0x{:08X}", g_masterChannels,
-              static_cast<unsigned long>(result));
-}
-
 HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, const WAVEFORMATEX* format, UINT32 flags,
                                                 float maxRatio, void* callback, const void* sends,
                                                 const void* effects) {
@@ -191,7 +183,7 @@ HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, cons
     if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr && format->nChannels == 6) {
         g_surroundVoice = *voice;
         if (GetConfig().audioChannelFix) {
-            ApplyChannelFix(*voice);
+            log::Info("Audio : ordre des canaux du flux 5.1 corrigé dans les échantillons");
         }
         if (format->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
             log::Info("Audio : masque de canaux du flux 6 canaux : 0x{:X}",
@@ -289,40 +281,21 @@ HRESULT WINAPI HookCoCreateInstance(REFCLSID clsid, LPUNKNOWN outer, DWORD conte
 
 }  // namespace
 
-bool ChannelFixMatrix(UINT32 outputChannels, float* matrix) noexcept {
-    // Indices de la source (flux du moteur, décalé) pour chaque rôle.
-    constexpr int kFrontLeft = 1;
-    constexpr int kFrontRight = 2;
-    constexpr int kCenter = 3;
-    constexpr int kLfe = 4;
-    constexpr int kRearLeft = 5;
-    constexpr int kRearRight = 0;
-    constexpr float kHalf = 0.7071f;
-    // Matrice XAudio2 : niveau[sortie * 6 + source].
-    auto set = [matrix](int output, int source, float level) { matrix[output * 6 + source] = level; };
-    switch (outputChannels) {
-        case 2:  // casque ou enceintes stéréo : mixage réduit habituel
-            set(0, kFrontLeft, 1.0f);
-            set(0, kCenter, kHalf);
-            set(0, kRearLeft, kHalf);
-            set(1, kFrontRight, 1.0f);
-            set(1, kCenter, kHalf);
-            set(1, kRearRight, kHalf);
-            return true;
-        case 6:  // 5.1 : AvG AvD C Basses ArG ArD
-        case 8:  // 7.1 : AvG AvD C Basses ArG ArD CôtéG CôtéD ; les arrières du jeu vont sur les côtés
-            set(0, kFrontLeft, 1.0f);
-            set(1, kFrontRight, 1.0f);
-            set(2, kCenter, 1.0f);
-            set(3, kLfe, 1.0f);
-            set(outputChannels == 8 ? 6 : 4, kRearLeft, 1.0f);
-            set(outputChannels == 8 ? 7 : 5, kRearRight, 1.0f);
-            return true;
-        default:
-            return false;
+void RotateSurroundFrames(float* samples, std::uint32_t frames) noexcept {
+    if (samples == nullptr) {
+        return;
+    }
+    for (std::uint32_t i = 0; i < frames; ++i) {
+        float* frame = samples + static_cast<std::size_t>(i) * 6;
+        const float first = frame[0];
+        frame[0] = frame[1];
+        frame[1] = frame[2];
+        frame[2] = frame[3];
+        frame[3] = frame[4];
+        frame[4] = frame[5];
+        frame[5] = first;
     }
 }
-
 void InstallAudioProbe(HMODULE engineModule) {
     if (!hooking::PatchImport(engineModule, "ole32.dll", "CoCreateInstance", &HookCoCreateInstance,
                               &g_coCreateInstance)) {

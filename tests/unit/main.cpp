@@ -148,14 +148,10 @@ void TestMovieSkip() {
 
 void TestChannelFix() {
     std::printf("Canaux audio\n");
-    float stereo[48]{};
-    Check(hca::audio::ChannelFixMatrix(2, stereo) && stereo[0 * 6 + 1] == 1.0f && stereo[1 * 6 + 2] == 1.0f && stereo[0 * 6 + 0] == 0.0f,
-          "stéréo : canal 1 à gauche, canal 2 à droite");
-    float surround[48]{};
-    Check(hca::audio::ChannelFixMatrix(8, surround) && surround[2 * 6 + 3] == 1.0f && surround[7 * 6 + 0] == 1.0f,
-          "7.1 : centre et arrière droit replacés");
-    float other[48]{};
-    Check(!hca::audio::ChannelFixMatrix(4, other), "4 canaux refusés");
+    float frames[12] = {0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15};
+    hca::audio::RotateSurroundFrames(frames, 2);
+    Check(frames[0] == 1 && frames[1] == 2 && frames[2] == 3 && frames[5] == 0, "première image remise dans l'ordre");
+    Check(frames[6] == 11 && frames[11] == 10, "deuxième image remise dans l'ordre");
 }
 
 }  // namespace
