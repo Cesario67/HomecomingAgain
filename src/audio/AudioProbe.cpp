@@ -37,6 +37,69 @@ using CreateSoundBufferFn = HRESULT(STDMETHODCALLTYPE*)(void*, const void*, void
 CreateSoundBufferFn g_createSoundBuffer = nullptr;
 int g_buffersLogged = 0;
 
+// IXAudio2::CreateSourceVoice (index 8) : (this, IXAudio2SourceVoice**, const WAVEFORMATEX*, UINT32 Flags,
+// float MaxFrequencyRatio, IXAudio2VoiceCallback*, const XAUDIO2_VOICE_SENDS*, const XAUDIO2_EFFECT_CHAIN*).
+// IXAudio2::CreateSubmixVoice (index 9) : (this, IXAudio2SubmixVoice**, UINT32 InputChannels, UINT32 InputSampleRate,
+// UINT32 Flags, UINT32 ProcessingStage, const XAUDIO2_VOICE_SENDS*, const XAUDIO2_EFFECT_CHAIN*).
+constexpr size_t kCreateSourceVoiceIndex = 8;
+constexpr size_t kCreateSubmixVoiceIndex = 9;
+using CreateSourceVoiceFn = HRESULT(STDMETHODCALLTYPE*)(void*, void**, const WAVEFORMATEX*, UINT32, float, void*,
+                                                        const void*, const void*);
+using CreateSubmixVoiceFn = HRESULT(STDMETHODCALLTYPE*)(void*, void**, UINT32, UINT32, UINT32, UINT32, const void*,
+                                                        const void*);
+CreateSourceVoiceFn g_createSourceVoice = nullptr;
+CreateSubmixVoiceFn g_createSubmixVoice = nullptr;
+int g_sourcesLogged = 0;
+
+// IXAudio2Voice::SetOutputMatrix. Hypothèse pour XAudio2 2.1 : index 14 (GetVoiceDetails, SetOutputVoices,
+// SetEffectChain, EnableEffect, DisableEffect, GetEffectState, SetEffectParameters, GetEffectParameters,
+// SetFilterParameters, GetFilterParameters, SetVolume, GetVolume, SetChannelVolumes, GetChannelVolumes,
+// SetOutputMatrix ; les filtres de sortie n'existent qu'à partir de 2.4). À valider par la cohérence des valeurs.
+// Signature : (this, IXAudio2Voice* destination, UINT32 sourceChannels, UINT32 destinationChannels,
+// const float* levelMatrix, UINT32 operationSet).
+constexpr size_t kSetOutputMatrixIndex = 14;
+using SetOutputMatrixFn = HRESULT(STDMETHODCALLTYPE*)(void*, void*, UINT32, UINT32, const float*, UINT32);
+SetOutputMatrixFn g_setOutputMatrix = nullptr;
+int g_matricesLogged = 0;
+
+HRESULT STDMETHODCALLTYPE HookSetOutputMatrix(void* voice, void* destination, UINT32 sourceChannels,
+                                              UINT32 destinationChannels, const float* matrix, UINT32 operationSet) {
+    if (g_matricesLogged < 40 && matrix != nullptr && sourceChannels <= 8 && destinationChannels <= 8) {
+        ++g_matricesLogged;
+        std::string values;
+        for (UINT32 i = 0; i < sourceChannels * destinationChannels; ++i) {
+            values += std::format(" {:.2f}", matrix[i]);
+        }
+        log::Info("Audio : SetOutputMatrix voix {} -> {} : {} canal(aux) vers {}, niveaux{}", voice, destination,
+                  sourceChannels, destinationChannels, values);
+    }
+    return g_setOutputMatrix(voice, destination, sourceChannels, destinationChannels, matrix, operationSet);
+}
+
+HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, const WAVEFORMATEX* format, UINT32 flags,
+                                                float maxRatio, void* callback, const void* sends,
+                                                const void* effects) {
+    const HRESULT result = g_createSourceVoice(xaudio, voice, format, flags, maxRatio, callback, sends, effects);
+    if (format != nullptr && g_sourcesLogged < 20) {
+        ++g_sourcesLogged;
+        log::Info("Audio : voix source {} : {} canal(aux), {} Hz, format 0x{:X}, envois {}",
+                  SUCCEEDED(result) && voice != nullptr ? *voice : nullptr, format->nChannels, format->nSamplesPerSec,
+                  format->wFormatTag, sends != nullptr ? "définis" : "par défaut");
+    }
+    if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && g_setOutputMatrix == nullptr) {
+        hooking::PatchVtable(*voice, kSetOutputMatrixIndex, &HookSetOutputMatrix, &g_setOutputMatrix);
+    }
+    return result;
+}
+
+HRESULT STDMETHODCALLTYPE HookCreateSubmixVoice(void* xaudio, void** voice, UINT32 channels, UINT32 rate, UINT32 flags,
+                                                UINT32 stage, const void* sends, const void* effects) {
+    const HRESULT result = g_createSubmixVoice(xaudio, voice, channels, rate, flags, stage, sends, effects);
+    log::Info("Audio : voix de mixage {} : {} canaux, {} Hz, étape {}",
+              SUCCEEDED(result) && voice != nullptr ? *voice : nullptr, channels, rate, stage);
+    return result;
+}
+
 std::string GuidText(REFGUID guid) {
     return std::format("{:08X}-{:04X}-{:04X}-{:02X}{:02X}-{:02X}{:02X}{:02X}{:02X}{:02X}{:02X}", guid.Data1, guid.Data2,
                        guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4],
@@ -100,6 +163,8 @@ HRESULT WINAPI HookCoCreateInstance(REFCLSID clsid, LPUNKNOWN outer, DWORD conte
         if (g_createMasteringVoice == nullptr) {
             hooking::PatchVtable(*object, kCreateMasteringVoiceIndex, &HookCreateMasteringVoice,
                                  &g_createMasteringVoice);
+            hooking::PatchVtable(*object, kCreateSourceVoiceIndex, &HookCreateSourceVoice, &g_createSourceVoice);
+            hooking::PatchVtable(*object, kCreateSubmixVoiceIndex, &HookCreateSubmixVoice, &g_createSubmixVoice);
         }
     } else {
         log::Info("Audio : CoCreateInstance {} par le moteur", GuidText(clsid));
