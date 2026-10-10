@@ -56,6 +56,7 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.ssaoFadeStart = ReadFloat(iniPath, L"Graphics", L"SsaoFadeStart", defaults.ssaoFadeStart, 0.0f, 100000.0f);
     config.ssaoFadeEnd = ReadFloat(iniPath, L"Graphics", L"SsaoFadeEnd", defaults.ssaoFadeEnd, 1.0f, 100000.0f);
     config.ssaoDebug = ReadBool(iniPath, L"Graphics", L"SsaoDebug", defaults.ssaoDebug);
+    config.filmGrain = ReadInt(iniPath, L"Graphics", L"FilmGrain", defaults.filmGrain, 0, 100);
 
     config.frameStats = ReadBool(iniPath, L"Frames", L"FrameStats", defaults.frameStats);
     config.reportIntervalSeconds =

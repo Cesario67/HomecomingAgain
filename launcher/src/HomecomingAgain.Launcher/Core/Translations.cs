@@ -86,7 +86,12 @@ public static class Translations
             ["ShadowResolution"] = ("Résolution des ombres", "Shadow resolution"),
             ["ShadowOriginal"] = ("2048 × 2048 (jeu d'origine)", "2048 × 2048 (original game)"),
             ["ShadowResolutionHint"] = ("Ombres plus nettes. Au-delà de 4096, des défauts apparaissent sur les vêtements (constaté en 8192).",
-                                        "Sharper shadows. Above 4096, artifacts appear on clothing (seen at 8192)."),            ["SecGameQuality"] = ("Qualité du jeu", "Game quality"),
+                                        "Sharper shadows. Above 4096, artifacts appear on clothing (seen at 8192)."),            ["FilmGrain"] = ("Grain de pellicule", "Film grain"),
+            ["GrainOff"] = ("Désactivé", "Off"),
+            ["GrainHalf"] = ("Réduit de moitié", "Halved"),
+            ["GrainOriginal"] = ("Jeu d'origine", "Original game"),
+            ["FilmGrainHint"] = ("Grain ajouté par le jeu à toute l'image. La teinte et le contraste ne changent pas.",
+                                 "Grain the game adds over the whole picture. Tint and contrast are unchanged."),            ["SecGameQuality"] = ("Qualité du jeu", "Game quality"),
             ["HighQualityShaders"] = ("Shaders en haute qualité", "High quality shaders"),
             ["FullResolutionTextures"] = ("Textures en pleine résolution", "Full resolution textures"),
             ["GameQualityHint"] = ("Réglages du jeu lui-même, en basse qualité par défaut (shaders simplifiés, textures " +

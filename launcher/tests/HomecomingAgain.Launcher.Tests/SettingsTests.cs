@@ -71,6 +71,7 @@ public sealed class SettingsTests
             FullResolutionTextures = true, Smaa = false, Anisotropy = 4, TargetFps = 144, PreciseTimer = false,
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
+            FilmGrain = 0,
         };
         IniDocument mod = IniDocument.Parse("");
         KeyValueDocument game = KeyValueDocument.Parse(OriginalGameSettings);

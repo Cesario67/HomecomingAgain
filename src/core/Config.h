@@ -33,6 +33,8 @@ struct Config {
     float ssaoFadeStart = 150.0f;
     float ssaoFadeEnd = 450.0f;
     bool ssaoDebug = false;
+    // Intensité du grain de pellicule du jeu en % (100 = jeu d'origine, 0 = aucun), voir graphics/FilmGrain.h.
+    int filmGrain = 100;
 
     // [Frames]
     bool frameStats = true;         // mesures de cadence, de Sleep et de mémoire dans le journal

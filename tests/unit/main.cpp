@@ -10,6 +10,7 @@
 
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
 #include "graphics/ShadowResolution.h"
@@ -105,6 +106,26 @@ void TestProjection() {
     Check(!hca::graphics::ParseProjection(worldViewProj, projection), "matrice d'objet refusée");
 }
 
+void TestFilmGrain() {
+    namespace grain = hca::graphics::grain;
+    std::printf("Grain de pellicule\n");
+    float values[8] = {0.00078125f, 0.00078125f, 1.0f, 0.0f, 0.45f, 0.75f, 0.0005f, 0.0009f};
+    Check(grain::ScaleIntensity(14, values, 2, 0.5f) && values[2] == 0.5f && values[0] == 0.00078125f && values[6] == 0.0005f,
+          "seule l'intensité (c14.z) est réduite");
+    float other[4] = {1, 1, 1, 1};
+    Check(!grain::ScaleIntensity(15, other, 1, 0.0f) && other[2] == 1.0f, "autres registres intacts");
+    // Table de constantes avec une seule variable « grainTexture » (s2).
+    const std::uint32_t withGrain[] = {
+        0xFFFF0300, (18u << 16) | 0xFFFE, 0x42415443,
+        28, 0, 0xFFFF0300, 1, 28, 0, 0,
+        48, (2u << 16) | 3, 1, 0, 0,
+        0x69617267, 0x7865546E, 0x65727574, 0, 0, 0,
+        0x0000FFFF};
+    Check(grain::IsGrainShader(reinterpret_cast<const DWORD*>(withGrain)), "shader du grain reconnu");
+    const std::uint32_t noTable[] = {0xFFFF0300, 0x0000FFFF};
+    Check(!grain::IsGrainShader(reinterpret_cast<const DWORD*>(noTable)), "autre shader ignoré");
+}
+
 }  // namespace
 
 int main() {
@@ -114,6 +135,7 @@ int main() {
     TestShaderConstantTable();
     TestShadowResolution();
     TestProjection();
+    TestFilmGrain();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

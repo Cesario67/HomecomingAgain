@@ -68,6 +68,12 @@
                         ItemsSource="{Binding ShadowResolutions}" SelectedItem="{Binding SelectedShadowResolution}" />
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[ShadowResolutionHint]}" />
+            <Grid ColumnDefinitions="220,*">
+              <TextBlock Text="{Binding L[FilmGrain]}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding FilmGrainLevels}" SelectedItem="{Binding SelectedFilmGrain}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[FilmGrainHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
             <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />

@@ -28,6 +28,7 @@ public sealed record PatchSettings
     public bool Ssao { get; init; } = true;
     public int SsaoStrength { get; init; } = 100;
     public int ShadowResolution { get; init; } = 4096;
+    public int FilmGrain { get; init; } = 100;
 
     // --- Cadence ([Frames])
     public int TargetFps { get; init; } = 60;
@@ -63,6 +64,7 @@ public sealed record PatchSettings
             Ssao = mod.GetBool("Graphics", "SSAO", defaults.Ssao),
             SsaoStrength = mod.GetInt("Graphics", "SsaoStrength", defaults.SsaoStrength),
             ShadowResolution = mod.GetInt("Graphics", "ShadowResolution", defaults.ShadowResolution),
+            FilmGrain = mod.GetInt("Graphics", "FilmGrain", defaults.FilmGrain),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
             WindowThreadLock = mod.GetBool("Compat", "WindowThreadLock", defaults.WindowThreadLock),
@@ -82,6 +84,7 @@ public sealed record PatchSettings
         mod.SetBool("Graphics", "SSAO", Ssao);
         mod.SetInt("Graphics", "SsaoStrength", Math.Clamp(SsaoStrength, 10, 400));
         mod.SetInt("Graphics", "ShadowResolution", ShadowResolution is 4096 or 8192 ? ShadowResolution : 2048);
+        mod.SetInt("Graphics", "FilmGrain", Math.Clamp(FilmGrain, 0, 100));
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Compat", "WindowThreadLock", WindowThreadLock);

@@ -6,6 +6,7 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "graphics/FilmGrain.h"
 #include "graphics/InternalDraw.h"
 #include "graphics/ShadowResolution.h"
 #include "graphics/Ssao.h"
@@ -20,6 +21,8 @@ constexpr size_t kCreateDepthStencilSurfaceIndex = 29;
 constexpr size_t kSetRenderTargetIndex = 37;
 constexpr size_t kSetViewportIndex = 47;
 constexpr size_t kSetVertexShaderConstantFIndex = 94;
+constexpr size_t kCreatePixelShaderIndex = 106;
+constexpr size_t kSetPixelShaderIndex = 107;
 constexpr size_t kSetPixelShaderConstantFIndex = 109;
 
 // Plus grand envoi de constantes corrigé (au-delà, envoyé tel quel) : 256 registres, la limite de ps_3_0.
@@ -31,6 +34,8 @@ using CreateSurfaceFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, UINT, UIN
                                                     DWORD, BOOL, IDirect3DSurface9**, HANDLE*);
 using SetRenderTargetFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, DWORD, IDirect3DSurface9*);
 using SetViewportFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const D3DVIEWPORT9*);
+using CreatePixelShaderFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const DWORD*, IDirect3DPixelShader9**);
+using SetPixelShaderFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, IDirect3DPixelShader9*);
 using SetShaderConstantFFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, UINT, const float*, UINT);
 
 CreateTextureFn g_createTexture = nullptr;
@@ -39,6 +44,8 @@ SetRenderTargetFn g_setRenderTarget = nullptr;
 SetViewportFn g_setViewport = nullptr;
 SetShaderConstantFFn g_setVertexShaderConstantF = nullptr;
 SetShaderConstantFFn g_setPixelShaderConstantF = nullptr;
+CreatePixelShaderFn g_createPixelShader = nullptr;
+SetPixelShaderFn g_setPixelShader = nullptr;
 
 HRESULT STDMETHODCALLTYPE HookCreateTexture(IDirect3DDevice9* device, UINT width, UINT height, UINT levels, DWORD usage,
                                             D3DFORMAT format, D3DPOOL pool, IDirect3DTexture9** texture,
@@ -111,24 +118,60 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
 
 HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, UINT start, const float* data,
                                                       UINT count) {
-    // Seuls les envois qui touchent c45..c54 (filtre des ombres) sont copiés puis corrigés.
-    if (!t_internalDraw && data != nullptr && count <= kMaxConstantVectors && start <= 54 && start + count > 45 &&
-        shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize) {
-        float copy[kMaxConstantVectors * 4];
-        std::memcpy(copy, data, count * 4 * sizeof(float));
-        if (shadows::ScaleFilterConstants(start, copy, count, shadows::ActiveAtlasSize())) {
-            return g_setPixelShaderConstantF(device, start, copy, count);
+    if (t_internalDraw || data == nullptr || count > kMaxConstantVectors) {
+        return g_setPixelShaderConstantF(device, start, data, count);
+    }
+    const bool touchesShadowFilter = start <= 54 && start + count > 45 &&
+                                     shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize;
+    const bool touchesGrain = grain::Active() && start <= grain::kIntensityRegister &&
+                              start + count > grain::kIntensityRegister;
+    if (!touchesShadowFilter && !touchesGrain) {
+        return g_setPixelShaderConstantF(device, start, data, count);
+    }
+    // Copie corrigée : filtre des ombres (c45..c54) et intensité du grain (c14, seulement sous son shader).
+    float copy[kMaxConstantVectors * 4];
+    std::memcpy(copy, data, count * 4 * sizeof(float));
+    bool changed = false;
+    if (touchesShadowFilter) {
+        changed |= shadows::ScaleFilterConstants(start, copy, count, shadows::ActiveAtlasSize());
+    }
+    if (touchesGrain) {
+        grain::RememberIntensity(start, data, count);
+        if (grain::GrainShaderBound()) {
+            changed |= grain::ScaleIntensity(start, copy, count, grain::Scale());
         }
     }
-    return g_setPixelShaderConstantF(device, start, data, count);
+    return g_setPixelShaderConstantF(device, start, changed ? copy : data, count);
 }
 
+HRESULT STDMETHODCALLTYPE HookCreatePixelShader(IDirect3DDevice9* device, const DWORD* function,
+                                                IDirect3DPixelShader9** shader) {
+    const HRESULT result = g_createPixelShader(device, function, shader);
+    if (!t_internalDraw && SUCCEEDED(result) && shader != nullptr) {
+        grain::OnPixelShaderCreated(function, *shader);
+    }
+    return result;
+}
+
+HRESULT STDMETHODCALLTYPE HookSetPixelShader(IDirect3DDevice9* device, IDirect3DPixelShader9* shader) {
+    const HRESULT result = g_setPixelShader(device, shader);
+    // Les constantes survivent au changement de shader : c14 est corrigé à l'arrivée du shader du grain et rétabli à
+    // son départ, pour les shaders suivants.
+    float intensity[4];
+    if (!t_internalDraw && grain::Active() && grain::OnSetPixelShader(shader) && grain::LastIntensity(intensity)) {
+        if (grain::GrainShaderBound()) {
+            grain::ScaleIntensity(grain::kIntensityRegister, intensity, 1, grain::Scale());
+        }
+        g_setPixelShaderConstantF(device, grain::kIntensityRegister, intensity, 1);
+    }
+    return result;
+}
 }  // namespace
 
 void Install(IDirect3DDevice9* device) {
     const Config& config = GetConfig();
     const bool shadowsActive = shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize;
-    if (!shadowsActive && !config.ssao) {
+    if (!shadowsActive && !config.ssao && !grain::Active()) {
         return;
     }
     bool ok = true;
@@ -141,12 +184,15 @@ void Install(IDirect3DDevice9* device) {
                                &g_setVertexShaderConstantF);
     ok &= hooking::PatchVtable(device, kSetPixelShaderConstantFIndex, &HookSetPixelShaderConstantF,
                                &g_setPixelShaderConstantF);
+    ok &= hooking::PatchVtable(device, kCreatePixelShaderIndex, &HookCreatePixelShader, &g_createPixelShader);
+    ok &= hooking::PatchVtable(device, kSetPixelShaderIndex, &HookSetPixelShader, &g_setPixelShader);
     if (!ok) {
         log::Error("Ombres et SSAO : interception incomplète du périphérique");
         return;
     }
-    log::Info("Ombres : atlas {}x{} ({}), SSAO : {}", shadows::ActiveAtlasSize(), shadows::ActiveAtlasSize(),
-              shadowsActive ? "agrandi" : "jeu d'origine", config.ssao ? "activé" : "désactivé");
+    log::Info("Ombres : atlas {}x{} ({}), SSAO : {}, grain : {} %", shadows::ActiveAtlasSize(),
+              shadows::ActiveAtlasSize(), shadowsActive ? "agrandi" : "jeu d'origine", config.ssao ? "activé" : "désactivé",
+              config.filmGrain);
 }
 
 }  // namespace hca::graphics::scene
