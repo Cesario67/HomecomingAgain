@@ -17,6 +17,7 @@
 #include "framepacing/FrameMonitor.h"
 #include "framepacing/WaitProfiler.h"
 #include "graphics/D3D9Hooks.h"
+#include "patches/FrameRateCap.h"
 
 namespace {
 
@@ -65,6 +66,7 @@ void Startup() {
     shhf::frames::Install(game, engine);
     if (engine != nullptr) {
         shhf::graphics::Install(engine);
+        shhf::patches::ApplyFrameRateCap(engine);
         if (shhf::GetConfig().frameStats) {
             shhf::frames::waits::Install(engine);
         }

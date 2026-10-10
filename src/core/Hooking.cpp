@@ -54,6 +54,17 @@ bool PatchImportRaw(HMODULE module, const char* dllName, const char* functionNam
     return false;
 }
 
+bool WriteCode(void* address, const void* bytes, size_t size) noexcept {
+    DWORD oldProtect = 0;
+    if (!VirtualProtect(address, size, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+        return false;
+    }
+    std::memcpy(address, bytes, size);
+    VirtualProtect(address, size, oldProtect, &oldProtect);
+    FlushInstructionCache(GetCurrentProcess(), address, size);
+    return true;
+}
+
 bool PatchImportOrdinalRaw(HMODULE module, const char* dllName, WORD ordinal, void* replacement,
                            void** original) noexcept {
     auto* base = reinterpret_cast<BYTE*>(module);

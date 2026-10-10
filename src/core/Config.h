@@ -26,6 +26,9 @@ struct Config {
     // parlent d'un 30 i/s codé en dur, et le correctif communautaire de 2018 débloque le 60 i/s (voir
     // docs/recherche-web.md). La valeur par défaut sera fixée après mesure en jeu.
     int frameLimitFps = 0;
+    // Cadence visée par le limiteur du moteur, qui est codé à 30 i/s en dur (voir patches/FrameRateCap.h).
+    // 0 = jeu d'origine. fpsLimit de vars_pc.cfg n'a aucun effet sur ce limiteur (vérifié le 10/10/2026).
+    int targetFps = 60;
 
     // [Debug]
     int logKeepCount = 10;

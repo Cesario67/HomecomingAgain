@@ -8,6 +8,7 @@
 
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
+#include "patches/FrameRateCap.h"
 
 namespace {
 
@@ -41,11 +42,19 @@ void TestBorderless() {
     Check(!shhf::graphics::ApplyBorderless(nullptr), "handle nul ignoré");
 }
 
+void TestFramePeriod() {
+    std::printf("Plafond de cadence\n");
+    Check(shhf::patches::FramePeriodMs(60) > 16.66f && shhf::patches::FramePeriodMs(60) < 16.67f, "60 i/s : 16,67 ms");
+    Check(shhf::patches::FramePeriodMs(30) > 33.33f && shhf::patches::FramePeriodMs(30) < 33.34f, "30 i/s : 33,33 ms");
+    Check(shhf::patches::FramePeriodMs(0) == 0.0f && shhf::patches::FramePeriodMs(5000) == 0.0f, "valeurs hors bornes refusées");
+}
+
 }  // namespace
 
 int main() {
     TestStrings();
     TestBorderless();
+    TestFramePeriod();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

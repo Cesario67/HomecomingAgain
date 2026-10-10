@@ -24,6 +24,11 @@ bool PatchImport(HMODULE module, const char* dllName, const char* functionName, 
     return true;
 }
 
+// Écrit `size` octets dans du code (adresse quelconque, même non alignée) en gardant la page exécutable pendant
+// l'écriture, puis vide le cache d'instructions. À n'appeler que lorsque le code visé ne s'exécute pas encore
+// (DllMain : le moteur est chargé mais pas démarré).
+bool WriteCode(void* address, const void* bytes, size_t size) noexcept;
+
 // Comme PatchImportRaw, pour un import par numéro d'ordre (ex. XINPUT1_3.dll, que le moteur de Silent Hill
 // importe par les ordinaux 2, 3 et 4, soit XInputGetState, XInputSetState et XInputGetCapabilities).
 bool PatchImportOrdinalRaw(HMODULE module, const char* dllName, WORD ordinal, void* replacement,

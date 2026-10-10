@@ -30,6 +30,7 @@ add_library(SHHFix SHARED
     src/framepacing/WaitProfiler.cpp
     src/graphics/BorderlessWindow.cpp
     src/graphics/D3D9Hooks.cpp
+    src/patches/FrameRateCap.cpp
     src/proxy/VersionProxy.cpp
     src/proxy/version.def
     "${CMAKE_CURRENT_BINARY_DIR}/version.rc"
@@ -66,7 +67,7 @@ add_custom_command(TARGET SHHFix POST_BUILD
 # Tests unitaires des fonctions pures, sans jeu ni matériel (tests/run-tests.ps1).
 option(SHHF_BUILD_TESTS "Compiler les tests" ON)
 if(SHHF_BUILD_TESTS)
-    add_executable(SHHFixUnitTests tests/unit/main.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp)
+    add_executable(SHHFixUnitTests tests/unit/main.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp src/patches/FrameRateCap.cpp src/core/Config.cpp src/core/Hooking.cpp)
     target_include_directories(SHHFixUnitTests PRIVATE src)
     target_compile_features(SHHFixUnitTests PRIVATE cxx_std_20)
     target_compile_definitions(SHHFixUnitTests PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
