@@ -64,6 +64,8 @@ struct Config {
     // Windows (0x7A = F11).
     bool frameCapture = false;
     int frameCaptureKey = 0x7A;
+    // Enregistre l'image affichée toutes les 15 s (voir graphics/BackBufferDump.h).
+    bool backBufferDump = false;
 };
 
 // Retourne false si le fichier .ini est absent (les valeurs par défaut sont alors utilisées).

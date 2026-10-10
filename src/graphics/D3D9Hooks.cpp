@@ -14,6 +14,7 @@
 #include "crash/CrashHandler.h"
 #include "crash/HangWatchdog.h"
 #include "framepacing/FrameMonitor.h"
+#include "graphics/BackBufferDump.h"
 #include "graphics/BorderlessWindow.h"
 #include "graphics/D3D9On12.h"
 #include "graphics/FrameCapture.h"
@@ -67,6 +68,10 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
         g_smaa.Apply(device);
     }
     GetSsao().OnPresent();
+    if (GetConfig().backBufferDump) {
+        InternalDrawScope internal;
+        dump::OnPresent(device);
+    }
     frames::OnBeforePresent();
     const HRESULT result = g_present(device, sourceRect, destRect, window, dirtyRegion);
     if (frames::OnAfterPresent()) {

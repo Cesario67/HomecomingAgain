@@ -66,6 +66,7 @@ add_library(HomecomingAgain SHARED
     src/engine/EngineSettings.cpp
     src/framepacing/FrameMonitor.cpp
     src/framepacing/WaitProfiler.cpp
+    src/graphics/BackBufferDump.cpp
     src/graphics/BorderlessWindow.cpp
     src/graphics/D3D9Hooks.cpp
     src/graphics/D3D9On12.cpp
