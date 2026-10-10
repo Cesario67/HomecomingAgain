@@ -1,6 +1,6 @@
 # Projet
 
-**SHHFix** : mod pour *Silent Hill: Homecoming* (PC, Steam appid 19000, Double Helix 2008) qui vise à le
+**HomecomingAgain** : mod pour *Silent Hill: Homecoming* (PC, Steam appid 19000, Double Helix 2008) qui vise à le
 rendre jouable sur les machines d'aujourd'hui. Objectifs, par priorité :
 
 1. **Plantages et cadence** : corriger les plantages connus (Windows 10/11, résolution, fréquence), régulariser
@@ -19,7 +19,7 @@ rendre jouable sur les machines d'aujourd'hui. Objectifs, par priorité :
 
 ## Architecture
 
-Reprise de DPStabilityFix, adaptée (espace de noms `shhf`, projet `SHHFix`). Modules, une responsabilité chacun :
+Reprise de DPStabilityFix, adaptée (espace de noms `hca`, projet `HomecomingAgain`). Modules, une responsabilité chacun :
 
 - `core/` : chemins, config `.ini`, journal, hooking (IAT, vtables COM), infos système.
 - `crash/` : filtre d'exceptions non gérées chaîné avec celui du jeu, minidumps, rapport.
@@ -27,13 +27,13 @@ Reprise de DPStabilityFix, adaptée (espace de noms `shhf`, projet `SHHFix`). Mo
 - `graphics/` : `Direct3DCreate9` (IAT) -> `CreateDevice` -> `Present`/`Reset` (vtables). Journalise les
   paramètres de présentation et mesure la cadence, sans rien modifier pour l'instant.
 - `proxy/` : `version.dll`, première DLL importée par le lanceur, transmise à la vraie (17 exports). C'est ce qui
-  charge SHHFix. Nos hooks visent l'IAT du **moteur** `g_SilentHill.sgl` (d3d9, XINPUT1_3 par ordinaux 2/3/4,
+  charge HomecomingAgain. Nos hooks visent l'IAT du **moteur** `g_SilentHill.sgl` (d3d9, XINPUT1_3 par ordinaux 2/3/4,
   DINPUT8), pas celle du lanceur.
 - À venir selon l'analyse : `input/` (manette XInput), `patches/` (fonctions internes du moteur, vérifiées par
   signature avant application).
 - `DllMain` ne fait que des opérations sûres sous le verrou du chargeur ; ce qui charge des DLL est différé au
   premier `Direct3DCreate9` (`LateInit`).
-- Chaque fonctionnalité doit pouvoir être désactivée dans le `.ini` (`dist/SHHFix.ini`).
+- Chaque fonctionnalité doit pouvoir être désactivée dans le `.ini` (`dist/HomecomingAgain.ini`).
 - Toute nouvelle fonctionnalité doit être couverte par un test (`tests/unit` pour les fonctions pures ; un faux
   jeu `tests/fake_game` à recréer comme dans DPStabilityFix dès que le chargeur est choisi).
 - Analyse de `SilentHill.exe` : `docs/analyse-shh-exe.md`. Désassembler dans le scratchpad
@@ -49,7 +49,7 @@ Prochaine étape et plan : `docs/a-faire.md`.
 ## Commandes
 
 - Compiler : `powershell -ExecutionPolicy Bypass -File tools\build.ps1` (preset `x86-release`).
-- Tests unitaires : `build\x86-release\SHHFixUnitTests.exe` (code de sortie = nombre d'échecs).
+- Tests unitaires : `build\x86-release\HomecomingAgainUnitTests.exe` (code de sortie = nombre d'échecs).
 - Les scripts `.ps1` doivent rester en UTF-8 **avec BOM** (sinon PowerShell 5.1 abîme les accents).
 - CI GitHub Actions (`.github/workflows/build.yml`) : compilation et tests unitaires.
 
@@ -130,11 +130,11 @@ Adaptatif :
 Repris de DPStabilityFix (mêmes conventions C#, voir le CLAUDE.md de ce projet : MVVM strict, liaisons compilées,
 textes dans `Core/Translations.cs` en français et en anglais, fichiers modifiés en place). Spécificités :
 - Trois onglets : Graphismes, Performances et stabilité, Installation. Les réglages sont répartis entre
-  `Bin\SHHFix.ini` (mod, `IniDocument`) et `Engine\vars_pc.cfg` (jeu, `KeyValueDocument`, copie de secours
-  `vars_pc.cfg.shhf-backup` à la première modification). Correspondance dans `Core/PatchSettings.cs`.
+  `Bin\HomecomingAgain.ini` (mod, `IniDocument`) et `Engine\vars_pc.cfg` (jeu, `KeyValueDocument`, copie de secours
+  `vars_pc.cfg.hca-backup` à la première modification). Correspondance dans `Core/PatchSettings.cs`.
 - Le jeu réécrit `vars_pc.cfg` en quittant : toute écriture est refusée tant qu'il tourne.
-- L'installation applique le patch 4 Go à `Bin\SilentHill.exe` (original : `SilentHill.exe.shhf-original`, remis à
-  la désinstallation, voir `Core/ExePatcher.cs`), puis copie `Bin\version.dll`, `Bin\SHHFix.ini` s'il est absent,
+- L'installation applique le patch 4 Go à `Bin\SilentHill.exe` (original : `SilentHill.exe.hca-original`, remis à
+  la désinstallation, voir `Core/ExePatcher.cs`), puis copie `Bin\version.dll`, `Bin\HomecomingAgain.ini` s'il est absent,
   les licences et le launcher dans `Bin`.
-- `tools\build.ps1` compile la DLL puis publie `SHHFix.exe` (autonome, ~21 Mo) qui l'embarque.
+- `tools\build.ps1` compile la DLL puis publie `HomecomingAgain.exe` (autonome, ~21 Mo) qui l'embarque.
 - Tests : `dotnet test launcher` (xUnit v3).

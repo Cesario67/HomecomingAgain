@@ -2,7 +2,7 @@
 
 #include <d3d9.h>
 
-namespace shhf::graphics {
+namespace hca::graphics {
 
 // Anticrénelage SMAA (Jimenez et al., préréglage HIGH, détection des contours par luminance) appliqué à l'image
 // finale juste avant Present. Shaders précompilés (shaders/smaa_d3d9.hlsl) : aucune dépendance à D3DX.
@@ -56,4 +56,4 @@ private:
     IDirect3DSurface9* blendSurface_ = nullptr;
 };
 
-}  // namespace shhf::graphics
+}  // namespace hca::graphics

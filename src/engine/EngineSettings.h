@@ -1,6 +1,6 @@
 #pragma once
 
-namespace shhf::engine {
+namespace hca::engine {
 
 // Lit les réglages de cadence du moteur en mémoire (valeurs réellement utilisées, après chargement de
 // vars_pc.cfg). Renvoie false si les structures ne sont pas encore créées ou si la version du moteur diffère.
@@ -12,4 +12,4 @@ namespace shhf::engine {
 // - 0x101266CF : à chaque image, fpsLimit est ramené à maxFPSLimit s'il vaut 0 ou le dépasse.
 bool ReadFpsLimits(int& fpsLimit, int& maxFpsLimit) noexcept;
 
-}  // namespace shhf::engine
+}  // namespace hca::engine

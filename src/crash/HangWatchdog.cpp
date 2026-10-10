@@ -7,7 +7,7 @@
 #include "crash/CrashHandler.h"
 #include "framepacing/FrameMonitor.h"
 
-namespace shhf::crash {
+namespace hca::crash {
 
 namespace {
 
@@ -59,4 +59,4 @@ void StartHangWatchdog(DWORD mainThreadId) noexcept {
     log::Info("Détecteur de blocage actif : diagnostic après {} s sans image", GetConfig().hangSeconds);
 }
 
-}  // namespace shhf::crash
+}  // namespace hca::crash

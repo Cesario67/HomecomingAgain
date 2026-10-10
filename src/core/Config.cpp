@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace shhf {
+namespace hca {
 
 namespace {
 
@@ -56,4 +56,4 @@ const Config& GetConfig() noexcept {
     return g_config;
 }
 
-}  // namespace shhf
+}  // namespace hca

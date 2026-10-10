@@ -4,7 +4,7 @@
 
 #include <cwchar>
 
-namespace shhf {
+namespace hca {
 
 std::wstring AnsiToWide(const char* text) {
     if (text == nullptr || *text == '\0') {
@@ -47,4 +47,4 @@ std::wstring FileTimestamp() {
     return buffer;
 }
 
-}  // namespace shhf
+}  // namespace hca

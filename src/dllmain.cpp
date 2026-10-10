@@ -1,4 +1,4 @@
-// Point d'entrée de SHHFix.
+// Point d'entrée de HomecomingAgain.
 //
 // DllMain s'exécute sous le verrou du chargeur de Windows, avant le code du jeu : on n'y fait que des
 // opérations sûres (fichiers, écriture de pointeurs dans l'IAT de SilentHill.exe). Ce qui demande de charger
@@ -33,24 +33,24 @@ bool IsHostedByGame() {
         name.remove_prefix(separator + 1);
     }
     // Nom de l'exécutable d'après les témoignages (correctif communautaire de 2018) : à confirmer.
-    return shhf::EqualsIgnoreCase(name, L"SilentHill.exe");
+    return hca::EqualsIgnoreCase(name, L"SilentHill.exe");
 }
 
 void Startup() {
     // Chargée par un autre programme : on ne fait rien.
-    if (!IsHostedByGame() || !shhf::InitPaths()) {
+    if (!IsHostedByGame() || !hca::InitPaths()) {
         return;
     }
-    const shhf::Paths& paths = shhf::GetPaths();
-    const bool iniFound = shhf::LoadConfig(paths.iniFile);
-    if (!shhf::log::Open(paths.logsDir, shhf::GetConfig().logKeepCount)) {
+    const hca::Paths& paths = hca::GetPaths();
+    const bool iniFound = hca::LoadConfig(paths.iniFile);
+    if (!hca::log::Open(paths.logsDir, hca::GetConfig().logKeepCount)) {
         return;
     }
     g_active = true;
 
-    shhf::log::Info("SHHFix {} : démarrage", SHHF_VERSION);
+    hca::log::Info("Homecoming Again {} : démarrage", HCA_VERSION);
     if (!iniFound) {
-        shhf::log::Warn("{} absent : valeurs par défaut utilisées", shhf::WideToUtf8(paths.iniFile));
+        hca::log::Warn("{} absent : valeurs par défaut utilisées", hca::WideToUtf8(paths.iniFile));
     }
 
     const HMODULE game = GetModuleHandleW(nullptr);
@@ -60,20 +60,20 @@ void Startup() {
     // journal au premier lancement).
     const HMODULE engine = GetModuleHandleW(L"g_SilentHill.sgl");
     if (engine == nullptr) {
-        shhf::log::Warn("g_SilentHill.sgl pas encore chargé : Direct3D, entrées et attentes du moteur non interceptés");
+        hca::log::Warn("g_SilentHill.sgl pas encore chargé : Direct3D, entrées et attentes du moteur non interceptés");
     }
-    shhf::sysinfo::LogStartupInfo(game);
-    shhf::crash::Install(game, engine);
-    shhf::frames::Install(game, engine);
+    hca::sysinfo::LogStartupInfo(game);
+    hca::crash::Install(game, engine);
+    hca::frames::Install(game, engine);
     if (engine != nullptr) {
-        shhf::graphics::Install(engine);
-        shhf::patches::ApplyFrameRateCap(engine);
-        shhf::compat::InstallWindowThreadLock(engine);
-        if (shhf::GetConfig().frameStats) {
-            shhf::frames::waits::Install(engine);
+        hca::graphics::Install(engine);
+        hca::patches::ApplyFrameRateCap(engine);
+        hca::compat::InstallWindowThreadLock(engine);
+        if (hca::GetConfig().frameStats) {
+            hca::frames::waits::Install(engine);
         }
     }
-    shhf::log::Info("Initialisation terminée");
+    hca::log::Info("Initialisation terminée");
 }
 
 void Shutdown(bool processTerminating) {
@@ -81,10 +81,10 @@ void Shutdown(bool processTerminating) {
         return;
     }
     if (processTerminating) {
-        shhf::frames::LogFinalReport();
-        shhf::log::Info("Fermeture normale du jeu");
+        hca::frames::LogFinalReport();
+        hca::log::Info("Fermeture normale du jeu");
     }
-    shhf::log::Close();
+    hca::log::Close();
 }
 
 }  // namespace

@@ -97,10 +97,10 @@ mot de passe puis Discord pour obtenir la dernière version, installation en arc
 - **ENB** : préréglage d'éclairage et de post-traitement sur Nexus Mods (pas une restauration de textures).
 - Aucun projet de restauration de textures HD trouvé.
 
-## Ce que cela change pour SHHFix
+## Ce que cela change pour HomecomingAgain
 
 Constat honnête : 60 i/s, 4 Go, résolutions élevées, 21:9, QTE et invites de boutons sont **déjà couverts** par un
-patch très abouti, mais fermé, sans licence et qui remplace des fichiers du jeu. Créneaux où SHHFix peut être
+patch très abouti, mais fermé, sans licence et qui remplace des fichiers du jeu. Créneaux où HomecomingAgain peut être
 utile (à valider par l'analyse de l'exécutable) :
 1. **Ouvert et auditable** (GPL, code lisible) alors que l'existant est un binaire opaque.
 2. **Non destructif** : exécutable et `.sgl` d'origine inchangés, un chargeur DLL, désinstallation propre.

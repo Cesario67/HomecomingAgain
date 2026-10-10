@@ -8,7 +8,7 @@
 
 #include "core/Strings.h"
 
-namespace shhf::log {
+namespace hca::log {
 
 namespace {
 
@@ -31,7 +31,7 @@ const char* LevelName(Level level) noexcept {
 void PruneOldLogs(const std::wstring& logsDir, int keepCount) {
     std::vector<std::wstring> names;
     WIN32_FIND_DATAW data{};
-    const HANDLE find = FindFirstFileW((logsDir + L"\\SHHFix_*.log").c_str(), &data);
+    const HANDLE find = FindFirstFileW((logsDir + L"\\HomecomingAgain_*.log").c_str(), &data);
     if (find == INVALID_HANDLE_VALUE) {
         return;
     }
@@ -76,7 +76,7 @@ bool Open(const std::wstring& logsDir, int keepCount) {
     }
     PruneOldLogs(logsDir, std::max(keepCount - 1, 0));
 
-    const std::wstring path = logsDir + L"\\SHHFix_" + FileTimestamp() + L".log";
+    const std::wstring path = logsDir + L"\\HomecomingAgain_" + FileTimestamp() + L".log";
     g_file = CreateFileW(path.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS,
                          FILE_ATTRIBUTE_NORMAL, nullptr);
     if (g_file == INVALID_HANDLE_VALUE) {
@@ -123,4 +123,4 @@ void WriteEmergency(Level level, std::string_view message) noexcept {
     WriteUnlocked(level, message);
 }
 
-}  // namespace shhf::log
+}  // namespace hca::log

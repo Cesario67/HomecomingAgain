@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace shhf::engine {
+namespace hca::engine {
 
 namespace {
 
@@ -57,4 +57,4 @@ bool ReadFpsLimits(int& fpsLimit, int& maxFpsLimit) noexcept {
     return analyzed && ReadUnsafe(fpsLimit, maxFpsLimit);
 }
 
-}  // namespace shhf::engine
+}  // namespace hca::engine

@@ -1,4 +1,4 @@
-﻿# Compile SHHFix en 32 bits avec les Build Tools, sans ouvrir de terminal développeur.
+﻿# Compile HomecomingAgain en 32 bits avec les Build Tools, sans ouvrir de terminal développeur.
 # Usage : powershell -ExecutionPolicy Bypass -File tools\build.ps1 [-Preset x86-release|x86-debug]
 param(
     [ValidateSet('x86-release', 'x86-debug')]
@@ -33,7 +33,7 @@ if (-not (Test-Path $dotnet)) {
 }
 $package = Join-Path $root "build\$Preset\package"
 $configuration = if ($Preset -eq 'x86-debug') { 'Debug' } else { 'Release' }
-& $dotnet publish (Join-Path $root 'launcher\src\SHHFix.Launcher\SHHFix.Launcher.csproj') `
+& $dotnet publish (Join-Path $root 'launcher\src\HomecomingAgain.Launcher\HomecomingAgain.Launcher.csproj') `
     -c $configuration -r win-x64 --self-contained -p:DebugType=none -o $package --nologo -v quiet
 if ($LASTEXITCODE -ne 0) {
     throw "Échec de la publication du launcher (code $LASTEXITCODE)."

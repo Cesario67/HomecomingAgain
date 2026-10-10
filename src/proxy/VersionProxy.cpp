@@ -1,4 +1,4 @@
-// Proxy de version.dll : c'est ce qui charge SHHFix dans le jeu.
+// Proxy de version.dll : c'est ce qui charge HomecomingAgain dans le jeu.
 //
 // SilentHill.exe (lanceur de 33 Ko) importe VERSION.dll en premier (3 fonctions : VerQueryValueA,
 // GetFileVersionInfoA, GetFileVersionInfoSizeA). version.dll n'est pas dans la liste KnownDLLs de Windows :
@@ -31,8 +31,8 @@ std::atomic<HMODULE> g_realModule{nullptr};
 std::atomic<FARPROC> g_realExports[kExportCount]{};
 
 [[noreturn]] void FailAndExit(const wchar_t* message) noexcept {
-    shhf::log::Write(shhf::log::Level::Error, "Vraie version.dll introuvable ou incomplète : arrêt du jeu");
-    MessageBoxW(nullptr, message, L"SHHFix", MB_ICONERROR | MB_OK);
+    hca::log::Write(hca::log::Level::Error, "Vraie version.dll introuvable ou incomplète : arrêt du jeu");
+    MessageBoxW(nullptr, message, L"HomecomingAgain", MB_ICONERROR | MB_OK);
     TerminateProcess(GetCurrentProcess(), 1);
     for (;;) {
     }
@@ -61,7 +61,7 @@ HMODULE LoadRealModule() noexcept {
 }  // namespace
 
 // Appelé par les stubs ci-dessous : résout (une fois) l'adresse de la vraie fonction.
-extern "C" FARPROC __cdecl ShhfResolveVersionExport(int index) noexcept {
+extern "C" FARPROC __cdecl HcaResolveVersionExport(int index) noexcept {
     FARPROC function = g_realExports[index].load(std::memory_order_acquire);
     if (function != nullptr) {
         return function;
@@ -76,28 +76,28 @@ extern "C" FARPROC __cdecl ShhfResolveVersionExport(int index) noexcept {
 
 // Stubs « nus » : ils ne touchent pas à la pile et sautent vers la vraie fonction, qui reçoit donc exactement
 // les arguments et l'adresse de retour de l'appelant. EAX, ECX et EDX sont libres pour l'appelant (stdcall).
-#define SHHF_VERSION_STUB(index, name)                                  \
-    extern "C" __declspec(naked) void ShhfStubVersion_##name() {        \
+#define HCA_VERSION_STUB(index, name)                                  \
+    extern "C" __declspec(naked) void HcaStubVersion_##name() {        \
         __asm { push index }                                            \
-        __asm { call ShhfResolveVersionExport }                         \
+        __asm { call HcaResolveVersionExport }                         \
         __asm { add esp, 4 }                                            \
         __asm { jmp eax }                                               \
     }
 
-SHHF_VERSION_STUB(0, GetFileVersionInfoA)
-SHHF_VERSION_STUB(1, GetFileVersionInfoByHandle)
-SHHF_VERSION_STUB(2, GetFileVersionInfoExA)
-SHHF_VERSION_STUB(3, GetFileVersionInfoExW)
-SHHF_VERSION_STUB(4, GetFileVersionInfoSizeA)
-SHHF_VERSION_STUB(5, GetFileVersionInfoSizeExA)
-SHHF_VERSION_STUB(6, GetFileVersionInfoSizeExW)
-SHHF_VERSION_STUB(7, GetFileVersionInfoSizeW)
-SHHF_VERSION_STUB(8, GetFileVersionInfoW)
-SHHF_VERSION_STUB(9, VerFindFileA)
-SHHF_VERSION_STUB(10, VerFindFileW)
-SHHF_VERSION_STUB(11, VerInstallFileA)
-SHHF_VERSION_STUB(12, VerInstallFileW)
-SHHF_VERSION_STUB(13, VerLanguageNameA)
-SHHF_VERSION_STUB(14, VerLanguageNameW)
-SHHF_VERSION_STUB(15, VerQueryValueA)
-SHHF_VERSION_STUB(16, VerQueryValueW)
+HCA_VERSION_STUB(0, GetFileVersionInfoA)
+HCA_VERSION_STUB(1, GetFileVersionInfoByHandle)
+HCA_VERSION_STUB(2, GetFileVersionInfoExA)
+HCA_VERSION_STUB(3, GetFileVersionInfoExW)
+HCA_VERSION_STUB(4, GetFileVersionInfoSizeA)
+HCA_VERSION_STUB(5, GetFileVersionInfoSizeExA)
+HCA_VERSION_STUB(6, GetFileVersionInfoSizeExW)
+HCA_VERSION_STUB(7, GetFileVersionInfoSizeW)
+HCA_VERSION_STUB(8, GetFileVersionInfoW)
+HCA_VERSION_STUB(9, VerFindFileA)
+HCA_VERSION_STUB(10, VerFindFileW)
+HCA_VERSION_STUB(11, VerInstallFileA)
+HCA_VERSION_STUB(12, VerInstallFileW)
+HCA_VERSION_STUB(13, VerLanguageNameA)
+HCA_VERSION_STUB(14, VerLanguageNameW)
+HCA_VERSION_STUB(15, VerQueryValueA)
+HCA_VERSION_STUB(16, VerQueryValueW)

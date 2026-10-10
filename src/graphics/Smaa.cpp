@@ -16,7 +16,7 @@
 #include "AreaTex.h"
 #include "SearchTex.h"
 
-namespace shhf::graphics {
+namespace hca::graphics {
 
 namespace {
 
@@ -255,4 +255,4 @@ bool Smaa::Apply(IDirect3DDevice9* device) noexcept {
     return true;
 }
 
-}  // namespace shhf::graphics
+}  // namespace hca::graphics

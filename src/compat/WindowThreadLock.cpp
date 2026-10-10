@@ -6,7 +6,7 @@
 #include "core/Hooking.h"
 #include "core/Log.h"
 
-namespace shhf::compat {
+namespace hca::compat {
 
 namespace {
 
@@ -70,4 +70,4 @@ void SetWindowThread(DWORD threadId) noexcept {
     g_windowThread.store(threadId, std::memory_order_relaxed);
 }
 
-}  // namespace shhf::compat
+}  // namespace hca::compat

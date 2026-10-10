@@ -17,7 +17,7 @@
 #include "graphics/BorderlessWindow.h"
 #include "graphics/Smaa.h"
 
-namespace shhf::graphics {
+namespace hca::graphics {
 
 namespace {
 
@@ -238,4 +238,4 @@ void Install(HMODULE engineModule) {
     }
 }
 
-}  // namespace shhf::graphics
+}  // namespace hca::graphics

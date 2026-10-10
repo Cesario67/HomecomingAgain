@@ -1,14 +1,14 @@
 // SMAA pour Direct3D 9, sans le système d'effets D3DX : chaque point d'entrée est compilé séparément par fxc
-// (vs_3_0 / ps_3_0) pendant la compilation de SHHFix, voir CMakeLists.txt.
+// (vs_3_0 / ps_3_0) pendant la compilation de HomecomingAgain, voir CMakeLists.txt.
 //
 // Les fonctions DX9_* reprennent les enveloppes du SMAA.fx de démonstration de SMAA (Jimenez et al., 2011,
 // licence BSD, voir third_party/smaa/LICENSE.txt). Différences : registres explicites au lieu des techniques et
 // des samplers d'effet, taille d'un pixel passée en constante (c0) au lieu d'une macro, préréglage HIGH, pas de
 // masque de stencil (le calcul des poids est fait sur tous les pixels, sans effet sur le résultat).
 
-float2 shhfPixelSize : register(c0);
+float2 hcaPixelSize : register(c0);
 
-#define SMAA_PIXEL_SIZE shhfPixelSize
+#define SMAA_PIXEL_SIZE hcaPixelSize
 #define SMAA_PRESET_HIGH 1
 #define SMAA_HLSL_3 1
 #include "SMAA.h"

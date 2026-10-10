@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-namespace shhf::hooking {
+namespace hca::hooking {
 
 // Remplace un pointeur en mémoire protégée (entrée d'IAT, case de vtable) et renvoie l'ancienne valeur.
 bool PatchPointer(void** slot, void* replacement, void** original) noexcept;
@@ -60,4 +60,4 @@ bool PatchVtable(void* object, size_t index, Fn replacement, Fn* original) noexc
     return true;
 }
 
-}  // namespace shhf::hooking
+}  // namespace hca::hooking

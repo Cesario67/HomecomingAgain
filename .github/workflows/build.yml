@@ -30,7 +30,7 @@ jobs:
         run: cmake --build --preset x86-release
 
       - name: Tests unitaires
-        run: build/x86-release/SHHFixUnitTests.exe
+        run: build/x86-release/HomecomingAgainUnitTests.exe
 
       # Launcher C# (Avalonia), qui embarque la DLL compilée ci-dessus. msvc-dev-cmd définit Platform=x86 pour la
       # suite du job, que MSBuild rejette pour la solution du launcher : on retire la variable pour ces étapes.
@@ -43,15 +43,15 @@ jobs:
       - name: Publier le launcher
         run: |
           Remove-Item Env:Platform -ErrorAction SilentlyContinue
-          dotnet publish launcher/src/SHHFix.Launcher/SHHFix.Launcher.csproj -c Release -r win-x64 --self-contained -p:DebugType=none -o build/x86-release/package
+          dotnet publish launcher/src/HomecomingAgain.Launcher/HomecomingAgain.Launcher.csproj -c Release -r win-x64 --self-contained -p:DebugType=none -o build/x86-release/package
 
       - uses: actions/upload-artifact@v4
         with:
-          name: SHHFix
+          name: HomecomingAgain
           path: build/x86-release/package/
 
       # Symboles, pour analyser les dumps de plantage qui passent par notre DLL.
       - uses: actions/upload-artifact@v4
         with:
-          name: SHHFix-symboles
+          name: HomecomingAgain-symboles
           path: build/x86-release/version.pdb

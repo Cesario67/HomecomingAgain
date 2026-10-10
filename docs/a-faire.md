@@ -7,10 +7,10 @@ Points en attente, avec ce que l'on sait déjà. À tenir à jour : retirer un p
 Le code actuel ne modifie rien dans le jeu : il journalise. Il sert à confirmer deux hypothèses de
 `docs/analyse-shh-exe.md` avant d'aller plus loin.
 
-1. FAIT (09/10/2026, sur confirmation) : compilation propre, `version.dll` (17 exports) et `SHHFix.ini` copiés dans
-   `Bin\` à côté de `SilentHill.exe`. Retour en arrière : supprimer ces deux fichiers (et le dossier `Bin\SHHFix`).
-2. Lancer le jeu, jouer deux minutes, quitter, puis lire `Bin\SHHFix\logs\SHHFix_*.log` et vérifier :
-   - la ligne de démarrage de SHHFix (le proxy `version.dll` est bien chargé) ;
+1. FAIT (09/10/2026, sur confirmation) : compilation propre, `version.dll` (17 exports) et `HomecomingAgain.ini` copiés dans
+   `Bin\` à côté de `SilentHill.exe`. Retour en arrière : supprimer ces deux fichiers (et le dossier `Bin\HomecomingAgain`).
+2. Lancer le jeu, jouer deux minutes, quitter, puis lire `Bin\HomecomingAgain\logs\HomecomingAgain_*.log` et vérifier :
+   - la ligne de démarrage de HomecomingAgain (le proxy `version.dll` est bien chargé) ;
    - l'absence de l'avertissement « g_SilentHill.sgl pas encore chargé » (le moteur est mappé à ce moment-là) ;
    - `Direct3DCreate9`, `CreateDevice` (résolution, MSAA, fenêtré) et le rapport de cadence (30 i/s ?).
 3. Si le moteur n'est pas encore mappé dans `DllMain` : différer l'installation des hooks (premier appel d'une
@@ -18,7 +18,7 @@ Le code actuel ne modifie rien dans le jeu : il journalise. Il sert à confirmer
 
 ## Plan pour faire mieux que l'existant
 
-Constat (voir `docs/recherche-web.md`) : l'essentiel existe déjà dans un patch fermé. SHHFix doit être **ouvert,
+Constat (voir `docs/recherche-web.md`) : l'essentiel existe déjà dans un patch fermé. HomecomingAgain doit être **ouvert,
 non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objectif mesurable.
 
 ### 1. Plantages et cadence (objectif 1)

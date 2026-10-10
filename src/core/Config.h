@@ -2,9 +2,9 @@
 
 #include <string>
 
-namespace shhf {
+namespace hca {
 
-// Reflet de SHHFix.ini. Les valeurs par défaut s'appliquent si le fichier ou une clé manque.
+// Reflet de HomecomingAgain.ini. Les valeurs par défaut s'appliquent si le fichier ou une clé manque.
 struct Config {
     // [Crash]
     bool crashDumps = true;
@@ -53,4 +53,4 @@ bool LoadConfig(const std::wstring& iniPath);
 
 const Config& GetConfig() noexcept;
 
-}  // namespace shhf
+}  // namespace hca

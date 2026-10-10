@@ -2,7 +2,7 @@
 
 #include "core/Log.h"
 
-namespace shhf::graphics {
+namespace hca::graphics {
 
 namespace {
 
@@ -50,4 +50,4 @@ bool ApplyBorderless(HWND window) noexcept {
     }
 }
 
-}  // namespace shhf::graphics
+}  // namespace hca::graphics

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <string>
 
-namespace shhf::sysinfo {
+namespace hca::sysinfo {
 
 struct MemorySnapshot {
     std::uint64_t addressSpaceUsedMb = 0;   // espace d'adressage virtuel utilisé par le processus
@@ -36,4 +36,4 @@ std::wstring ModulePathOf(const void* address);
 // Journalise la configuration de la machine et de l'exécutable du jeu.
 void LogStartupInfo(HMODULE gameModule);
 
-}  // namespace shhf::sysinfo
+}  // namespace hca::sysinfo

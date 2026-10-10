@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-namespace shhf::hooking {
+namespace hca::hooking {
 
 bool PatchPointer(void** slot, void* replacement, void** original) noexcept {
     DWORD oldProtect = 0;
@@ -95,4 +95,4 @@ bool PatchImportOrdinalRaw(HMODULE module, const char* dllName, WORD ordinal, vo
     return false;
 }
 
-}  // namespace shhf::hooking
+}  // namespace hca::hooking

@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-namespace shhf {
+namespace hca {
 
 namespace {
 
@@ -42,8 +42,8 @@ bool InitPaths() {
         return false;
     }
     g_paths.gameDir = g_paths.gameExe.substr(0, separator);
-    g_paths.iniFile = g_paths.gameDir + L"\\SHHFix.ini";
-    g_paths.modDir = g_paths.gameDir + L"\\SHHFix";
+    g_paths.iniFile = g_paths.gameDir + L"\\HomecomingAgain.ini";
+    g_paths.modDir = g_paths.gameDir + L"\\HomecomingAgain";
     g_paths.logsDir = g_paths.modDir + L"\\logs";
     g_paths.dumpsDir = g_paths.modDir + L"\\crashdumps";
 
@@ -55,4 +55,4 @@ const Paths& GetPaths() noexcept {
     return g_paths;
 }
 
-}  // namespace shhf
+}  // namespace hca

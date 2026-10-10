@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace shhf::frames {
+namespace hca::frames {
 
 // Intercepte Sleep dans SilentHill.exe pour mesurer la précision réelle de ses attentes.
 void Install(HMODULE gameModule, HMODULE engineModule);
@@ -29,4 +29,4 @@ std::int64_t LastPresentTicks() noexcept;
 std::int64_t TicksPerSecond() noexcept;
 DWORD RenderThreadId() noexcept;
 
-}  // namespace shhf::frames
+}  // namespace hca::frames

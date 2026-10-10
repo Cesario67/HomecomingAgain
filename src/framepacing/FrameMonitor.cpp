@@ -13,7 +13,7 @@
 #include "core/SystemInfo.h"
 #include "framepacing/WaitProfiler.h"
 
-namespace shhf::frames {
+namespace hca::frames {
 
 namespace {
 
@@ -337,4 +337,4 @@ void LogFinalReport() noexcept {
               g_totalFrames, g_totalHitches, kHitchThresholdMs, g_totalZeroDeltaFrames);
 }
 
-}  // namespace shhf::frames
+}  // namespace hca::frames

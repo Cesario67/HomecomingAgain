@@ -1,4 +1,4 @@
-# SHHFix
+# Homecoming Again
 
 A fix and enhancement mod for *Silent Hill: Homecoming* on PC (Steam), aimed at making it run on modern
 machines: crash and frame-rate fixes, graphics improvements and proper Xbox controller support.

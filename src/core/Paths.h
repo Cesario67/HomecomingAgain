@@ -2,15 +2,15 @@
 
 #include <string>
 
-namespace shhf {
+namespace hca {
 
 struct Paths {
     std::wstring gameExe;     // ...\SilentHill.exe
     std::wstring gameDir;     // dossier du jeu
-    std::wstring iniFile;     // ...\SHHFix.ini
-    std::wstring modDir;      // ...\SHHFix
-    std::wstring logsDir;     // ...\SHHFix\logs
-    std::wstring dumpsDir;    // ...\SHHFix\crashdumps
+    std::wstring iniFile;     // ...\HomecomingAgain.ini
+    std::wstring modDir;      // ...\HomecomingAgain
+    std::wstring logsDir;     // ...\HomecomingAgain\logs
+    std::wstring dumpsDir;    // ...\HomecomingAgain\crashdumps
 };
 
 // Calcule les chemins à partir de l'exécutable hôte et crée les dossiers du mod.
@@ -18,4 +18,4 @@ bool InitPaths();
 
 const Paths& GetPaths() noexcept;
 
-}  // namespace shhf
+}  // namespace hca

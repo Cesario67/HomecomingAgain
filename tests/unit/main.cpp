@@ -23,30 +23,30 @@ void Check(bool condition, const char* name) {
 
 void TestStrings() {
     std::printf("Chaînes\n");
-    Check(shhf::EqualsIgnoreCase(L"SilentHill.exe", L"silenthill.EXE"), "comparaison insensible à la casse");
-    Check(!shhf::EqualsIgnoreCase(L"SilentHill.exe", L"SilentHill2.exe"), "noms différents");
-    Check(shhf::WideToUtf8(L"é") == "\xC3\xA9", "conversion UTF-8 d'un caractère accentué");
-    const std::wstring stamp = shhf::FileTimestamp();
+    Check(hca::EqualsIgnoreCase(L"SilentHill.exe", L"silenthill.EXE"), "comparaison insensible à la casse");
+    Check(!hca::EqualsIgnoreCase(L"SilentHill.exe", L"SilentHill2.exe"), "noms différents");
+    Check(hca::WideToUtf8(L"é") == "\xC3\xA9", "conversion UTF-8 d'un caractère accentué");
+    const std::wstring stamp = hca::FileTimestamp();
     Check(stamp.size() == 19 && stamp[8] == L'-' && stamp[15] == L'-', "horodatage AAAAMMJJ-HHMMSS-mmm");
 }
 
 void TestBorderless() {
     std::printf("Fenêtre sans bordure\n");
     const DWORD framed = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPSIBLINGS;
-    const DWORD result = shhf::graphics::BorderlessStyle(framed);
+    const DWORD result = hca::graphics::BorderlessStyle(framed);
     Check((result & WS_CAPTION) == 0 && (result & WS_THICKFRAME) == 0 && (result & WS_SYSMENU) == 0, "cadre, titre et menu retirés");
     Check((result & WS_POPUP) != 0 && (result & WS_VISIBLE) != 0 && (result & WS_CLIPSIBLINGS) != 0, "WS_POPUP ajouté, visibilité conservée");
     const DWORD ex = WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_TOPMOST;
-    const DWORD exResult = shhf::graphics::BorderlessExStyle(ex);
+    const DWORD exResult = hca::graphics::BorderlessExStyle(ex);
     Check((exResult & (WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE)) == 0 && (exResult & WS_EX_TOPMOST) != 0, "bords étendus retirés, TOPMOST conservé");
-    Check(!shhf::graphics::ApplyBorderless(nullptr), "handle nul ignoré");
+    Check(!hca::graphics::ApplyBorderless(nullptr), "handle nul ignoré");
 }
 
 void TestFramePeriod() {
     std::printf("Plafond de cadence\n");
-    Check(shhf::patches::FramePeriodMs(60) > 16.66f && shhf::patches::FramePeriodMs(60) < 16.67f, "60 i/s : 16,67 ms");
-    Check(shhf::patches::FramePeriodMs(30) > 33.33f && shhf::patches::FramePeriodMs(30) < 33.34f, "30 i/s : 33,33 ms");
-    Check(shhf::patches::FramePeriodMs(0) == 0.0f && shhf::patches::FramePeriodMs(5000) == 0.0f, "valeurs hors bornes refusées");
+    Check(hca::patches::FramePeriodMs(60) > 16.66f && hca::patches::FramePeriodMs(60) < 16.67f, "60 i/s : 16,67 ms");
+    Check(hca::patches::FramePeriodMs(30) > 33.33f && hca::patches::FramePeriodMs(30) < 33.34f, "30 i/s : 33,33 ms");
+    Check(hca::patches::FramePeriodMs(0) == 0.0f && hca::patches::FramePeriodMs(5000) == 0.0f, "valeurs hors bornes refusées");
 }
 
 }  // namespace

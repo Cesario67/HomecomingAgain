@@ -7,7 +7,7 @@
 #include "core/Hooking.h"
 #include "core/Log.h"
 
-namespace shhf::patches {
+namespace hca::patches {
 
 namespace {
 
@@ -53,4 +53,4 @@ void ApplyFrameRateCap(HMODULE engineModule) {
               g_framePeriodMs);
 }
 
-}  // namespace shhf::patches
+}  // namespace hca::patches

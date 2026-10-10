@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-namespace shhf::patches {
+namespace hca::patches {
 
 // Durée d'image visée par le limiteur du moteur, en millisecondes, pour une cadence donnée (fonction pure,
 // testée par tests/unit). `fps` hors de [1, 1000] : 0 (pas de durée valide).
@@ -19,4 +19,4 @@ float FramePeriodMs(int fps) noexcept;
 // n'est pas modifié. Si les octets ne correspondent pas (autre version), rien n'est fait.
 void ApplyFrameRateCap(HMODULE engineModule);
 
-}  // namespace shhf::patches
+}  // namespace hca::patches

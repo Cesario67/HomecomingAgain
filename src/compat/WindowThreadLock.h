@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-namespace shhf::compat {
+namespace hca::compat {
 
 // Évite l'interblocage du chargement en fenêtré avec l'overlay Steam (voir docs/analyse-shh-exe.md, 10/10/2026).
 //
@@ -21,4 +21,4 @@ void InstallWindowThreadLock(HMODULE engineModule);
 // Thread qui possède la fenêtre du jeu (celui qui crée le périphérique Direct3D).
 void SetWindowThread(DWORD threadId) noexcept;
 
-}  // namespace shhf::compat
+}  // namespace hca::compat

@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-namespace shhf::crash {
+namespace hca::crash {
 
 // Installe notre filtre d'exceptions non gérées (minidump + rapport dans le journal), puis intercepte
 // SetUnhandledExceptionFilter dans SilentHill.exe : le filtre du jeu est mémorisé et appelé après le nôtre
@@ -20,4 +20,4 @@ void WriteHangDump() noexcept;
 // Vérifie qu'un autre module n'a pas remplacé notre filtre ; le réinstalle sinon.
 void EnsureInstalled() noexcept;
 
-}  // namespace shhf::crash
+}  // namespace hca::crash

@@ -5,7 +5,7 @@
 #include <string_view>
 #include <utility>
 
-namespace shhf::log {
+namespace hca::log {
 
 enum class Level { Info, Warn, Error };
 
@@ -52,4 +52,4 @@ void Crash(std::format_string<Args...> format, Args&&... args) noexcept {
     }
 }
 
-}  // namespace shhf::log
+}  // namespace hca::log

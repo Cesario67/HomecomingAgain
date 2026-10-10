@@ -12,7 +12,7 @@
 #include "engine/EngineSettings.h"
 #include "framepacing/FrameMonitor.h"
 
-namespace shhf::frames::waits {
+namespace hca::frames::waits {
 
 namespace {
 
@@ -141,4 +141,4 @@ void Report() noexcept {
     g_dropped = 0;
 }
 
-}  // namespace shhf::frames::waits
+}  // namespace hca::frames::waits

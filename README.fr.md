@@ -1,4 +1,4 @@
-# SHHFix
+# Homecoming Again
 
 Mod de correction et d'amélioration pour *Silent Hill: Homecoming* sur PC (Steam), pour le faire fonctionner
 sur les machines actuelles : plantages et cadence d'images, graphismes et prise en charge correcte des

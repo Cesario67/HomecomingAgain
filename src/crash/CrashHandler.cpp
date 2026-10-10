@@ -16,7 +16,7 @@
 #include "core/Strings.h"
 #include "core/SystemInfo.h"
 
-namespace shhf::crash {
+namespace hca::crash {
 
 namespace {
 
@@ -354,4 +354,4 @@ void EnsureInstalled() noexcept {
     }
 }
 
-}  // namespace shhf::crash
+}  // namespace hca::crash

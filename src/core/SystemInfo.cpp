@@ -9,7 +9,7 @@
 #include "core/Paths.h"
 #include "core/Strings.h"
 
-namespace shhf::sysinfo {
+namespace hca::sysinfo {
 
 namespace {
 
@@ -169,4 +169,4 @@ void LogStartupInfo(HMODULE gameModule) {
               frequency.QuadPart, hours, GameTimeResolutionMs(24), GameTimeResolutionMs(53) * 1000.0);
 }
 
-}  // namespace shhf::sysinfo
+}  // namespace hca::sysinfo

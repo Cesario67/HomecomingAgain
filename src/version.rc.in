@@ -11,10 +11,10 @@ BEGIN
     BEGIN
         BLOCK "040C04B0"
         BEGIN
-            VALUE "FileDescription", "SHHFix pour Silent Hill: Homecoming (PC)"
+            VALUE "FileDescription", "Homecoming Again pour Silent Hill: Homecoming (PC)"
             VALUE "FileVersion", "@PROJECT_VERSION@"
             VALUE "LegalCopyright", "Copyright (C) 2026 Cesar Schaal. Licence GPL-3.0-or-later."
-            VALUE "ProductName", "SHHFix"
+            VALUE "ProductName", "Homecoming Again"
             VALUE "ProductVersion", "@PROJECT_VERSION@"
             VALUE "OriginalFilename", "version.dll"
         END

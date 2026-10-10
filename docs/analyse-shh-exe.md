@@ -62,13 +62,13 @@ Ordinaux de `XINPUT1_3.dll` (vérifié sur la DLL du système) : 2 = `XInputGetS
 ## À analyser ensuite (par ordre de priorité)
 
 1. Références aux chaînes `fpsLimit` / `maxFPSLimit` / `ScreenResWidth` : borne de cadence, clamp de résolution.
-2. `Direct3DCreate9` : paramètres de présentation (le journal de SHHFix donnera la réalité au premier lancement).
+2. `Direct3DCreate9` : paramètres de présentation (le journal de HomecomingAgain donnera la réalité au premier lancement).
 3. Utilisation de `timeSetEvent` : horloge de la logique du jeu, à comparer à la cadence d'affichage.
 4. Boucle de lecture XInput : conversion en commandes, zones mortes, sensibilité de la caméra.
 5. Gestion du périphérique perdu (Alt-Tab) : `Reset` et ressources.
 6. Constantes de résolution 720p (interface, carte, objets).
 
-## Premier lancement de vérification (09/10/2026, journal SHHFix 0.1.0, Windows 11 build 26300)
+## Premier lancement de vérification (09/10/2026, journal HomecomingAgain 0.1.0, Windows 11 build 26300)
 
 Tout ce qui suit est **vérifié par le journal** (le mod ne faisait que journaliser, aucun réglage modifié).
 
@@ -98,13 +98,13 @@ Tout ce qui suit est **vérifié par le journal** (le mod ne faisait que journal
 
 ## Deuxième lancement (10/10/2026) : plafond 60 sans effet et plantage à l'Alt-Tab reproduit
 
-Avec `fpsLimit=60` et `maxFPSLimit=60` dans `vars_pc.cfg` (copie de secours `vars_pc.cfg.shhf-backup`) :
+Avec `fpsLimit=60` et `maxFPSLimit=60` dans `vars_pc.cfg` (copie de secours `vars_pc.cfg.hca-backup`) :
 - **Cadence toujours à 29,2 i/s** : ces réglages ne suffisent pas, le plafond est aussi une constante ou une borne dans
   le code du moteur (**vérifié** par la mesure ; sa nature exacte reste à trouver).
 - **Alt-Tab en plein écran : plantage reproduit** (contrairement à la première session). `Present` renvoie
   `D3DERR_DEVICELOST` (0x88760868), puis le premier `Reset` échoue aussitôt avec `D3DERR_INVALIDCALL` (0x8876086C,
   6 ms) et le jeu plante 6 ms plus tard : `EXCEPTION_ACCESS_VIOLATION` en lecture à l'adresse 0, EIP =
-  `g_SilentHill.sgl+0xB8DBF2` (0x10B8DBF2), thread principal. Minidump écrit dans `Bin\SHHFix\crashdumps`.
+  `g_SilentHill.sgl+0xB8DBF2` (0x10B8DBF2), thread principal. Minidump écrit dans `Bin\HomecomingAgain\crashdumps`.
 - **Hypothèse** (non vérifiée) : `Reset` échoue parce que le moteur n'a pas libéré toutes ses ressources
   `D3DPOOL_DEFAULT` (cela dépend de ce qu'il tenait à cet instant, d'où le succès de la première fois), puis le
   moteur déréférence un pointeur nul. Un contournement possible : sur `INVALIDCALL`, ne pas rendre l'échec au moteur
@@ -114,7 +114,7 @@ Avec `fpsLimit=60` et `maxFPSLimit=60` dans `vars_pc.cfg` (copie de secours `var
 ## Cadence : le verrou 30 i/s (vérifié le 10/10/2026)
 
 - `fpsLimit` (+0xE4) et `maxFPSLimit` (+0xE8) de l'objet de réglages `[[0x111D2460]+0x38]+0x08` sont bien lus et
-  valent 60 en mémoire avec le fichier modifié (relevé SHHFix), et `0x101266CF` ramène `fpsLimit` à `maxFPSLimit` à
+  valent 60 en mémoire avec le fichier modifié (relevé HomecomingAgain), et `0x101266CF` ramène `fpsLimit` à `maxFPSLimit` à
   chaque image. **Ils ne commandent pas le limiteur.**
 - Le relevé des attentes du rendu montre 93 % du temps dans `SleepEx` (enveloppe `0x1080BAC0`, appel en
   `0x1080BAF6`) et `QueryPerformanceCounter` (enveloppe `0x10892C70`).
@@ -171,6 +171,6 @@ Mesure avec les deux correctifs : **8 lancements sur 8 via Steam, overlay charg�
 
 ## Patch 4 Go (10/10/2026)
 
-Appliqué par le launcher (`SHHFix.exe install`) avec l'accord de l'utilisateur : bit `IMAGE_FILE_LARGE_ADDRESS_AWARE`
-(0x20) de `SilentHill.exe`, original conservé dans `SilentHill.exe.shhf-original`. Vérifié en jeu : espace
+Appliqué par le launcher (`HomecomingAgain.exe install`) avec l'accord de l'utilisateur : bit `IMAGE_FILE_LARGE_ADDRESS_AWARE`
+(0x20) de `SilentHill.exe`, original conservé dans `SilentHill.exe.hca-original`. Vérifié en jeu : espace
 d'adressage **4095 Mo** (2047 avant), 59,6 i/s, aucun blocage. Prérequis aux essais de rendu en haute résolution.

@@ -2,7 +2,7 @@
 
 #include <windows.h>
 
-namespace shhf::graphics {
+namespace hca::graphics {
 
 // Styles d'une fenêtre sans bordure ni barre de titre (fonctions pures, testées par tests/unit).
 // `style` et `exStyle` sont ceux de la fenêtre du jeu en mode fenêtré.
@@ -14,4 +14,4 @@ DWORD BorderlessExStyle(DWORD exStyle) noexcept;
 // handle n'est plus une fenêtre. Renvoie true si la fenêtre a été modifiée.
 bool ApplyBorderless(HWND window) noexcept;
 
-}  // namespace shhf::graphics
+}  // namespace hca::graphics
