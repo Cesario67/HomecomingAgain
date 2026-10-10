@@ -411,16 +411,16 @@ void DownmixSurroundToStereo(float* samples, std::uint32_t frames) noexcept {
         return;
     }
     constexpr float kShared = 0.7071f;
+    constexpr float kLfe = 0.5f;
     for (std::uint32_t i = 0; i < frames; ++i) {
         const float* f = samples + static_cast<std::size_t>(i) * 6;
-        // Canaux du moteur (mesures du 10/10/2026) : 2 et 4 = musique gauche et droite, 1 et 3 = bruitages, 5 = faible,
-        // 0 = toujours vide. Les bruitages et le canal 5 sont envoyés des deux côtés.
-        const float shared = kShared * (f[1] + f[3] + f[5]);
-        const float left = f[2] + shared;
-        const float right = f[4] + shared;
-        // Écriture compacte sur place : l'indice écrit (2i, 2i+1) ne dépasse jamais l'image lue (6i).
-        samples[static_cast<std::size_t>(i) * 2] = left;
-        samples[static_cast<std::size_t>(i) * 2 + 1] = right;
+        // Flux du moteur dans l'ordre de Windows (AvG AvD C Basses ArG ArD), mais placement des sons faussé : avant droit
+        // et arrière gauche remplis, avant gauche et arrière droit presque vides (mesures du 10/10/2026 : niveaux et
+        // ressemblance entre canaux, piano seul au centre, basses liées au centre). Tous les canaux sont donc envoyés
+        // à égalité des deux côtés : plus aucun son d'un seul côté, au prix de la spatialisation.
+        const float mono = kShared * (f[0] + f[1] + f[2] + f[4] + f[5]) + kLfe * f[3];
+        samples[static_cast<std::size_t>(i) * 2] = mono;
+        samples[static_cast<std::size_t>(i) * 2 + 1] = mono;
     }
 }
 void InstallAudioProbe(HMODULE engineModule) {

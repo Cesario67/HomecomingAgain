@@ -16,8 +16,8 @@ namespace hca::audio {
 // C Basses ArG ArD). ParseChannelOrder lit « 2,4,1,3,5,0 » (chaque canal 0 à 5 une seule fois), false sinon.
 bool ParseChannelOrder(const char* text, int order[6]) noexcept;
 void RemapSurroundFrames(float* samples, std::uint32_t frames, const int order[6]) noexcept;
-// Sortie stéréo : convertit chaque image de 6 canaux du moteur en 2 (gauche, droite), écrites de façon compacte au
-// début du tableau (2 flottants par image). 2 et 4 = musique gauche et droite, 1, 3 et 5 envoyés des deux côtés.
+// Sortie stéréo : convertit chaque image de 6 canaux du moteur en 2, écrites de façon compacte au début du tableau
+// (2 flottants par image). Placement des sons du moteur faussé : tous les canaux sont centrés (gauche = droite).
 void DownmixSurroundToStereo(float* samples, std::uint32_t frames) noexcept;
 
 void InstallAudioProbe(HMODULE engineModule);

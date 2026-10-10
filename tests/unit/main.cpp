@@ -160,12 +160,12 @@ void TestChannelFix() {
     float mono[6] = {0, 1, 0, 0, 0, 0};
     hca::audio::DownmixSurroundToStereo(mono, 1);
     Check(mono[0] == mono[1] && mono[0] > 0.7f, "bruitage du canal 1 centré en stéréo");
-    float two[12] = {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0};
+    float two[12] = {0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0};
     hca::audio::DownmixSurroundToStereo(two, 2);
-    Check(two[0] == 1.0f && two[1] == 0.0f && two[2] == 0.0f && two[3] == 1.0f, "images converties de façon compacte");
-    float music[6] = {0, 0, 1, 0, 0.5f, 0};
-    hca::audio::DownmixSurroundToStereo(music, 1);
-    Check(music[0] == 1.0f && music[1] == 0.5f, "musique gauche et droite conservées");
+    Check(two[0] == two[1] && two[2] == two[3] && two[0] > 0.7f && two[2] > 0.7f, "images converties de façon compacte, centrées");
+    float side[6] = {0, 1, 0, 0, 0, 0};
+    hca::audio::DownmixSurroundToStereo(side, 1);
+    Check(side[0] == side[1], "son de l'avant droit centré");
 }
 
 }  // namespace
