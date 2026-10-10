@@ -23,6 +23,16 @@ struct Config {
     bool smaa = true;
     // Filtrage anisotrope forcé sur les textures filtrées en linéaire (0 ou 1 = jeu d'origine, 2 à 16).
     int anisotropy = 16;
+    // Taille de l'atlas d'ombres : 2048 (jeu d'origine), 4096 ou 8192 (voir graphics/ShadowResolution.h).
+    int shadowResolution = 4096;
+    // Occlusion ambiante en espace écran (voir graphics/Ssao.h). Rayon en unités du jeu, intensité en %, fondu
+    // entre deux distances (unités du jeu), mode de réglage qui affiche l'occlusion seule.
+    bool ssao = true;
+    int ssaoRadius = 40;
+    int ssaoStrength = 100;
+    int ssaoFadeStart = 1500;
+    int ssaoFadeEnd = 4000;
+    bool ssaoDebug = false;
 
     // [Frames]
     bool frameStats = true;         // mesures de cadence, de Sleep et de mémoire dans le journal

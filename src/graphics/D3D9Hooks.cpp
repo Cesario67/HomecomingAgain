@@ -16,6 +16,9 @@
 #include "framepacing/FrameMonitor.h"
 #include "graphics/BorderlessWindow.h"
 #include "graphics/FrameCapture.h"
+#include "graphics/InternalDraw.h"
+#include "graphics/SceneHooks.h"
+#include "graphics/Ssao.h"
 #include "graphics/Smaa.h"
 
 namespace hca::graphics {
@@ -41,8 +44,6 @@ ResetFn g_reset = nullptr;
 PresentFn g_present = nullptr;
 SetSamplerStateFn g_setSamplerState = nullptr;
 Smaa g_smaa;
-// Vrai pendant nos propres dessins (SMAA) : le filtrage anisotrope forcé ne doit pas toucher à nos samplers.
-thread_local bool t_internalDraw = false;
 std::atomic<bool> g_lateInitDone{false};
 HRESULT g_lastPresentError = S_OK;
 std::uint32_t g_resetFailures = 0;  // échecs consécutifs de Reset
@@ -61,12 +62,10 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
         capture::OnPresent(device);
     }
     if (GetConfig().smaa) {
-        t_internalDraw = true;
-        capture::SetInternalDraw(true);
+        InternalDrawScope internal;
         g_smaa.Apply(device);
-        capture::SetInternalDraw(false);
-        t_internalDraw = false;
     }
+    GetSsao().OnPresent();
     frames::OnBeforePresent();
     const HRESULT result = g_present(device, sourceRect, destRect, window, dirtyRegion);
     if (frames::OnAfterPresent()) {
@@ -92,6 +91,7 @@ HRESULT STDMETHODCALLTYPE HookReset(IDirect3DDevice9* device, D3DPRESENT_PARAMET
     }
     // Nos ressources D3DPOOL_DEFAULT doivent être libérées avant Reset, sinon il échoue.
     g_smaa.OnBeforeReset();
+    GetSsao().OnBeforeReset();
     const HRESULT result = g_reset(device, params);
     if (SUCCEEDED(result) && params != nullptr && params->Windowed && GetConfig().borderless) {
         // Un Reset (changement de mode) peut rendre son cadre à la fenêtre.
@@ -156,6 +156,7 @@ void PatchDevice(IDirect3DDevice9* device) {
             log::Warn("Filtrage anisotrope : interception de SetSamplerState impossible");
         }
     }
+    scene::Install(device);
     if (GetConfig().frameCapture) {
         capture::Install(device);
     }

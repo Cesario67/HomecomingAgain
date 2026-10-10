@@ -10,7 +10,9 @@
 
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
+#include "graphics/ShadowResolution.h"
 #include "patches/FrameRateCap.h"
 
 namespace {
@@ -73,6 +75,36 @@ void TestShaderConstantTable() {
     Check(hca::graphics::ParseConstantTable(tokens, 5).empty(), "bytecode tronqué refusé");
 }
 
+void TestShadowResolution() {
+    namespace shadows = hca::graphics::shadows;
+    std::printf("Ombres\n");
+    Check(shadows::AtlasSizeFor(4096) == 4096 && shadows::AtlasSizeFor(2048) == 2048 && shadows::AtlasSizeFor(3000) == 2048,
+          "tailles d'atlas acceptées");
+    Check(shadows::IsAtlasTexture(2048, 2048, D3DUSAGE_RENDERTARGET, D3DFMT_R32F), "atlas reconnu");
+    Check(!shadows::IsAtlasTexture(1920, 1080, D3DUSAGE_RENDERTARGET, D3DFMT_R32F) &&
+              !shadows::IsAtlasTexture(2048, 2048, 0, D3DFMT_R32F),
+          "profondeur de l'écran et texture ordinaire ignorées");
+    const D3DVIEWPORT9 tile{1024, 0, 1024, 1024, 0.0f, 1.0f};
+    const D3DVIEWPORT9 scaled = shadows::ScaleViewport(tile, 4096);
+    Check(scaled.X == 2048 && scaled.Y == 0 && scaled.Width == 2048 && scaled.Height == 2048, "carré de l'atlas agrandi");
+    float constants[8] = {1, 1, 1.0f / 2048, 1.0f / 2048, 1, 1, 0.5f, 0.5f};
+    Check(shadows::ScaleFilterConstants(46, constants, 2, 4096) && constants[2] == 1.0f / 4096 && constants[6] == 0.5f,
+          "décalage du filtre ramené à un texel, autres valeurs intactes");
+    float outside[4] = {1, 1, 1.0f / 2048, 1.0f / 2048};
+    Check(!shadows::ScaleFilterConstants(80, outside, 1, 4096), "registres hors du filtre ignorés");
+}
+
+void TestProjection() {
+    std::printf("Projection de la caméra\n");
+    const float relevee[16] = {1.6407f, 0, 0, 0, 0, 2.9167f, 0, 0, 0, 0, 1.0002f, -3.0006f, 0, 0, 1, 0};
+    hca::graphics::Projection projection;
+    Check(hca::graphics::ParseProjection(relevee, projection) && projection.yScale == 2.9167f && projection.b == -3.0006f,
+          "projection du relevé reconnue");
+    const float worldViewProj[16] = {0.45928f, 1e-8f, -1.5751f, 787.56f, 0.25f, 2.9f, 0.07f, -316.4f,
+                                     0.95f, -0.09f, 0.28f, -642.1f, 0.95f, -0.09f, 0.28f, -639.0f};
+    Check(!hca::graphics::ParseProjection(worldViewProj, projection), "matrice d'objet refusée");
+}
+
 }  // namespace
 
 int main() {
@@ -80,6 +112,8 @@ int main() {
     TestBorderless();
     TestFramePeriod();
     TestShaderConstantTable();
+    TestShadowResolution();
+    TestProjection();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

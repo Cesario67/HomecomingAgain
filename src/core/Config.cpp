@@ -35,6 +35,14 @@ bool LoadConfig(const std::wstring& iniPath) {
 
     config.smaa = ReadBool(iniPath, L"Graphics", L"SMAA", defaults.smaa);
     config.anisotropy = ReadInt(iniPath, L"Graphics", L"Anisotropy", defaults.anisotropy, 0, 16);
+    config.shadowResolution =
+        ReadInt(iniPath, L"Graphics", L"ShadowResolution", defaults.shadowResolution, 2048, 8192);
+    config.ssao = ReadBool(iniPath, L"Graphics", L"SSAO", defaults.ssao);
+    config.ssaoRadius = ReadInt(iniPath, L"Graphics", L"SsaoRadius", defaults.ssaoRadius, 1, 1000);
+    config.ssaoStrength = ReadInt(iniPath, L"Graphics", L"SsaoStrength", defaults.ssaoStrength, 10, 400);
+    config.ssaoFadeStart = ReadInt(iniPath, L"Graphics", L"SsaoFadeStart", defaults.ssaoFadeStart, 0, 100000);
+    config.ssaoFadeEnd = ReadInt(iniPath, L"Graphics", L"SsaoFadeEnd", defaults.ssaoFadeEnd, 1, 100000);
+    config.ssaoDebug = ReadBool(iniPath, L"Graphics", L"SsaoDebug", defaults.ssaoDebug);
 
     config.frameStats = ReadBool(iniPath, L"Frames", L"FrameStats", defaults.frameStats);
     config.reportIntervalSeconds =

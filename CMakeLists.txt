@@ -34,6 +34,21 @@ foreach(entry EdgeDetectionVS:vs_3_0 BlendingWeightCalculationVS:vs_3_0 Neighbor
         VERBATIM)
     list(APPEND HCA_SHADER_HEADERS "${header}")
 endforeach()
+# SSAO (shaders/ssao_d3d9.hlsl, notre code), même méthode.
+foreach(entry QuadVS:vs_3_0 OcclusionPS:ps_3_0 BlurPS:ps_3_0)
+    string(REPLACE ":" ";" parts "${entry}")
+    list(GET parts 0 name)
+    list(GET parts 1 profile)
+    set(header "${HCA_SHADER_DIR}/ssao_shaders/${name}.h")
+    add_custom_command(OUTPUT "${header}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${HCA_SHADER_DIR}/ssao_shaders"
+        COMMAND "${HCA_FXC}" /nologo /O3 /T ${profile} /E ${name} /Vn g_${name} /Fh "${header}"
+                "${CMAKE_SOURCE_DIR}/shaders/ssao_d3d9.hlsl"
+        DEPENDS "${CMAKE_SOURCE_DIR}/shaders/ssao_d3d9.hlsl"
+        COMMENT "fxc ${name} (${profile})"
+        VERBATIM)
+    list(APPEND HCA_SHADER_HEADERS "${header}")
+endforeach()
 add_custom_target(smaa_shaders DEPENDS ${HCA_SHADER_HEADERS})
 # DLL du mod, sous le nom version.dll : SilentHill.exe importe VERSION.dll en premier (voir docs/analyse-shh-exe.md).
 # de la table d'imports de SilentHill.exe : voir docs/a-faire.md. En attendant, elle se compile sous son
@@ -54,6 +69,10 @@ add_library(HomecomingAgain SHARED
     src/graphics/BorderlessWindow.cpp
     src/graphics/D3D9Hooks.cpp
     src/graphics/FrameCapture.cpp
+    src/graphics/Projection.cpp
+    src/graphics/SceneHooks.cpp
+    src/graphics/ShadowResolution.cpp
+    src/graphics/Ssao.cpp
     src/graphics/ShaderConstantTable.cpp
     src/graphics/Smaa.cpp
     src/patches/FrameRateCap.cpp
@@ -96,7 +115,7 @@ add_custom_command(TARGET HomecomingAgain POST_BUILD
 # Tests unitaires des fonctions pures, sans jeu ni matériel (tests/run-tests.ps1).
 option(HCA_BUILD_TESTS "Compiler les tests" ON)
 if(HCA_BUILD_TESTS)
-    add_executable(HomecomingAgainUnitTests tests/unit/main.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp src/patches/FrameRateCap.cpp src/core/Config.cpp src/core/Hooking.cpp src/graphics/ShaderConstantTable.cpp)
+    add_executable(HomecomingAgainUnitTests tests/unit/main.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp src/patches/FrameRateCap.cpp src/core/Config.cpp src/core/Hooking.cpp src/graphics/ShaderConstantTable.cpp src/graphics/ShadowResolution.cpp src/graphics/Projection.cpp)
     target_include_directories(HomecomingAgainUnitTests PRIVATE src)
     target_compile_features(HomecomingAgainUnitTests PRIVATE cxx_std_20)
     target_compile_definitions(HomecomingAgainUnitTests PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
