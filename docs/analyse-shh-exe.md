@@ -110,3 +110,31 @@ Avec `fpsLimit=60` et `maxFPSLimit=60` dans `vars_pc.cfg` (copie de secours `var
   moteur déréférence un pointeur nul. Un contournement possible : sur `INVALIDCALL`, ne pas rendre l'échec au moteur
   tant que la cause n'est pas traitée (voir l'ordre `Present` / `Reset` dans DPStabilityFix). À analyser avec le
   minidump et le désassemblage autour de `0x10B8DBF2` et de l'appelant `0x10B898E7`.
+
+## Cadence : le verrou 30 i/s (vérifié le 10/10/2026)
+
+- `fpsLimit` (+0xE4) et `maxFPSLimit` (+0xE8) de l'objet de réglages `[[0x111D2460]+0x38]+0x08` sont bien lus et
+  valent 60 en mémoire avec le fichier modifié (relevé SHHFix), et `0x101266CF` ramène `fpsLimit` à `maxFPSLimit` à
+  chaque image. **Ils ne commandent pas le limiteur.**
+- Le relevé des attentes du rendu montre 93 % du temps dans `SleepEx` (enveloppe `0x1080BAC0`, appel en
+  `0x1080BAF6`) et `QueryPerformanceCounter` (enveloppe `0x10892C70`).
+- Limiteur : fonction `0x10A4CC90` (via la passerelle `0x100643D0`). Elle convertit en ticks la durée lue par
+  `fld dword ptr ds:[0x1108E804]` (instruction `0x10A4CC99`, octets `D9 05 04 E8 08 11`), soit **33,32333 ms**,
+  constante de `.rdata` référencée uniquement ici ; puis `SleepEx` et attente active jusqu'à cette échéance depuis
+  l'image précédente (horodatage en `0x116C7A00`).
+- Correctif `patches/FrameRateCap` : l'opérande est redirigé vers une variable du mod (`1000 / TargetFps`).
+  Mesuré : **59,5 i/s** au menu en 1920x1080 (fenêtré et sans bordure). L'écran de chargement (thread séparé)
+  reste à 29 i/s : limiteur distinct, sans importance.
+- Mise à jour du jeu : `0x10126707` et suivants montrent que la logique utilise une durée d'image variable, moyennée
+  sur 5 images et bornée à 0,08 s (`0x10F94818`). À vérifier en jeu : vitesse des animations, de la physique, des
+  dialogues et des QTE à 60 i/s.
+
+## Fenêtré 1080p et blocage (10/10/2026)
+
+- Blocage du premier essai sans bordure : « Application Hang » de Windows 15 s après le lancement, pendant le
+  chargement. Pendant les ~20 premières secondes, le thread principal charge sans traiter les messages et un autre
+  thread présente l'écran de chargement : en fenêtré, une entrée utilisateur pendant ce temps fait déclarer le jeu
+  « ne répond pas ». Hypothèse cohérente avec le journal, corrigée par `DisableProcessWindowsGhosting`.
+- Deux sessions suivantes (avec et sans bordure, 1920x1080) : aucun blocage, jeu réactif, 60 i/s.
+- En fenêtré, pas de périphérique perdu à l'Alt-Tab : le plantage `0x10B8DBF2` (plein écran) ne devrait plus se
+  produire. À confirmer par un test en jeu.
