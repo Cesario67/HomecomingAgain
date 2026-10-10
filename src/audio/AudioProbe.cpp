@@ -6,6 +6,7 @@
 #include <format>
 #include <string>
 
+#include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
 
@@ -44,6 +45,12 @@ std::string GuidText(REFGUID guid) {
 
 HRESULT STDMETHODCALLTYPE HookCreateMasteringVoice(void* xaudio, void** voice, UINT32 channels, UINT32 rate,
                                                    UINT32 flags, UINT32 device, const void* effects) {
+    // [Audio] Channels : sortie forcée en 5.1 ou 7.1. Avec un casque (2 canaux), le moteur envoie ses sons mono à droite
+    // seulement (constaté le 10/10/2026) ; XAudio2 ramène ensuite les canaux forcés vers ceux du périphérique.
+    const UINT32 requested = channels;
+    if (channels == 0 && GetConfig().audioChannels != 0) {
+        channels = static_cast<UINT32>(GetConfig().audioChannels);
+    }
     const HRESULT result = g_createMasteringVoice(xaudio, voice, channels, rate, flags, device, effects);
     // Canaux réellement obtenus : IXAudio2Voice::GetVoiceDetails (index 0 de la vtable, pas d'IUnknown), structure
     // XAUDIO2_VOICE_DETAILS { CreationFlags, InputChannels, InputSampleRate }.
@@ -53,9 +60,9 @@ HRESULT STDMETHODCALLTYPE HookCreateMasteringVoice(void* xaudio, void** voice, U
         const auto getDetails = reinterpret_cast<GetVoiceDetailsFn>((*reinterpret_cast<void***>(*voice))[0]);
         getDetails(*voice, details);
     }
-    log::Info("Audio : XAudio2 voix maîtresse : canaux demandés {} (0 = ceux de Windows), obtenus {}, {} Hz -> "
+    log::Info("Audio : XAudio2 voix maîtresse : canaux demandés par le jeu {} (0 = ceux de Windows), obtenus {}, {} Hz -> "
               "0x{:08X}",
-              channels, details[1], details[2], static_cast<unsigned long>(result));
+              requested, details[1], details[2], static_cast<unsigned long>(result));
     return result;
 }
 

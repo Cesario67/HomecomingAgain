@@ -69,6 +69,8 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.windowThreadLock = ReadBool(iniPath, L"Compat", L"WindowThreadLock", defaults.windowThreadLock);
     config.d3dMultithreaded = ReadBool(iniPath, L"Compat", L"D3DMultithreaded", defaults.d3dMultithreaded);
 
+    config.audioChannels = ReadInt(iniPath, L"Audio", L"Channels", defaults.audioChannels, 0, 8);
+
     config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
 
 
