@@ -55,8 +55,9 @@ static const float3 kKernel[kSampleCount] = {
 
 float4 OcclusionPS(float2 uv : TEXCOORD0, float2 pixel : VPOS) : COLOR0 {
     const float raw = RawDepth(uv);
-    if (raw >= 0.99999) {
-        return 1.0;  // ciel ou rien de dessiné
+    // Ciel (1), rien de dessiné, ou valeur hors de la plage attendue : pas d'occlusion plutôt qu'une valeur fausse.
+    if (!(raw > 0.0001 && raw < 0.99999)) {
+        return 1.0;
     }
     const float3 p = ViewPos(uv, ViewZ(raw));
 
@@ -69,7 +70,8 @@ float4 OcclusionPS(float2 uv : TEXCOORD0, float2 pixel : VPOS) : COLOR0 {
     const float3 down = ViewPosAt(uv + py) - p;
     const float3 dx = abs(left.z) < abs(right.z) ? left : right;
     const float3 dy = abs(up.z) < abs(down.z) ? up : down;
-    const float3 normal = normalize(cross(dy, dx));
+    const float3 rawNormal = cross(dy, dx);
+    const float3 normal = dot(rawNormal, rawNormal) > 1e-12 ? normalize(rawNormal) : float3(0.0, 0.0, -1.0);
 
     const float angle = InterleavedNoise(pixel) * 6.2831853;
     const float3 random = float3(cos(angle), sin(angle), 0.0);
@@ -87,6 +89,7 @@ float4 OcclusionPS(float2 uv : TEXCOORD0, float2 pixel : VPOS) : COLOR0 {
         occlusion += (sceneZ < s.z - radius * 0.03 ? 1.0 : 0.0) * range;
     }
     float ao = 1.0 - occlusion / kSampleCount;
+    ao = ao >= 0.0 && ao <= 1.0 ? ao : 1.0;  // NaN ou valeur aberrante : pas d'effet
     ao = pow(saturate(ao), gParams.y);
     // Fondu avec la distance : le brouillard du jeu masque déjà le lointain.
     ao = lerp(ao, 1.0, saturate((p.z - gParams.z) / max(gParams.w - gParams.z, 1.0)));
@@ -108,6 +111,7 @@ float4 BlurPS(float2 uv : TEXCOORD0) : COLOR0 {
             weights += w;
         }
     }
-    const float ao = sum / weights;
+    float ao = weights > 0.0 ? sum / weights : 1.0;
+    ao = ao >= 0.0 && ao <= 1.0 ? ao : 1.0;
     return float4(ao, ao, ao, 1.0);
 }

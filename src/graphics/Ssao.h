@@ -37,6 +37,7 @@ private:
     bool Apply(IDirect3DDevice9* device) noexcept;
     bool EnsureResources(IDirect3DDevice9* device, UINT width, UINT height) noexcept;
     void ReleaseAll() noexcept;
+    void LogDiagnostics(IDirect3DDevice9* device) noexcept;
 
     // Texture de profondeur du moteur et sa surface (non possédées : le moteur les crée et les libère). Elles ne sont
     // utilisées que pendant une image où le moteur vient de s'en servir, donc vivantes.
@@ -48,6 +49,8 @@ private:
     bool projectionSeen_ = false;
     bool failed_ = false;
     bool loggedFirstApply_ = false;
+    int diagnosticsLeft_ = 5;
+    unsigned applyCount_ = 0;
 
     IDirect3DDevice9* device_ = nullptr;  // non possédé
     UINT width_ = 0;

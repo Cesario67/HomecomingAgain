@@ -270,6 +270,10 @@ bool Ssao::Apply(IDirect3DDevice9* device) noexcept {
     if (ownScene) {
         device->EndScene();
     }
+    if (diagnosticsLeft_ > 0 && applyCount_++ % 600 == 0) {
+        --diagnosticsLeft_;
+        LogDiagnostics(device);
+    }
 
     savedState_->Apply();
     device->SetRenderTarget(0, sceneTarget);
@@ -278,6 +282,63 @@ bool Ssao::Apply(IDirect3DDevice9* device) noexcept {
     SafeRelease(savedDepth);
     sceneTarget->Release();
     return true;
+}
+
+// Relevé ponctuel (premières applications puis toutes les 600) : valeurs de profondeur lues et occlusion obtenue,
+// pour vérifier sans capture d'écran que l'effet lit la bonne texture. Copie vers la mémoire système : lent, donc rare.
+void Ssao::LogDiagnostics(IDirect3DDevice9* device) noexcept {
+    IDirect3DSurface9* depthCopy = nullptr;
+    IDirect3DSurface9* aoCopy = nullptr;
+    D3DSURFACE_DESC desc{};
+    depthSurface_->GetDesc(&desc);
+    if (FAILED(device->CreateOffscreenPlainSurface(desc.Width, desc.Height, D3DFMT_R32F, D3DPOOL_SYSTEMMEM, &depthCopy,
+                                                   nullptr)) ||
+        FAILED(device->CreateOffscreenPlainSurface(desc.Width, desc.Height, D3DFMT_L8, D3DPOOL_SYSTEMMEM, &aoCopy,
+                                                   nullptr)) ||
+        FAILED(device->GetRenderTargetData(depthSurface_, depthCopy)) ||
+        FAILED(device->GetRenderTargetData(aoSurface_, aoCopy))) {
+        log::Warn("SSAO : relevé de diagnostic impossible");
+        SafeRelease(depthCopy);
+        SafeRelease(aoCopy);
+        return;
+    }
+    D3DLOCKED_RECT depthRect{};
+    D3DLOCKED_RECT aoRect{};
+    if (SUCCEEDED(depthCopy->LockRect(&depthRect, nullptr, D3DLOCK_READONLY)) &&
+        SUCCEEDED(aoCopy->LockRect(&aoRect, nullptr, D3DLOCK_READONLY))) {
+        float minDepth = 1e30f;
+        float maxDepth = -1e30f;
+        int zeros = 0;
+        int ones = 0;
+        int samples = 0;
+        double aoSum = 0.0;
+        int aoDark = 0;
+        for (UINT y = 0; y < desc.Height; y += 16) {
+            const auto* depthRow = reinterpret_cast<const float*>(static_cast<const BYTE*>(depthRect.pBits) +
+                                                                  y * depthRect.Pitch);
+            const auto* aoRow = static_cast<const BYTE*>(aoRect.pBits) + y * aoRect.Pitch;
+            for (UINT x = 0; x < desc.Width; x += 16) {
+                const float d = depthRow[x];
+                minDepth = d < minDepth ? d : minDepth;
+                maxDepth = d > maxDepth ? d : maxDepth;
+                zeros += d <= 0.0001f ? 1 : 0;
+                ones += d >= 0.99999f ? 1 : 0;
+                aoSum += aoRow[x];
+                aoDark += aoRow[x] < 64 ? 1 : 0;
+                ++samples;
+            }
+        }
+        const float center = reinterpret_cast<const float*>(static_cast<const BYTE*>(depthRect.pBits) +
+                                                            (desc.Height / 2) * depthRect.Pitch)[desc.Width / 2];
+        log::Info("SSAO diagnostic : profondeur min {:.6f} max {:.6f} centre {:.6f} (zVue {:.1f}), {} % à 0, {} % à 1 ; "
+                  "occlusion moyenne {:.2f}, {} % sombre",
+                  minDepth, maxDepth, center, projection_.b / (center - projection_.a), zeros * 100 / samples,
+                  ones * 100 / samples, aoSum / samples / 255.0, aoDark * 100 / samples);
+    }
+    depthCopy->UnlockRect();
+    aoCopy->UnlockRect();
+    SafeRelease(depthCopy);
+    SafeRelease(aoCopy);
 }
 
 Ssao& GetSsao() noexcept {
