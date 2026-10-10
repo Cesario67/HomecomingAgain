@@ -83,9 +83,19 @@ void InstallMovieSkip(HMODULE engineModule) {
     if (GetConfig().movieSkipKey == 0) {
         return;
     }
+    // Le moteur importe binkw32.dll par sa table d'imports (vérifié par dumpbin /imports le 10/10/2026). L'interception
+    // par GetProcAddress reste en secours, au cas où une autre version charge Bink à la demande.
+    if (hooking::PatchImport(engineModule, "binkw32.dll", "_BinkNextFrame@4", &HookBinkNextFrame, &g_binkNextFrame)) {
+        if (const HMODULE bink = GetModuleHandleW(L"binkw32.dll"); bink != nullptr) {
+            g_binkGoto = reinterpret_cast<BinkGotoFn>(GetProcAddress(bink, "_BinkGoto@12"));
+        }
+        log::Info("Cinématiques : touche 0x{:02X} pour passer les vidéos ({})", GetConfig().movieSkipKey,
+                  g_binkGoto != nullptr ? "prête" : "BinkGoto introuvable, désactivée");
+        return;
+    }
     if (!hooking::PatchImport(engineModule, "kernel32.dll", "GetProcAddress", &HookGetProcAddress,
                               &g_getProcAddress)) {
-        log::Warn("Cinématiques : GetProcAddress du moteur non intercepté, touche pour passer indisponible");
+        log::Warn("Cinématiques : fonctions de Bink non interceptées, touche pour passer indisponible");
     }
 }
 
