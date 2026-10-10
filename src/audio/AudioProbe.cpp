@@ -86,6 +86,9 @@ using SubmitSourceBufferFn = HRESULT(STDMETHODCALLTYPE*)(void*, const void*, con
 SubmitSourceBufferFn g_submitSourceBuffer = nullptr;
 void* g_surroundVoice = nullptr;  // la voix 6 canaux du moteur
 UINT32 g_masterChannels = 2;      // canaux de la voix maîtresse
+double g_cross[6][6]{};
+ULONGLONG g_nextCorrelationLog = 0;
+int g_correlationLogs = 0;
 bool g_surroundAsStereo = false;   // voix 5.1 du moteur créée en stéréo, conversion faite par le mod
 
 // Mesure d'énergie par canal pour chaque voix source du moteur (il n'en crée que trois : 1, 2 et 6 canaux).
@@ -135,6 +138,37 @@ HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer
     // Correction du flux 5.1 du moteur. En sortie stéréo, la voix a été créée en stéréo (voir HookCreateSourceVoice) :
     // les 6 canaux sont convertis ici en 2, sur place, et XAudio2 reçoit une copie du descripteur avec la taille réduite.
     XAudio2BufferFull converted{};
+    // Ressemblance entre les 6 canaux d'origine (corrélation normalisée), journalisée 6 fois : révèle les paires stéréo
+    // et les canaux qui portent le même son, pour connaître le rôle de chaque canal du moteur.
+    if (voice == g_surroundVoice && buffer != nullptr && g_correlationLogs < 6) {
+        const auto* b = static_cast<const XAudio2Buffer*>(buffer);
+        const auto* s = reinterpret_cast<const float*>(b->audioData);
+        const std::uint32_t frames = s != nullptr ? b->audioBytes / (6 * sizeof(float)) : 0;
+        for (std::uint32_t i = 0; i < frames; ++i) {
+            for (int a = 0; a < 6; ++a) {
+                for (int c = 0; c < 6; ++c) {
+                    g_cross[a][c] += static_cast<double>(s[i * 6 + a]) * s[i * 6 + c];
+                }
+            }
+        }
+        const ULONGLONG now = GetTickCount64();
+        if (g_nextCorrelationLog == 0) {
+            g_nextCorrelationLog = now + 5000;
+        } else if (now >= g_nextCorrelationLog) {
+            g_nextCorrelationLog = now + 5000;
+            ++g_correlationLogs;
+            std::string text;
+            for (int a = 0; a < 6; ++a) {
+                text += std::format(" | {}:", a);
+                for (int c = 0; c < 6; ++c) {
+                    const double norm = std::sqrt(g_cross[a][a] * g_cross[c][c]);
+                    text += std::format(" {:+.2f}", norm > 0.0 ? g_cross[a][c] / norm : 0.0);
+                }
+            }
+            std::memset(g_cross, 0, sizeof(g_cross));
+            log::Info("Audio : ressemblance entre canaux d'origine (ligne a : colonnes 0 à 5){}", text);
+        }
+    }
     if (voice == g_surroundVoice && buffer != nullptr && GetConfig().audioChannelFix) {
         const auto* b = static_cast<const XAudio2Buffer*>(buffer);
         if (b->audioData != nullptr) {
