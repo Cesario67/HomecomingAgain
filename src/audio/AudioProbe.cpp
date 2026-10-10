@@ -84,8 +84,15 @@ constexpr size_t kSubmitSourceBufferIndex = 19;
 using SubmitSourceBufferFn = HRESULT(STDMETHODCALLTYPE*)(void*, const void*, const void*);
 SubmitSourceBufferFn g_submitSourceBuffer = nullptr;
 void* g_surroundVoice = nullptr;  // la voix 6 canaux du moteur
-double g_channelEnergy[8]{};
-std::uint64_t g_frames = 0;
+
+// Mesure d'énergie par canal pour chaque voix source du moteur (il n'en crée que trois : 1, 2 et 6 canaux).
+struct VoiceMeter {
+    void* voice = nullptr;
+    UINT32 channels = 0;
+    double energy[8]{};
+    std::uint64_t frames = 0;
+};
+VoiceMeter g_meters[4];
 ULONGLONG g_nextEnergyLog = 0;
 int g_energyLogs = 0;
 
@@ -95,39 +102,58 @@ struct XAudio2Buffer {
     const BYTE* audioData;
 };
 
-// Énergie de chaque canal du flux 6 canaux (flottants entrelacés), journalisée toutes les 5 s : montre dans quel canal
-// le moteur écrit ses sons.
-HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer, const void* wma) {
-    if (voice == g_surroundVoice && buffer != nullptr && g_energyLogs < 12) {
-        const auto* b = static_cast<const XAudio2Buffer*>(buffer);
-        const auto* samples = reinterpret_cast<const float*>(b->audioData);
-        const UINT32 frames = b->audioBytes / (6 * sizeof(float));
-        for (UINT32 i = 0; samples != nullptr && i < frames; ++i) {
-            for (int c = 0; c < 6; ++c) {
-                const double s = samples[i * 6 + c];
-                g_channelEnergy[c] += s * s;
-            }
+void TrackVoice(void* voice, UINT32 channels) {
+    for (VoiceMeter& meter : g_meters) {
+        if (meter.voice == nullptr) {
+            meter.voice = voice;
+            meter.channels = channels;
+            return;
         }
-        g_frames += frames;
+    }
+}
+
+// Énergie de chaque canal de chaque voix (flottants entrelacés), journalisée toutes les 5 s : montre par quelle voix et
+// dans quel canal passent les sons.
+HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer, const void* wma) {
+    if (buffer != nullptr && g_energyLogs < 12) {
+        for (VoiceMeter& meter : g_meters) {
+            if (meter.voice != voice || meter.channels == 0 || meter.channels > 8) {
+                continue;
+            }
+            const auto* b = static_cast<const XAudio2Buffer*>(buffer);
+            const auto* samples = reinterpret_cast<const float*>(b->audioData);
+            const UINT32 frames = b->audioBytes / (meter.channels * sizeof(float));
+            for (UINT32 i = 0; samples != nullptr && i < frames; ++i) {
+                for (UINT32 c = 0; c < meter.channels; ++c) {
+                    const double s = samples[i * meter.channels + c];
+                    meter.energy[c] += s * s;
+                }
+            }
+            meter.frames += frames;
+        }
         const ULONGLONG now = GetTickCount64();
         if (g_nextEnergyLog == 0) {
             g_nextEnergyLog = now + 5000;
-        } else if (now >= g_nextEnergyLog && g_frames > 0) {
+        } else if (now >= g_nextEnergyLog) {
             g_nextEnergyLog = now + 5000;
             ++g_energyLogs;
             std::string text;
-            for (int c = 0; c < 6; ++c) {
-                text += std::format(" {:.4f}", std::sqrt(g_channelEnergy[c] / static_cast<double>(g_frames)));
-                g_channelEnergy[c] = 0.0;
+            for (VoiceMeter& meter : g_meters) {
+                if (meter.voice == nullptr) {
+                    continue;
+                }
+                text += std::format(" | {} canaux :", meter.channels);
+                for (UINT32 c = 0; c < meter.channels; ++c) {
+                    text += std::format(" {:.4f}", meter.frames > 0 ? std::sqrt(meter.energy[c] / meter.frames) : 0.0);
+                    meter.energy[c] = 0.0;
+                }
+                meter.frames = 0;
             }
-            g_frames = 0;
-            log::Info("Audio : niveau des canaux du flux 6 canaux (ordre de Windows : AvG AvD Centre Basses ArG ArD) :{}",
-                      text);
+            log::Info("Audio : niveau par voix et par canal (5.1 dans l'ordre AvG AvD C Basses ArG ArD){}", text);
         }
     }
     return g_submitSourceBuffer(voice, buffer, wma);
 }
-
 UINT32 g_masterChannels = 2;
 
 // Le flux 6 canaux du moteur arrive décalé d'un canal (mesuré le 10/10/2026 : canal 0 toujours vide, sons « à droite »).
@@ -156,11 +182,14 @@ HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, cons
                   SUCCEEDED(result) && voice != nullptr ? *voice : nullptr, format->nChannels, format->nSamplesPerSec,
                   format->wFormatTag, sends != nullptr ? "définis" : "par défaut");
     }
-    if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr && format->nChannels == 6) {
-        g_surroundVoice = *voice;
+    if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr) {
+        TrackVoice(*voice, format->nChannels);
         if (g_submitSourceBuffer == nullptr) {
             hooking::PatchVtable(*voice, kSubmitSourceBufferIndex, &HookSubmitSourceBuffer, &g_submitSourceBuffer);
         }
+    }
+    if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr && format->nChannels == 6) {
+        g_surroundVoice = *voice;
         if (GetConfig().audioChannelFix) {
             ApplyChannelFix(*voice);
         }
