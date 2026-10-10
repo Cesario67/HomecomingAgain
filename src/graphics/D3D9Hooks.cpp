@@ -13,6 +13,7 @@
 #include "core/SystemInfo.h"
 #include "crash/CrashHandler.h"
 #include "crash/HangWatchdog.h"
+#include "dlss/DxvkInterop.h"
 #include "framepacing/FrameMonitor.h"
 #include "graphics/BackBufferDump.h"
 #include "graphics/BorderlessWindow.h"
@@ -66,6 +67,9 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
     if (GetConfig().smaa) {
         InternalDrawScope internal;
         g_smaa.Apply(device);
+    }
+    if (dlss::Available()) {
+        dlss::Probe(GetSsao().SceneTexture(), GetSsao().DepthTexture());
     }
     GetSsao().OnPresent();
     if (GetConfig().backBufferDump) {
@@ -193,6 +197,9 @@ HRESULT STDMETHODCALLTYPE HookCreateDevice(IDirect3D9* direct3d, UINT adapter, D
     if (SUCCEEDED(result) && device != nullptr && *device != nullptr) {
         if (GetConfig().d3d9On12) {
             on12::LogDevice(*device);
+        }
+        if (dlss::OnDeviceCreated(*device)) {
+            log::Info("Périphérique DXVK détecté");
         }
         try {
             PatchDevice(*device);

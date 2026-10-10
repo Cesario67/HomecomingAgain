@@ -8,6 +8,9 @@
 #include <iterator>
 #include <string>
 
+#include "audio/AudioProbe.h"
+#include "compat/MovieSkip.h"
+#include "compat/SkipMovies.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
 #include "graphics/FilmGrain.h"
@@ -126,6 +129,45 @@ void TestFilmGrain() {
     Check(!grain::IsGrainShader(reinterpret_cast<const DWORD*>(noTable)), "autre shader ignoré");
 }
 
+void TestSkipMovies() {
+    std::printf("Vidéos ignorées\n");
+    Check(hca::compat::IsMoviePath(L"..\\Engine\\movies\\New_GURNEY_RIDE_FINAL.bik") && hca::compat::IsMoviePath(L"X.BIK"),
+          "vidéos Bink reconnues, casse ignorée");
+    Check(!hca::compat::IsMoviePath(L"vars_pc.cfg") && !hca::compat::IsMoviePath(L"bik") && !hca::compat::IsMoviePath(L"a.bikx"),
+          "autres fichiers ouverts normalement");
+}
+
+void TestMovieSkip() {
+    std::printf("Passer les cinématiques\n");
+    std::uint32_t target = 0;
+    Check(hca::compat::ShouldSkipTo({1280, 720, 900, 120}, true, target) && target == 900, "saut à la dernière image");
+    Check(!hca::compat::ShouldSkipTo({1280, 720, 900, 120}, false, target), "rien sans la touche");
+    Check(!hca::compat::ShouldSkipTo({1280, 720, 900, 900}, true, target) && !hca::compat::ShouldSkipTo({0, 0, 1, 1}, true, target),
+          "vidéo déjà finie ou vide ignorée");
+}
+
+void TestChannelFix() {
+    std::printf("Canaux audio\n");
+    int order[6]{};
+    Check(hca::audio::ParseChannelOrder("2,4,1,3,5,0", order) && order[0] == 2 && order[5] == 0, "ordre lu");
+    Check(!hca::audio::ParseChannelOrder("2,4,1,3,5", order) && !hca::audio::ParseChannelOrder("2,2,1,3,5,0", order) &&
+              !hca::audio::ParseChannelOrder("2,4,1,3,5,9", order),
+          "ordre incomplet, en double ou hors limites refusé");
+    float frames[6] = {0, 10, 20, 30, 40, 50};
+    const int map[6] = {2, 4, 1, 3, 5, 0};
+    hca::audio::RemapSurroundFrames(frames, 1, map);
+    Check(frames[0] == 20 && frames[1] == 40 && frames[2] == 10 && frames[5] == 0, "canaux réordonnés");
+    float mono[6] = {0, 1, 0, 0, 0, 0};
+    hca::audio::DownmixSurroundToStereo(mono, 1);
+    Check(mono[0] == mono[1] && mono[0] > 0.7f, "bruitage du canal 1 centré en stéréo");
+    float two[12] = {0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0};
+    hca::audio::DownmixSurroundToStereo(two, 2);
+    Check(two[0] == two[1] && two[2] == two[3] && two[0] > 0.7f && two[2] > 0.7f, "images converties de façon compacte, centrées");
+    float side[6] = {0, 1, 0, 0, 0, 0};
+    hca::audio::DownmixSurroundToStereo(side, 1);
+    Check(side[0] == side[1], "son de l'avant droit centré");
+}
+
 }  // namespace
 
 int main() {
@@ -136,6 +178,9 @@ int main() {
     TestShadowResolution();
     TestProjection();
     TestFilmGrain();
+    TestSkipMovies();
+    TestMovieSkip();
+    TestChannelFix();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

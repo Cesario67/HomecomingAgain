@@ -8,6 +8,9 @@
 
 #include <string_view>
 
+#include "audio/AudioProbe.h"
+#include "compat/MovieSkip.h"
+#include "compat/SkipMovies.h"
 #include "compat/WindowThreadLock.h"
 #include "core/Config.h"
 #include "core/Log.h"
@@ -69,6 +72,9 @@ void Startup() {
         hca::graphics::Install(engine);
         hca::patches::ApplyFrameRateCap(engine);
         hca::compat::InstallWindowThreadLock(engine);
+        hca::compat::InstallSkipMovies(engine);
+        hca::compat::InstallMovieSkip(engine);
+        hca::audio::InstallAudioProbe(engine);
         if (hca::GetConfig().frameStats) {
             hca::frames::waits::Install(engine);
         }

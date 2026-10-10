@@ -1,5 +1,8 @@
 #include "core/Config.h"
 
+#include "audio/AudioProbe.h"
+#include "core/Strings.h"
+
 #include <windows.h>
 
 #include <algorithm>
@@ -69,10 +72,34 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.windowThreadLock = ReadBool(iniPath, L"Compat", L"WindowThreadLock", defaults.windowThreadLock);
     config.d3dMultithreaded = ReadBool(iniPath, L"Compat", L"D3DMultithreaded", defaults.d3dMultithreaded);
 
+    config.audioChannels = ReadInt(iniPath, L"Audio", L"Channels", defaults.audioChannels, 0, 8);
+
+    config.audioChannelFix = ReadBool(iniPath, L"Audio", L"ChannelFix", defaults.audioChannelFix);
+
+    {
+
+        char order[64]{};
+
+        GetPrivateProfileStringA("Audio", "ChannelOrder", "", order, sizeof(order), WideToUtf8(iniPath).c_str());
+
+        int parsed[6]{};
+
+        if (audio::ParseChannelOrder(order, parsed)) {
+
+            std::copy(parsed, parsed + 6, config.audioChannelOrder);
+
+        }
+
+    }
+
+    config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
+
+
     config.logKeepCount = ReadInt(iniPath, L"Debug", L"LogKeepCount", defaults.logKeepCount, 1, 500);
     config.frameCapture = ReadBool(iniPath, L"Debug", L"FrameCapture", defaults.frameCapture);
     config.frameCaptureKey = ReadInt(iniPath, L"Debug", L"FrameCaptureKey", defaults.frameCaptureKey, 1, 254);
     config.backBufferDump = ReadBool(iniPath, L"Debug", L"BackBufferDump", defaults.backBufferDump);
+    config.skipMovies = ReadBool(iniPath, L"Debug", L"SkipMovies", defaults.skipMovies);
 
     g_config = config;
     return GetFileAttributesW(iniPath.c_str()) != INVALID_FILE_ATTRIBUTES;

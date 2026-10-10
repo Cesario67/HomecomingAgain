@@ -58,6 +58,28 @@ struct Config {
     // les chargements sans ce drapeau (interblocage constaté dans le pilote NVIDIA, voir graphics/D3D9Hooks.cpp).
     bool d3dMultithreaded = true;
 
+    // [Audio]
+
+    // Canaux de sortie forcés (0 = ceux de Windows, jeu d'origine ; 6 = 5.1 ; 8 = 7.1), voir audio/AudioProbe.h.
+
+    int audioChannels = 0;
+
+    // Remet dans l'ordre les canaux du flux 5.1 du moteur, décalés d'un canal (sons à droite seulement).
+
+    bool audioChannelFix = true;
+
+    // Pour chaque canal de Windows (AvG AvD C Basses ArG ArD), canal du moteur à utiliser (voir audio/AudioProbe.h).
+
+    int audioChannelOrder[6] = {2, 4, 1, 3, 5, 0};
+
+
+    // [Movies]
+
+    // Touche pour passer les cinématiques en vidéo (code de touche virtuelle Windows, 0x2E = Suppr, 0 = aucune).
+
+    int movieSkipKey = 0x2E;
+
+
     // [Debug]
     int logKeepCount = 10;
     // Relevé d'images pour préparer le DLSS (voir graphics/FrameCapture.h). Touche : code de touche virtuelle
@@ -66,6 +88,8 @@ struct Config {
     int frameCaptureKey = 0x7A;
     // Enregistre l'image affichée toutes les 15 s (voir graphics/BackBufferDump.h).
     bool backBufferDump = false;
+    // Option de test : le moteur ne lit plus ses vidéos (voir compat/SkipMovies.h).
+    bool skipMovies = false;
 };
 
 // Retourne false si le fichier .ini est absent (les valeurs par défaut sont alors utilisées).
