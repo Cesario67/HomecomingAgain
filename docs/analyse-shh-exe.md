@@ -138,3 +138,19 @@ Avec `fpsLimit=60` et `maxFPSLimit=60` dans `vars_pc.cfg` (copie de secours `var
 - Deux sessions suivantes (avec et sans bordure, 1920x1080) : aucun blocage, jeu réactif, 60 i/s.
 - En fenêtré, pas de périphérique perdu à l'Alt-Tab : le plantage `0x10B8DBF2` (plein écran) ne devrait plus se
   produire. À confirmer par un test en jeu.
+
+## Blocage au lancement en fenêtré avec l'overlay Steam (10/10/2026, 09:30)
+
+Le jeu ne répond plus pendant le chargement (pas de plantage : processus vivant, « Responding = False »). Diagnostic
+du détecteur de blocage (minidump `SHH_20261010-093053-908.dmp`) :
+- **thread principal** : attend dans `EnterCriticalSection` (appel en `0x10891F07`, enveloppe de verrou du moteur),
+  depuis `0x10B8DB37` ;
+- **thread de l'écran de chargement** : dans `Present`, passé par `gameoverlayrenderer.dll` (overlay Steam) puis le
+  pilote (`nvd3dum.dll`), en attente.
+Hypothèse (non prouvée) : l'overlay, appelé depuis le thread de chargement, attend le thread de la fenêtre (messages),
+qui attend lui-même le verrou du moteur tenu par le thread de chargement : interblocage. N'existe qu'en fenêtré
+(le plein écran exclusif ne passe pas par ce chemin) et pas à chaque lancement.
+Constat : **3 lancements sur 3 sans overlay** (exécutable lancé directement) sans blocage ; 1 blocage sur 3 lancements
+via Steam avec overlay (plus le blocage de 08:49, même phase de chargement).
+Contournement : désactiver l'overlay Steam pour ce jeu. Correctif dans le mod à étudier (Present du thread de
+chargement quand l'overlay est présent).
