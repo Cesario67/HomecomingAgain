@@ -85,8 +85,8 @@ public static class Translations
                             "stays untouched."),
             ["ShadowResolution"] = ("Résolution des ombres", "Shadow resolution"),
             ["ShadowOriginal"] = ("2048 × 2048 (jeu d'origine)", "2048 × 2048 (original game)"),
-            ["ShadowResolutionHint"] = ("Ombres plus nettes. 8192 demande quatre fois plus de mémoire graphique que 4096.",
-                                        "Sharper shadows. 8192 needs four times as much video memory as 4096."),            ["SecGameQuality"] = ("Qualité du jeu", "Game quality"),
+            ["ShadowResolutionHint"] = ("Ombres plus nettes. Au-delà de 4096, des défauts apparaissent sur les vêtements (constaté en 8192).",
+                                        "Sharper shadows. Above 4096, artifacts appear on clothing (seen at 8192)."),            ["SecGameQuality"] = ("Qualité du jeu", "Game quality"),
             ["HighQualityShaders"] = ("Shaders en haute qualité", "High quality shaders"),
             ["FullResolutionTextures"] = ("Textures en pleine résolution", "Full resolution textures"),
             ["GameQualityHint"] = ("Réglages du jeu lui-même, en basse qualité par défaut (shaders simplifiés, textures " +

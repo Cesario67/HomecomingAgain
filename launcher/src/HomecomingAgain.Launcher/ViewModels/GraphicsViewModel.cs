@@ -33,7 +33,6 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [
         Choice<int>.Localized(2048, "ShadowOriginal"),
         new(4096, "4096 × 4096"),
-        new(8192, "8192 × 8192"),
     ];
 
     public IReadOnlyList<Choice<(int Width, int Height)>> Resolutions { get; private set; } = BuildResolutions(1920, 1080);
