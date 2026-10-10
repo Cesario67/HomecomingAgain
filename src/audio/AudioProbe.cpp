@@ -45,9 +45,17 @@ std::string GuidText(REFGUID guid) {
 HRESULT STDMETHODCALLTYPE HookCreateMasteringVoice(void* xaudio, void** voice, UINT32 channels, UINT32 rate,
                                                    UINT32 flags, UINT32 device, const void* effects) {
     const HRESULT result = g_createMasteringVoice(xaudio, voice, channels, rate, flags, device, effects);
-    log::Info("Audio : XAudio2 CreateMasteringVoice canaux demandés {} (0 = ceux du périphérique), fréquence {}, "
-              "périphérique {} -> 0x{:08X}",
-              channels, rate, device, static_cast<unsigned long>(result));
+    // Canaux réellement obtenus : IXAudio2Voice::GetVoiceDetails (index 0 de la vtable, pas d'IUnknown), structure
+    // XAUDIO2_VOICE_DETAILS { CreationFlags, InputChannels, InputSampleRate }.
+    UINT32 details[4]{};
+    if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr) {
+        using GetVoiceDetailsFn = void(STDMETHODCALLTYPE*)(void*, UINT32*);
+        const auto getDetails = reinterpret_cast<GetVoiceDetailsFn>((*reinterpret_cast<void***>(*voice))[0]);
+        getDetails(*voice, details);
+    }
+    log::Info("Audio : XAudio2 voix maîtresse : canaux demandés {} (0 = ceux de Windows), obtenus {}, {} Hz -> "
+              "0x{:08X}",
+              channels, details[1], details[2], static_cast<unsigned long>(result));
     return result;
 }
 
