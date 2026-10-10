@@ -64,6 +64,10 @@ struct Config {
 
     int audioChannels = 0;
 
+    // Remet dans l'ordre les canaux du flux 5.1 du moteur, décalés d'un canal (sons à droite seulement).
+
+    bool audioChannelFix = true;
+
 
     // [Movies]
 

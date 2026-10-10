@@ -71,6 +71,8 @@ bool LoadConfig(const std::wstring& iniPath) {
 
     config.audioChannels = ReadInt(iniPath, L"Audio", L"Channels", defaults.audioChannels, 0, 8);
 
+    config.audioChannelFix = ReadBool(iniPath, L"Audio", L"ChannelFix", defaults.audioChannelFix);
+
     config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
 
 

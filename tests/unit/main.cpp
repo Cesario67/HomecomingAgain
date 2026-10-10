@@ -8,6 +8,7 @@
 #include <iterator>
 #include <string>
 
+#include "audio/AudioProbe.h"
 #include "compat/MovieSkip.h"
 #include "compat/SkipMovies.h"
 #include "core/Strings.h"
@@ -145,6 +146,18 @@ void TestMovieSkip() {
           "vidéo déjà finie ou vide ignorée");
 }
 
+void TestChannelFix() {
+    std::printf("Canaux audio\n");
+    float stereo[48]{};
+    Check(hca::audio::ChannelFixMatrix(2, stereo) && stereo[0 * 6 + 1] == 1.0f && stereo[1 * 6 + 2] == 1.0f && stereo[0 * 6 + 0] == 0.0f,
+          "stéréo : canal 1 à gauche, canal 2 à droite");
+    float surround[48]{};
+    Check(hca::audio::ChannelFixMatrix(8, surround) && surround[2 * 6 + 3] == 1.0f && surround[7 * 6 + 0] == 1.0f,
+          "7.1 : centre et arrière droit replacés");
+    float other[48]{};
+    Check(!hca::audio::ChannelFixMatrix(4, other), "4 canaux refusés");
+}
+
 }  // namespace
 
 int main() {
@@ -157,6 +170,7 @@ int main() {
     TestFilmGrain();
     TestSkipMovies();
     TestMovieSkip();
+    TestChannelFix();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }
