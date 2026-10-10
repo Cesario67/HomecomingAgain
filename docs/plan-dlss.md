@@ -91,6 +91,17 @@ Conséquences pour le plan :
   mouvement à l'étape 4.
 - **Point d'insertion du DLSS** : juste avant les post-traitements (fin de l'étape 3), l'interface venant après.
 
+## 4 ter. Essais D3D9On12 (10/10/2026, vérifiés)
+
+- Le rendu fonctionne : l'image du tampon arrière, enregistrée juste avant Present (`[Debug] BackBufferDump`), est
+  correcte (menu complet). Present ne renvoie aucune erreur. Mais la fenêtre reste noire.
+- Éliminé : nos effets (SMAA, SSAO), le mode sans bordure, la fenêtre de présentation (hDeviceWindow et fenêtre
+  forcée bien renseignés), le mode COPY (DISCARD essayé), le choix de la carte (périphérique Direct3D 12 créé sur la
+  RTX), l'overlay Steam (jeu lancé sans), toutes les fonctions du mod, la rampe gamma (normale, ignorée sans effet).
+- Un programme de test minimal (fenêtre, effacement rouge, Present) affiche correctement par D3D9On12 sur la même
+  machine, y compris en COPY, multithread, Present depuis un autre thread et avec fenêtre forcée.
+- Conclusion : incompatibilité entre ce moteur et D3D9On12, cause non trouvée. Cadence aussi divisée par deux
+  (31 i/s au menu au lieu de 60).
 ## 5. Plans de repli
 
 - Si les traînées sont inacceptables et que les animations ne peuvent pas être suivies : garder DLAA sur les

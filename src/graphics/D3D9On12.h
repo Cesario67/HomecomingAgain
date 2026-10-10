@@ -12,7 +12,10 @@ namespace hca::graphics::on12 {
 // processus avec des fences. Présent en 32 bits dans Windows 10 et 11 (d3d9.dll exporte Direct3DCreate9On12).
 //
 // Renvoie nullptr si la couche est indisponible : l'appelant crée alors l'objet Direct3D 9 habituel.
-IDirect3D9* Create(UINT sdkVersion) noexcept;
+using Direct3DCreate9Fn = IDirect3D9*(WINAPI*)(UINT);
+
+// createOriginal : le vrai Direct3DCreate9, pour lire la carte de l'adaptateur 0.
+IDirect3D9* Create(UINT sdkVersion, Direct3DCreate9Fn createOriginal) noexcept;
 
 // Après CreateDevice : journalise si le périphérique passe bien par D3D9On12.
 void LogDevice(IDirect3DDevice9* device) noexcept;

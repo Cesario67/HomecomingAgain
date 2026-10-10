@@ -51,11 +51,11 @@ HRESULT g_lastPresentError = S_OK;
 std::uint32_t g_resetFailures = 0;  // échecs consécutifs de Reset
 
 void LogPresentParameters(const char* context, const D3DPRESENT_PARAMETERS& params) {
-    log::Info("{} : {}x{} format {} x{} tampons, MSAA {}, swap {}, fenêtré {}, {} Hz, intervalle 0x{:X}, options 0x{:X}",
+    log::Info("{} : {}x{} format {} x{} tampons, MSAA {}, swap {}, fenêtré {}, {} Hz, intervalle 0x{:X}, options 0x{:X}, fenêtre {}",
               context, params.BackBufferWidth, params.BackBufferHeight, static_cast<int>(params.BackBufferFormat),
               params.BackBufferCount, static_cast<int>(params.MultiSampleType), static_cast<int>(params.SwapEffect),
               params.Windowed ? "oui" : "non", params.FullScreen_RefreshRateInHz, params.PresentationInterval,
-              params.Flags);
+              params.Flags, static_cast<const void*>(params.hDeviceWindow));
 }
 
 HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sourceRect, const RECT* destRect,
@@ -239,7 +239,7 @@ IDirect3D9* WINAPI HookDirect3DCreate9(UINT sdkVersion) {
         LateInit();
     } catch (...) {
     }
-    IDirect3D9* direct3d = GetConfig().d3d9On12 ? on12::Create(sdkVersion) : nullptr;
+    IDirect3D9* direct3d = GetConfig().d3d9On12 ? on12::Create(sdkVersion, g_direct3DCreate9) : nullptr;
     if (direct3d == nullptr) {
         direct3d = g_direct3DCreate9(sdkVersion);
     }
