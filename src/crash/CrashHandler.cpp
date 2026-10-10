@@ -87,7 +87,7 @@ void PruneOldDumps() {
     const Paths& paths = GetPaths();
     std::vector<std::wstring> names;
     WIN32_FIND_DATAW data{};
-    const HANDLE find = FindFirstFileW((paths.dumpsDir + L"\\DP_*.dmp").c_str(), &data);
+    const HANDLE find = FindFirstFileW((paths.dumpsDir + L"\\SHH_*.dmp").c_str(), &data);
     if (find == INVALID_HANDLE_VALUE) {
         return;
     }
@@ -206,7 +206,7 @@ void LogException(const EXCEPTION_POINTERS& exception) {
 }
 
 void WriteDump(EXCEPTION_POINTERS* exception) {
-    const std::wstring path = GetPaths().dumpsDir + L"\\DP_" + FileTimestamp() + L".dmp";
+    const std::wstring path = GetPaths().dumpsDir + L"\\SHH_" + FileTimestamp() + L".dmp";
     DumpJob job;
     job.exception = exception;
     job.threadId = GetCurrentThreadId();

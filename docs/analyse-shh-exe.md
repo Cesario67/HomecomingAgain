@@ -95,3 +95,18 @@ Tout ce qui suit est **vérifié par le journal** (le mod ne faisait que journal
   réussit et `Present` refonctionne. **Sur cette machine, le jeu d'origine survit donc à l'Alt-Tab** (interruption de
   14 s, le temps de l'avoir quitté), contrairement à ce que dit la réputation du jeu ; les plantages signalés sont
   peut-être liés au contexte (résolution élevée, mode fenêtré, alt-tab en menu, autre GPU). À re-tester dans ces cas.
+
+## Deuxième lancement (10/10/2026) : plafond 60 sans effet et plantage à l'Alt-Tab reproduit
+
+Avec `fpsLimit=60` et `maxFPSLimit=60` dans `vars_pc.cfg` (copie de secours `vars_pc.cfg.shhf-backup`) :
+- **Cadence toujours à 29,2 i/s** : ces réglages ne suffisent pas, le plafond est aussi une constante ou une borne dans
+  le code du moteur (**vérifié** par la mesure ; sa nature exacte reste à trouver).
+- **Alt-Tab en plein écran : plantage reproduit** (contrairement à la première session). `Present` renvoie
+  `D3DERR_DEVICELOST` (0x88760868), puis le premier `Reset` échoue aussitôt avec `D3DERR_INVALIDCALL` (0x8876086C,
+  6 ms) et le jeu plante 6 ms plus tard : `EXCEPTION_ACCESS_VIOLATION` en lecture à l'adresse 0, EIP =
+  `g_SilentHill.sgl+0xB8DBF2` (0x10B8DBF2), thread principal. Minidump écrit dans `Bin\SHHFix\crashdumps`.
+- **Hypothèse** (non vérifiée) : `Reset` échoue parce que le moteur n'a pas libéré toutes ses ressources
+  `D3DPOOL_DEFAULT` (cela dépend de ce qu'il tenait à cet instant, d'où le succès de la première fois), puis le
+  moteur déréférence un pointeur nul. Un contournement possible : sur `INVALIDCALL`, ne pas rendre l'échec au moteur
+  tant que la cause n'est pas traitée (voir l'ordre `Present` / `Reset` dans DPStabilityFix). À analyser avec le
+  minidump et le désassemblage autour de `0x10B8DBF2` et de l'appelant `0x10B898E7`.
