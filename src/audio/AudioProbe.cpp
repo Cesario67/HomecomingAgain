@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <format>
 #include <string>
 
@@ -85,6 +86,7 @@ using SubmitSourceBufferFn = HRESULT(STDMETHODCALLTYPE*)(void*, const void*, con
 SubmitSourceBufferFn g_submitSourceBuffer = nullptr;
 void* g_surroundVoice = nullptr;  // la voix 6 canaux du moteur
 UINT32 g_masterChannels = 2;      // canaux de la voix maîtresse
+bool g_surroundAsStereo = false;   // voix 5.1 du moteur créée en stéréo, conversion faite par le mod
 
 // Mesure d'énergie par canal pour chaque voix source du moteur (il n'en crée que trois : 1, 2 et 6 canaux).
 struct VoiceMeter {
@@ -96,6 +98,20 @@ struct VoiceMeter {
 VoiceMeter g_meters[4];
 ULONGLONG g_nextEnergyLog = 0;
 int g_energyLogs = 0;
+
+// XAUDIO2_BUFFER complet (32 bits) : Flags, AudioBytes, pAudioData, PlayBegin, PlayLength, LoopBegin, LoopLength,
+// LoopCount, pContext.
+struct XAudio2BufferFull {
+    UINT32 flags;
+    UINT32 audioBytes;
+    const BYTE* audioData;
+    UINT32 playBegin;
+    UINT32 playLength;
+    UINT32 loopBegin;
+    UINT32 loopLength;
+    UINT32 loopCount;
+    void* context;
+};
 
 struct XAudio2Buffer {
     UINT32 flags;
@@ -116,22 +132,24 @@ void TrackVoice(void* voice, UINT32 channels) {
 // Énergie de chaque canal de chaque voix (flottants entrelacés), journalisée toutes les 5 s : montre par quelle voix et
 // dans quel canal passent les sons.
 HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer, const void* wma) {
-    // Correction : canaux du flux 5.1 remis dans l'ordre directement dans les échantillons (voir RemapSurroundFrames).
+    // Correction du flux 5.1 du moteur. En sortie stéréo, la voix a été créée en stéréo (voir HookCreateSourceVoice) :
+    // les 6 canaux sont convertis ici en 2, sur place, et XAudio2 reçoit une copie du descripteur avec la taille réduite.
+    XAudio2BufferFull converted{};
     if (voice == g_surroundVoice && buffer != nullptr && GetConfig().audioChannelFix) {
         const auto* b = static_cast<const XAudio2Buffer*>(buffer);
         if (b->audioData != nullptr) {
             auto* samples = const_cast<float*>(reinterpret_cast<const float*>(b->audioData));
             const std::uint32_t frames = b->audioBytes / (6 * sizeof(float));
-            // XAudio2 2.1 ne garde que les deux premiers canaux en sortie stéréo (hypothèse, d'après l'écoute) : le mod
-            // fait lui-même le mélange vers la stéréo.
-            if (g_masterChannels == 2) {
+            if (g_surroundAsStereo) {
                 DownmixSurroundToStereo(samples, frames);
+                std::memcpy(&converted, buffer, sizeof(converted));
+                converted.audioBytes = frames * 2 * sizeof(float);
+                buffer = &converted;
             } else {
                 RemapSurroundFrames(samples, frames, GetConfig().audioChannelOrder);
             }
         }
-    }
-    if (buffer != nullptr && g_energyLogs < 12) {
+    }    if (buffer != nullptr && g_energyLogs < 12) {
         for (VoiceMeter& meter : g_meters) {
             if (meter.voice != voice || meter.channels == 0 || meter.channels > 8) {
                 continue;
@@ -174,7 +192,21 @@ HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer
 HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, const WAVEFORMATEX* format, UINT32 flags,
                                                 float maxRatio, void* callback, const void* sends,
                                                 const void* effects) {
-    const HRESULT result = g_createSourceVoice(xaudio, voice, format, flags, maxRatio, callback, sends, effects);
+    // Sortie stéréo : la voix 5.1 du moteur est créée en stéréo (flottants 32 bits, même fréquence) ; la conversion des
+    // canaux est faite par le mod dans HookSubmitSourceBuffer. Le moteur continue de croire qu'il a une voix 5.1.
+    WAVEFORMATEX stereo{};
+    const bool asStereo = format != nullptr && format->nChannels == 6 && g_masterChannels == 2 &&
+                          GetConfig().audioChannelFix;
+    if (asStereo) {
+        stereo.wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
+        stereo.nChannels = 2;
+        stereo.nSamplesPerSec = format->nSamplesPerSec;
+        stereo.wBitsPerSample = 32;
+        stereo.nBlockAlign = 2 * sizeof(float);
+        stereo.nAvgBytesPerSec = stereo.nSamplesPerSec * stereo.nBlockAlign;
+    }
+    const HRESULT result = g_createSourceVoice(xaudio, voice, asStereo ? &stereo : format, flags, maxRatio, callback,
+                                               sends, effects);
     if (format != nullptr && g_sourcesLogged < 20) {
         ++g_sourcesLogged;
         log::Info("Audio : voix source {} : {} canal(aux), {} Hz, format 0x{:X}, envois {}",
@@ -182,14 +214,17 @@ HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, cons
                   format->wFormatTag, sends != nullptr ? "définis" : "par défaut");
     }
     if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr) {
-        TrackVoice(*voice, format->nChannels);
+        TrackVoice(*voice, asStereo ? 2 : format->nChannels);
         if (g_submitSourceBuffer == nullptr) {
             hooking::PatchVtable(*voice, kSubmitSourceBufferIndex, &HookSubmitSourceBuffer, &g_submitSourceBuffer);
         }
     }
     if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr && format->nChannels == 6) {
         g_surroundVoice = *voice;
-        if (GetConfig().audioChannelFix) {
+        g_surroundAsStereo = asStereo;
+        if (asStereo) {
+            log::Info("Audio : voix 5.1 du moteur créée en stéréo, conversion des canaux faite par le mod");
+        } else if (GetConfig().audioChannelFix) {
             const int* o = GetConfig().audioChannelOrder;
             log::Info("Audio : canaux du flux 5.1 réordonnés dans les échantillons (AvG AvD C Basses ArG ArD <- {},{},{},{},{},{})",
                       o[0], o[1], o[2], o[3], o[4], o[5]);
@@ -343,15 +378,15 @@ void DownmixSurroundToStereo(float* samples, std::uint32_t frames) noexcept {
     }
     constexpr float kShared = 0.7071f;
     for (std::uint32_t i = 0; i < frames; ++i) {
-        float* f = samples + static_cast<std::size_t>(i) * 6;
+        const float* f = samples + static_cast<std::size_t>(i) * 6;
         // Canaux du moteur (mesures du 10/10/2026) : 2 et 4 = musique gauche et droite, 1 et 3 = bruitages, 5 = faible,
         // 0 = toujours vide. Les bruitages et le canal 5 sont envoyés des deux côtés.
         const float shared = kShared * (f[1] + f[3] + f[5]);
         const float left = f[2] + shared;
         const float right = f[4] + shared;
-        f[0] = left;
-        f[1] = right;
-        f[2] = f[3] = f[4] = f[5] = 0.0f;
+        // Écriture compacte sur place : l'indice écrit (2i, 2i+1) ne dépasse jamais l'image lue (6i).
+        samples[static_cast<std::size_t>(i) * 2] = left;
+        samples[static_cast<std::size_t>(i) * 2 + 1] = right;
     }
 }
 void InstallAudioProbe(HMODULE engineModule) {
