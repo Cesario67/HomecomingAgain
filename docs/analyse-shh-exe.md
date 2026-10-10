@@ -168,3 +168,9 @@ Deux interblocages distincts, tous deux pendant le chargement initial en fenêtr
 
 Mesure avec les deux correctifs : **8 lancements sur 8 via Steam, overlay chargé, sans blocage**, 59,5 i/s en
 1920x1080 sans bordure (avant : 1 blocage sur 3 avec le seul correctif 1, 2 sur 5 sans correctif).
+
+## Patch 4 Go (10/10/2026)
+
+Appliqué par le launcher (`SHHFix.exe install`) avec l'accord de l'utilisateur : bit `IMAGE_FILE_LARGE_ADDRESS_AWARE`
+(0x20) de `SilentHill.exe`, original conservé dans `SilentHill.exe.shhf-original`. Vérifié en jeu : espace
+d'adressage **4095 Mo** (2047 avant), 59,6 i/s, aucun blocage. Prérequis aux essais de rendu en haute résolution.

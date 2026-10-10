@@ -3,15 +3,16 @@ using System.Diagnostics;
 namespace SHHFix.Launcher.Core;
 
 /// <summary>État de l'installation du mod dans un dossier de jeu.</summary>
-public sealed record InstallStatus(string? InstalledModVersion, bool HasForeignVersionDll, bool HasGameSettings)
+public sealed record InstallStatus(ExeInfo Exe, bool HasOriginalExeBackup, string? InstalledModVersion,
+                                   bool HasForeignVersionDll, bool HasGameSettings)
 {
     public bool IsModInstalled => InstalledModVersion is not null;
 }
 
 /// <summary>
-/// Installation, mise à jour et désinstallation de SHHFix. Contrairement au fix de Deadly Premonition, aucun
-/// fichier du jeu n'est modifié : le mod tient dans <c>Bin\version.dll</c> et <c>Bin\SHHFix.ini</c>. Les réglages
-/// existants de l'utilisateur ne sont jamais écrasés.
+/// Installation, mise à jour et désinstallation de SHHFix. Un seul fichier du jeu est modifié, après copie de
+/// l'original : l'en-tête de SilentHill.exe (patch 4 Go, voir <see cref="ExePatcher"/>). Le reste du mod tient dans
+/// <c>Bin\version.dll</c> et <c>Bin\SHHFix.ini</c>. Les réglages existants de l'utilisateur ne sont jamais écrasés.
 /// </summary>
 public static class ModInstaller
 {
@@ -19,6 +20,8 @@ public static class ModInstaller
     private static readonly string[] LicenseFiles = ["LICENSE.txt", "LICENSE-SMAA.txt"];
 
     public static InstallStatus ReadStatus(GamePaths paths) => new(
+        ExePatcher.ReadInfo(paths.GameExe),
+        File.Exists(paths.OriginalExeBackup),
         ModVersionOf(paths.ModDll),
         File.Exists(paths.ModDll) && ModVersionOf(paths.ModDll) is null,
         File.Exists(paths.GameSettings));
@@ -42,11 +45,20 @@ public static class ModInstaller
     public static IReadOnlyList<string> Install(string packageDirectory, GamePaths paths, string? launcherExecutable)
     {
         List<string> report = new();
-        if (!paths.ContainsGame)
+        ExeInfo exe = ExePatcher.ReadInfo(paths.GameExe);
+        if (!paths.ContainsGame || !exe.IsValid || !exe.IsX86)
         {
             throw new InvalidDataException(Loc.Get("InstallInvalidGame"));
         }
         EnsureGameNotRunning(paths);
+        if (!exe.IsKnownVersion)
+        {
+            report.Add(Loc.Get("InstallUnknownVersion"));
+        }
+        // 4 Go d'espace d'adressage au lieu de 2 : nécessaire aux résolutions élevées et au sur-échantillonnage.
+        report.Add(ExePatcher.EnableLargeAddressAware(paths.GameExe)
+            ? Loc.Get("InstallLaaApplied")
+            : Loc.Get("InstallLaaAlready"));
 
         string sourceDll = Path.Combine(packageDirectory, GamePaths.ModDllName);
         if (ModVersionOf(sourceDll) is not { } version)
@@ -97,8 +109,8 @@ public static class ModInstaller
     }
 
     /// <summary>
-    /// Retire le mod : notre version.dll est supprimée (une version.dll d'un autre mod mise de côté est remise).
-    /// Les réglages, journaux et diagnostics sont conservés.
+    /// Retire le mod : notre version.dll est supprimée (une version.dll d'un autre mod mise de côté est remise) et
+    /// SilentHill.exe d'origine est restauré. Les réglages, journaux et diagnostics sont conservés.
     /// </summary>
     public static IReadOnlyList<string> Uninstall(GamePaths paths)
     {
@@ -113,6 +125,11 @@ public static class ModInstaller
         {
             File.Move(paths.ModDllBackup, paths.ModDll, overwrite: true);
             report.Add(Loc.Get("UninstallDllRestored"));
+        }
+        if (File.Exists(paths.OriginalExeBackup))
+        {
+            ExePatcher.RestoreOriginal(paths.GameExe);
+            report.Add(Loc.Get("UninstallExeRestored"));
         }
         report.Add(Loc.Get("UninstallKept"));
         return report;

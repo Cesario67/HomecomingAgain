@@ -129,9 +129,11 @@ public static class Translations
             ["InstallButton"] = ("Installer / mettre à jour", "Install / update"),
             ["InstallButtonVersion"] = ("Installer / mettre à jour (version {0})", "Install / update (version {0})"),
             ["Uninstall"] = ("Désinstaller", "Uninstall"),
-            ["InstallHint"] = ("Aucun fichier du jeu n'est modifié : le mod tient dans Bin\\version.dll et Bin\\SHHFix.ini. " +
-                               "Vos réglages existants sont conservés.",
-                               "No game file is modified: the mod lives in Bin\\version.dll and Bin\\SHHFix.ini. Your " +
+            ["InstallHint"] = ("Le mod tient dans Bin\\version.dll et Bin\\SHHFix.ini. Seul l'en-tête de SilentHill.exe est " +
+                               "modifié (patch 4 Go), après copie de l'original, remis à la désinstallation. Vos réglages " +
+                               "existants sont conservés.",
+                               "The mod lives in Bin\\version.dll and Bin\\SHHFix.ini. Only the SilentHill.exe header is " +
+                               "modified (4 GB patch), after copying the original, which is restored on uninstall. Your " +
                                "existing settings are kept."),
             ["UninstallConfirm"] = ("Désinstaller SHHFix ?\n\nversion.dll est retirée ; les réglages et les journaux sont " +
                                     "conservés.",
@@ -162,6 +164,26 @@ public static class Translations
             ["UninstallDllRemoved"] = ("version.dll retirée.", "version.dll removed."),
             ["UninstallDllRestored"] = ("version.dll d'origine remise en place.", "Original version.dll restored."),
             ["UninstallKept"] = ("Réglages et journaux conservés.", "Settings and logs kept."),
+            ["UninstallExeRestored"] = ("SilentHill.exe d'origine restauré.", "Original SilentHill.exe restored."),
+            ["InstallUnknownVersion"] = ("Version du jeu différente de celle analysée : certains correctifs peuvent " +
+                                         "être ignorés (voir le journal).",
+                                         "Game version differs from the analysed one: some fixes may be skipped (see the log)."),
+            ["InstallLaaApplied"] = ("Patch 4 Go appliqué (original conservé : SilentHill.exe.shhf-original).",
+                                     "4 GB patch applied (original kept: SilentHill.exe.shhf-original)."),
+            ["InstallLaaAlready"] = ("Patch 4 Go déjà présent.", "4 GB patch already present."),
+
+            // --- Patch 4 Go (en-tête de SilentHill.exe)
+            ["ExeUnreadable"] = ("SilentHill.exe illisible.", "SilentHill.exe is unreadable."),
+            ["ExeKnownVersion"] = ("Jeu : version Steam analysée (build 6.30).", "Game: analysed Steam version (build 6.30)."),
+            ["ExeUnknownVersion"] = ("Jeu : version inconnue (horodatage {0}).", "Game: unknown version (timestamp {0})."),
+            ["LaaApplied"] = ("Mémoire : 4 Go disponibles (patch appliqué).", "Memory: 4 GB available (patch applied)."),
+            ["LaaMissing"] = ("Mémoire : limitée à 2 Go (patch 4 Go appliqué à l'installation).",
+                              "Memory: limited to 2 GB (4 GB patch applied on install)."),
+            ["ExeInvalidHeader"] = ("En-tête de SilentHill.exe invalide.", "Invalid SilentHill.exe header."),
+            ["PatchVerifyFailed"] = ("Le patch 4 Go n'a pas pu être vérifié après écriture.",
+                                     "The 4 GB patch could not be verified after writing."),
+            ["ExeBackupMissing"] = ("Aucune copie d'origine de SilentHill.exe (SilentHill.exe.shhf-original).",
+                                    "No original copy of SilentHill.exe (SilentHill.exe.shhf-original)."),
 
             // --- Ligne de commande
             ["CliUsage"] = ("Usage : SHHFix.exe install \"<dossier du jeu>\"", "Usage: SHHFix.exe install \"<game folder>\""),

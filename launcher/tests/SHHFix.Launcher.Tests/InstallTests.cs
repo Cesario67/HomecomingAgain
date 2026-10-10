@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using SHHFix.Launcher.Core;
 using Xunit;
 
@@ -13,7 +14,7 @@ public sealed class InstallTests : IDisposable
     {
         Directory.CreateDirectory(Path.Combine(_root, "Bin"));
         Directory.CreateDirectory(Path.Combine(_root, "Engine"));
-        File.WriteAllText(Path.Combine(_root, "Bin", GamePaths.GameExeName), "faux lanceur");
+        File.WriteAllBytes(Path.Combine(_root, "Bin", GamePaths.GameExeName), MinimalExe(ExeInfo.KnownGameTimestamp, false));
     }
 
     public void Dispose()
@@ -95,5 +96,45 @@ public sealed class InstallTests : IDisposable
         Assert.Equal([1, 2, 3], File.ReadAllBytes(Path.Combine(target, "version.dll")));
         EmbeddedPackage.Extract(files, target, "v2");
         Assert.Equal(4, opened);
+    }
+
+    [Fact]
+    public void LargeAddressAwarePatchKeepsTheOriginalAndIsRestored()
+    {
+        GamePaths paths = new(_root);
+        byte[] original = File.ReadAllBytes(paths.GameExe);
+        Assert.False(ExePatcher.ReadInfo(paths.GameExe).LargeAddressAware);
+        Assert.True(ExePatcher.ReadInfo(paths.GameExe).IsKnownVersion);
+
+        Assert.True(ExePatcher.EnableLargeAddressAware(paths.GameExe));
+        Assert.False(ExePatcher.EnableLargeAddressAware(paths.GameExe));  // déjà appliqué : rien n'est réécrit
+        Assert.True(ExePatcher.ReadInfo(paths.GameExe).LargeAddressAware);
+        Assert.Equal(original, File.ReadAllBytes(paths.OriginalExeBackup));
+
+        ModInstaller.Uninstall(paths);
+        Assert.Equal(original, File.ReadAllBytes(paths.GameExe));
+    }
+
+    [Fact]
+    public void RejectsAnInvalidGameExecutable()
+    {
+        GamePaths paths = new(_root);
+        File.WriteAllText(paths.GameExe, "pas un exécutable");
+        Assert.Throws<InvalidDataException>(() => ModInstaller.Install(_root, paths, null));
+    }
+
+    /// <summary>En-tête DOS + PE suffisant pour ExePatcher (machine i386, horodatage, caractéristiques).</summary>
+    private static byte[] MinimalExe(uint timestamp, bool largeAddressAware)
+    {
+        byte[] bytes = new byte[512];
+        bytes[0] = (byte)'M';
+        bytes[1] = (byte)'Z';
+        const int peOffset = 0x80;
+        BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(0x3C), peOffset);
+        "PE\0\0"u8.CopyTo(bytes.AsSpan(peOffset));
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(peOffset + 4), 0x014C);
+        BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(peOffset + 8), timestamp);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(peOffset + 22), (ushort)(0x0102 | (largeAddressAware ? 0x20 : 0)));
+        return bytes;
     }
 }

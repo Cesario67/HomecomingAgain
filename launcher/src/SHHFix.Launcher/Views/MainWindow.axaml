@@ -99,7 +99,9 @@
         <ScrollViewer>
           <StackPanel Spacing="6" Margin="0,8" DataContext="{Binding Status}" x:DataType="vm:StatusViewModel">
             <TextBlock Classes="section" Text="{Binding L[SecStatus]}" />
+            <TextBlock Text="{Binding GameVersion}" TextWrapping="Wrap" />
             <TextBlock Text="{Binding ModState}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding MemoryState}" TextWrapping="Wrap" />
             <TextBlock Text="{Binding GameSettingsState}" TextWrapping="Wrap" />
 
             <TextBlock Classes="section" Text="{Binding L[SecInstallation]}" />

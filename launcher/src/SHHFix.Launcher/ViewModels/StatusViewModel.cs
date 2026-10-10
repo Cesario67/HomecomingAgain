@@ -13,6 +13,12 @@ public sealed partial class StatusViewModel(MainWindowViewModel main, string pac
         ModInstaller.ModVersionOf(Path.Combine(packageDirectory, GamePaths.ModDllName)) ?? "?";
 
     [ObservableProperty]
+    public partial string GameVersion { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string MemoryState { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial string ModState { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -29,6 +35,10 @@ public sealed partial class StatusViewModel(MainWindowViewModel main, string pac
     public void Load(GamePaths paths)
     {
         InstallStatus status = ModInstaller.ReadStatus(paths);
+        GameVersion = !status.Exe.IsValid ? Loc.Get("ExeUnreadable")
+            : status.Exe.IsKnownVersion ? Loc.Get("ExeKnownVersion")
+            : Loc.Get("ExeUnknownVersion", status.Exe.Timestamp.ToString("X8"));
+        MemoryState = status.Exe.LargeAddressAware ? Loc.Get("LaaApplied") : Loc.Get("LaaMissing");
         ModState = status.IsModInstalled ? Loc.Get("ModInstalledState", status.InstalledModVersion ?? "?")
             : status.HasForeignVersionDll ? Loc.Get("ModForeignDll")
             : Loc.Get("ModNotInstalled");

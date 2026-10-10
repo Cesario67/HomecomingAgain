@@ -11,6 +11,7 @@ public sealed record GamePaths(string GameDirectory)
 
     public string BinDirectory => Path.Combine(GameDirectory, "Bin");
     public string GameExe => Path.Combine(BinDirectory, GameExeName);
+    public string OriginalExeBackup => GameExe + ".shhf-original";
     public string ModDll => Path.Combine(BinDirectory, ModDllName);
     public string ModDllBackup => ModDll + ".avant-shhf";
     public string ModIni => Path.Combine(BinDirectory, "SHHFix.ini");
