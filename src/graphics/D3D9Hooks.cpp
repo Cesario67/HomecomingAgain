@@ -11,6 +11,7 @@
 #include "core/Strings.h"
 #include "core/SystemInfo.h"
 #include "crash/CrashHandler.h"
+#include "crash/HangWatchdog.h"
 #include "framepacing/FrameMonitor.h"
 #include "graphics/BorderlessWindow.h"
 
@@ -145,6 +146,8 @@ void LateInit() {
     }
     frames::LateInit();
     crash::PreloadDbgHelp();
+    // Direct3DCreate9 est appelé par le thread principal, celui qui possède la fenêtre du jeu.
+    crash::StartHangWatchdog(GetCurrentThreadId());
 
     // L'IAT peut pointer vers un shim de compatibilité de Windows (apphelp.dll) plutôt que vers d3d9.dll.
     const std::wstring caller = sysinfo::ModulePathOf(reinterpret_cast<const void*>(g_direct3DCreate9));

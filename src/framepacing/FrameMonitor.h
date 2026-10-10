@@ -2,6 +2,8 @@
 
 #include <windows.h>
 
+#include <cstdint>
+
 namespace shhf::frames {
 
 // Intercepte Sleep dans SilentHill.exe pour mesurer la précision réelle de ses attentes.
@@ -20,5 +22,11 @@ bool OnAfterPresent() noexcept;
 void OnDeviceReset() noexcept;
 
 void LogFinalReport() noexcept;
+
+// Pour le détecteur de blocage (autre thread) : horodatage QueryPerformanceCounter de la dernière image présentée
+// (0 avant la première), fréquence du compteur et thread qui présente les images.
+std::int64_t LastPresentTicks() noexcept;
+std::int64_t TicksPerSecond() noexcept;
+DWORD RenderThreadId() noexcept;
 
 }  // namespace shhf::frames

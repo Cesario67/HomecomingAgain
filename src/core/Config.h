@@ -10,6 +10,8 @@ struct Config {
     bool crashDumps = true;
     bool fullMemoryDumps = false;   // dump complet (jusqu'à 2 Go) au lieu d'un dump réduit
     int dumpKeepCount = 10;
+    // Secondes sans image avant de journaliser l'état des threads et d'écrire un minidump (0 = désactivé).
+    int hangSeconds = 3;
 
     // [Window]
     // Mode fenêtré du jeu (FullScreen=false dans Engine, fichier vars_pc.cfg) sans bordure ni barre de titre, étendu à

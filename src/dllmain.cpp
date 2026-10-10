@@ -15,6 +15,7 @@
 #include "core/SystemInfo.h"
 #include "crash/CrashHandler.h"
 #include "framepacing/FrameMonitor.h"
+#include "framepacing/WaitProfiler.h"
 #include "graphics/D3D9Hooks.h"
 
 namespace {
@@ -64,6 +65,9 @@ void Startup() {
     shhf::frames::Install(game, engine);
     if (engine != nullptr) {
         shhf::graphics::Install(engine);
+        if (shhf::GetConfig().frameStats) {
+            shhf::frames::waits::Install(engine);
+        }
     }
     shhf::log::Info("Initialisation terminée");
 }

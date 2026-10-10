@@ -24,7 +24,10 @@ add_library(SHHFix SHARED
     src/core/Strings.cpp
     src/core/SystemInfo.cpp
     src/crash/CrashHandler.cpp
+    src/crash/HangWatchdog.cpp
+    src/engine/EngineSettings.cpp
     src/framepacing/FrameMonitor.cpp
+    src/framepacing/WaitProfiler.cpp
     src/graphics/BorderlessWindow.cpp
     src/graphics/D3D9Hooks.cpp
     src/proxy/VersionProxy.cpp

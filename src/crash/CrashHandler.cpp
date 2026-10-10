@@ -138,7 +138,9 @@ DWORD WINAPI DumpThread(LPVOID parameter) {
                            MiniDumpWithUnloadedModules)
                         : (MiniDumpWithDataSegs | MiniDumpWithIndirectlyReferencedMemory | MiniDumpWithHandleData |
                            MiniDumpWithThreadInfo | MiniDumpWithUnloadedModules | MiniDumpWithProcessThreadData));
-    job->succeeded = writeDump(GetCurrentProcess(), GetCurrentProcessId(), file, type, &info, nullptr, nullptr);
+    // Sans exception (blocage) : dump de tous les threads, sans enregistrement d'exception.
+    job->succeeded = writeDump(GetCurrentProcess(), GetCurrentProcessId(), file, type,
+                               job->exception != nullptr ? &info : nullptr, nullptr, nullptr);
     if (!job->succeeded) {
         job->error = GetLastError();
     }
@@ -169,9 +171,7 @@ bool IsExecutableImageAddress(std::uintptr_t value) noexcept {
 
 // Liste les valeurs de la pile qui pointent dans du code : candidates « adresses de retour », pour
 // situer l'appelant sans symboles. Approximatif, mais suffisant pour orienter le désassemblage.
-void LogStackScan(const CONTEXT& context) {
-    std::uintptr_t words[kStackWordsScanned]{};
-    const int copied = CopyStackWords(reinterpret_cast<const std::uintptr_t*>(context.Esp), words, kStackWordsScanned);
+void LogStackWords(const std::uintptr_t* words, int copied) {
     int found = 0;
     for (int i = 0; i < copied && found < kMaxStackCandidates; ++i) {
         if (IsExecutableImageAddress(words[i])) {
@@ -182,6 +182,12 @@ void LogStackScan(const CONTEXT& context) {
     if (found == 0) {
         log::Crash("  (aucune adresse de code trouvée dans les {} premiers mots de pile)", copied);
     }
+}
+
+void LogStackScan(const CONTEXT& context) {
+    std::uintptr_t words[kStackWordsScanned]{};
+    const int copied = CopyStackWords(reinterpret_cast<const std::uintptr_t*>(context.Esp), words, kStackWordsScanned);
+    LogStackWords(words, copied);
 }
 
 void LogException(const EXCEPTION_POINTERS& exception) {
@@ -283,6 +289,48 @@ void Install(HMODULE gameModule, HMODULE engineModule) {
 void PreloadDbgHelp() noexcept {
     if (LoadDbgHelp() == nullptr) {
         log::Warn("dbghelp.dll introuvable : les fichiers de diagnostic ne pourront pas être écrits");
+    }
+}
+
+void LogThreadStack(DWORD threadId, const char* label) noexcept {
+    if (threadId == 0 || threadId == GetCurrentThreadId()) {
+        return;
+    }
+    const HANDLE thread = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_QUERY_INFORMATION, FALSE,
+                                     threadId);
+    if (thread == nullptr) {
+        log::Crash("{} (thread {}) : ouverture impossible (erreur {})", label, threadId, GetLastError());
+        return;
+    }
+    // Pendant la suspension, aucune allocation ni écriture du journal : le thread suspendu peut détenir le verrou
+    // du tas ou celui du journal. On copie registres et pile, on relâche le thread, puis on journalise.
+    CONTEXT context{};
+    context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    std::uintptr_t words[kStackWordsScanned]{};
+    int copied = 0;
+    bool captured = false;
+    if (SuspendThread(thread) != static_cast<DWORD>(-1)) {
+        if (GetThreadContext(thread, &context)) {
+            copied = CopyStackWords(reinterpret_cast<const std::uintptr_t*>(context.Esp), words, kStackWordsScanned);
+            captured = true;
+        }
+        ResumeThread(thread);
+    }
+    CloseHandle(thread);
+    if (!captured) {
+        log::Crash("{} (thread {}) : état illisible", label, threadId);
+        return;
+    }
+    log::Crash("{} (thread {}) : EIP {} ESP={:08X}", label, threadId, sysinfo::FormatAddress(context.Eip), context.Esp);
+    LogStackWords(words, copied);
+}
+
+void WriteHangDump() noexcept {
+    try {
+        if (GetConfig().crashDumps) {
+            WriteDump(nullptr);
+        }
+    } catch (...) {
     }
 }
 

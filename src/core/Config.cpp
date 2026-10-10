@@ -29,6 +29,7 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.crashDumps = ReadBool(iniPath, L"Crash", L"CrashDumps", defaults.crashDumps);
     config.fullMemoryDumps = ReadBool(iniPath, L"Crash", L"FullMemoryDumps", defaults.fullMemoryDumps);
     config.dumpKeepCount = ReadInt(iniPath, L"Crash", L"DumpKeepCount", defaults.dumpKeepCount, 1, 100);
+    config.hangSeconds = ReadInt(iniPath, L"Crash", L"HangSeconds", defaults.hangSeconds, 0, 60);
 
     config.borderless = ReadBool(iniPath, L"Window", L"Borderless", defaults.borderless);
 

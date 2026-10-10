@@ -5,10 +5,13 @@
 #include <atomic>
 #include <cstdint>
 
+#include <intrin.h>
+
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
 #include "core/SystemInfo.h"
+#include "framepacing/WaitProfiler.h"
 
 namespace shhf::frames {
 
@@ -31,6 +34,7 @@ std::int64_t g_windowStart = 0;
 std::uint64_t g_totalFrames = 0;
 std::uint64_t g_totalHitches = 0;
 std::atomic<DWORD> g_renderThreadId{0};
+std::atomic<std::int64_t> g_lastPresentShared{0};  // lu par le détecteur de blocage (autre thread)
 
 // Diagnostic des chargements et des images à durée nulle (journal seulement, aucun effet sur le jeu).
 constexpr double kLongGapMs = 500.0;  // interruption de Present assimilée à un chargement
@@ -77,6 +81,7 @@ double ToMs(std::int64_t ticks) noexcept {
 }
 
 void WINAPI HookSleep(DWORD milliseconds) {
+    void* const caller = _ReturnAddress();
     SleepStats& stats = GetCurrentThreadId() == g_renderThreadId.load(std::memory_order_relaxed) ? g_renderSleep
                                                                                                    : g_otherSleep;
     if (milliseconds == 0) {
@@ -87,6 +92,7 @@ void WINAPI HookSleep(DWORD milliseconds) {
     const std::int64_t start = Now();
     g_sleep(milliseconds);
     const auto elapsedUs = static_cast<std::uint64_t>(ToMs(Now() - start) * 1000.0);
+    waits::RecordWait(caller, "Sleep", Now() - start);
 
     stats.calls.fetch_add(1, std::memory_order_relaxed);
     stats.requestedMs.fetch_add(milliseconds, std::memory_order_relaxed);
@@ -167,6 +173,7 @@ void Report(std::int64_t now) {
         log::Info("  Images présentées à moins de {:.1f} ms de la précédente (delta proche de zéro) : {}", kZeroDeltaMs,
                   g_zeroDeltaFrames);
     }
+    waits::Report();
     log::Info("  Sleep thread de rendu : {}", DescribeSleep(g_renderSleep));
     log::Info("  Sleep autres threads : {}", DescribeSleep(g_otherSleep));
     const sysinfo::MemorySnapshot memory = sysinfo::QueryMemory();
@@ -241,6 +248,7 @@ void OnBeforePresent() noexcept {
 bool OnAfterPresent() noexcept {
     const std::int64_t now = Now();
     ++g_totalFrames;
+    g_lastPresentShared.store(now, std::memory_order_relaxed);
     // SilentHill.exe présente ses premières images (écran de chargement) depuis un autre thread que le thread
     // principal, qui prend ensuite le relais : on suit le thread qui présente réellement.
     const DWORD threadId = GetCurrentThreadId();
@@ -310,6 +318,18 @@ void OnDeviceReset() noexcept {
     g_sampleCount = 0;
     g_hitchCount = 0;
     g_nextDeadline = 0;
+}
+
+std::int64_t LastPresentTicks() noexcept {
+    return g_lastPresentShared.load(std::memory_order_relaxed);
+}
+
+std::int64_t TicksPerSecond() noexcept {
+    return g_frequency.QuadPart;
+}
+
+DWORD RenderThreadId() noexcept {
+    return g_renderThreadId.load(std::memory_order_relaxed);
 }
 
 void LogFinalReport() noexcept {
