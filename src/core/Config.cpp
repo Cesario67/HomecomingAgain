@@ -47,6 +47,8 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.d3dMultithreaded = ReadBool(iniPath, L"Compat", L"D3DMultithreaded", defaults.d3dMultithreaded);
 
     config.logKeepCount = ReadInt(iniPath, L"Debug", L"LogKeepCount", defaults.logKeepCount, 1, 500);
+    config.frameCapture = ReadBool(iniPath, L"Debug", L"FrameCapture", defaults.frameCapture);
+    config.frameCaptureKey = ReadInt(iniPath, L"Debug", L"FrameCaptureKey", defaults.frameCaptureKey, 1, 254);
 
     g_config = config;
     return GetFileAttributesW(iniPath.c_str()) != INVALID_FILE_ATTRIBUTES;

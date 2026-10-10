@@ -3,11 +3,14 @@
 
 #include <windows.h>
 
+#include <cstdint>
 #include <cstdio>
+#include <iterator>
 #include <string>
 
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/ShaderConstantTable.h"
 #include "patches/FrameRateCap.h"
 
 namespace {
@@ -49,12 +52,34 @@ void TestFramePeriod() {
     Check(hca::patches::FramePeriodMs(0) == 0.0f && hca::patches::FramePeriodMs(5000) == 0.0f, "valeurs hors bornes refusées");
 }
 
+void TestShaderConstantTable() {
+    std::printf("Table de constantes des shaders\n");
+    // vs_3_0 avec un bloc CTAB : en-tête (7 mots), une constante (5 mots), nom « View » (2 mots).
+    const std::uint32_t tokens[] = {
+        0xFFFE0300,                              // version vs_3_0
+        (15u << 16) | 0xFFFE,                    // commentaire de 15 mots
+        0x42415443,                              // 'CTAB'
+        28, 0, 0xFFFE0300, 1, 28, 0, 0,          // en-tête : 1 constante décrite à l'octet 28
+        48, (4u << 16) | 2, 4, 0, 0,             // nom à l'octet 48, registres c4 x4
+        0x77656956, 0,                           // « View »
+        0x0000FFFF};                             // fin
+    const auto constants = hca::graphics::ParseConstantTable(tokens, std::size(tokens));
+    Check(constants.size() == 1 && constants[0].name == "View", "nom de la constante");
+    Check(constants.size() == 1 && constants[0].registerSet == 2 && constants[0].registerIndex == 4 &&
+              constants[0].registerCount == 4,
+          "registres c4 à c7");
+    const std::uint32_t noTable[] = {0xFFFE0300, 0x0000FFFF};
+    Check(hca::graphics::ParseConstantTable(noTable, std::size(noTable)).empty(), "shader sans table");
+    Check(hca::graphics::ParseConstantTable(tokens, 5).empty(), "bytecode tronqué refusé");
+}
+
 }  // namespace
 
 int main() {
     TestStrings();
     TestBorderless();
     TestFramePeriod();
+    TestShaderConstantTable();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

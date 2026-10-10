@@ -15,6 +15,7 @@
 #include "crash/HangWatchdog.h"
 #include "framepacing/FrameMonitor.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/FrameCapture.h"
 #include "graphics/Smaa.h"
 
 namespace hca::graphics {
@@ -56,9 +57,14 @@ void LogPresentParameters(const char* context, const D3DPRESENT_PARAMETERS& para
 
 HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sourceRect, const RECT* destRect,
                                       HWND window, const RGNDATA* dirtyRegion) {
+    if (GetConfig().frameCapture) {
+        capture::OnPresent(device);
+    }
     if (GetConfig().smaa) {
         t_internalDraw = true;
+        capture::SetInternalDraw(true);
         g_smaa.Apply(device);
+        capture::SetInternalDraw(false);
         t_internalDraw = false;
     }
     frames::OnBeforePresent();
@@ -149,6 +155,9 @@ void PatchDevice(IDirect3DDevice9* device) {
         } else {
             log::Warn("Filtrage anisotrope : interception de SetSamplerState impossible");
         }
+    }
+    if (GetConfig().frameCapture) {
+        capture::Install(device);
     }
     log::Info("SMAA : {}", GetConfig().smaa ? "activé (appliqué à chaque image avant Present)" : "désactivé");
 }
