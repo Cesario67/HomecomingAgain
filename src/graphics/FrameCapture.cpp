@@ -15,6 +15,7 @@
 #include "core/Log.h"
 #include "core/Paths.h"
 #include "core/Strings.h"
+#include "graphics/InternalDraw.h"
 #include "graphics/ShaderConstantTable.h"
 
 namespace hca::graphics::capture {
@@ -89,7 +90,6 @@ SetPixelShaderFn g_setPixelShader = nullptr;
 SetShaderConstantFFn g_setVertexShaderConstantF = nullptr;
 SetShaderConstantFFn g_setPixelShaderConstantF = nullptr;
 
-thread_local bool t_internalDraw = false;
 std::atomic<bool> g_recording{false};
 
 // Tout ce qui suit est protégé par g_mutex. Le relevé est un outil de diagnostic : allocations et écritures de
@@ -465,10 +465,6 @@ void OnPresent(IDirect3DDevice9* /*device*/) {
     g_framesLeft = kFramesPerCapture;
     g_recording.store(true, std::memory_order_relaxed);
     log::Info("Relevé d'images démarré : {}", WideToUtf8(g_captureDir.wstring()));
-}
-
-void SetInternalDraw(bool internal) noexcept {
-    t_internalDraw = internal;
 }
 
 }  // namespace hca::graphics::capture

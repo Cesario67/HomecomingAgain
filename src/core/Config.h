@@ -23,6 +23,20 @@ struct Config {
     bool smaa = true;
     // Filtrage anisotrope forcé sur les textures filtrées en linéaire (0 ou 1 = jeu d'origine, 2 à 16).
     int anisotropy = 16;
+    // Taille de l'atlas d'ombres : 2048 (jeu d'origine), 4096 ou 8192 (voir graphics/ShadowResolution.h).
+    int shadowResolution = 4096;
+    // Occlusion ambiante en espace écran (voir graphics/Ssao.h). Rayon en unités du jeu, intensité en %, fondu
+    // entre deux distances (unités du jeu), mode de réglage qui affiche l'occlusion seule.
+    bool ssao = true;
+    float ssaoRadius = 1.5f;  // le jeu ne mesure pas en centimètres : une pièce est à 25-30 unités (relevé 10/10/2026)
+    int ssaoStrength = 100;
+    float ssaoFadeStart = 150.0f;
+    float ssaoFadeEnd = 450.0f;
+    bool ssaoDebug = false;
+    // Intensité du grain de pellicule du jeu en % (100 = jeu d'origine, 0 = aucun), voir graphics/FilmGrain.h.
+    int filmGrain = 100;
+    // Jeu exécuté par D3D9On12 (Direct3D 12), préparation du DLSS, expérimental (voir graphics/D3D9On12.h).
+    bool d3d9On12 = false;
 
     // [Frames]
     bool frameStats = true;         // mesures de cadence, de Sleep et de mémoire dans le journal
@@ -50,6 +64,8 @@ struct Config {
     // Windows (0x7A = F11).
     bool frameCapture = false;
     int frameCaptureKey = 0x7A;
+    // Enregistre l'image affichée toutes les 15 s (voir graphics/BackBufferDump.h).
+    bool backBufferDump = false;
 };
 
 // Retourne false si le fichier .ini est absent (les valeurs par défaut sont alors utilisées).

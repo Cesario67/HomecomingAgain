@@ -10,7 +10,10 @@
 
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/FilmGrain.h"
+#include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
+#include "graphics/ShadowResolution.h"
 #include "patches/FrameRateCap.h"
 
 namespace {
@@ -73,6 +76,56 @@ void TestShaderConstantTable() {
     Check(hca::graphics::ParseConstantTable(tokens, 5).empty(), "bytecode tronqué refusé");
 }
 
+void TestShadowResolution() {
+    namespace shadows = hca::graphics::shadows;
+    std::printf("Ombres\n");
+    Check(shadows::AtlasSizeFor(4096) == 4096 && shadows::AtlasSizeFor(2048) == 2048 && shadows::AtlasSizeFor(3000) == 2048,
+          "tailles d'atlas acceptées");
+    Check(shadows::IsAtlasTexture(2048, 2048, D3DUSAGE_RENDERTARGET, D3DFMT_R32F), "atlas reconnu");
+    Check(!shadows::IsAtlasTexture(1920, 1080, D3DUSAGE_RENDERTARGET, D3DFMT_R32F) &&
+              !shadows::IsAtlasTexture(2048, 2048, 0, D3DFMT_R32F),
+          "profondeur de l'écran et texture ordinaire ignorées");
+    const D3DVIEWPORT9 tile{1024, 0, 1024, 1024, 0.0f, 1.0f};
+    const D3DVIEWPORT9 scaled = shadows::ScaleViewport(tile, 4096);
+    Check(scaled.X == 2048 && scaled.Y == 0 && scaled.Width == 2048 && scaled.Height == 2048, "carré de l'atlas agrandi");
+    float constants[8] = {1, 1, 1.0f / 2048, 1.0f / 2048, 1, 1, 0.5f, 0.5f};
+    Check(shadows::ScaleFilterConstants(46, constants, 2, 4096) && constants[2] == 1.0f / 4096 && constants[6] == 0.5f,
+          "décalage du filtre ramené à un texel, autres valeurs intactes");
+    float outside[4] = {1, 1, 1.0f / 2048, 1.0f / 2048};
+    Check(!shadows::ScaleFilterConstants(80, outside, 1, 4096), "registres hors du filtre ignorés");
+}
+
+void TestProjection() {
+    std::printf("Projection de la caméra\n");
+    const float relevee[16] = {1.6407f, 0, 0, 0, 0, 2.9167f, 0, 0, 0, 0, 1.0002f, -3.0006f, 0, 0, 1, 0};
+    hca::graphics::Projection projection;
+    Check(hca::graphics::ParseProjection(relevee, projection) && projection.yScale == 2.9167f && projection.b == -3.0006f,
+          "projection du relevé reconnue");
+    const float worldViewProj[16] = {0.45928f, 1e-8f, -1.5751f, 787.56f, 0.25f, 2.9f, 0.07f, -316.4f,
+                                     0.95f, -0.09f, 0.28f, -642.1f, 0.95f, -0.09f, 0.28f, -639.0f};
+    Check(!hca::graphics::ParseProjection(worldViewProj, projection), "matrice d'objet refusée");
+}
+
+void TestFilmGrain() {
+    namespace grain = hca::graphics::grain;
+    std::printf("Grain de pellicule\n");
+    float values[8] = {0.00078125f, 0.00078125f, 1.0f, 0.0f, 0.45f, 0.75f, 0.0005f, 0.0009f};
+    Check(grain::ScaleIntensity(14, values, 2, 0.5f) && values[2] == 0.5f && values[0] == 0.00078125f && values[6] == 0.0005f,
+          "seule l'intensité (c14.z) est réduite");
+    float other[4] = {1, 1, 1, 1};
+    Check(!grain::ScaleIntensity(15, other, 1, 0.0f) && other[2] == 1.0f, "autres registres intacts");
+    // Table de constantes avec une seule variable « grainTexture » (s2).
+    const std::uint32_t withGrain[] = {
+        0xFFFF0300, (18u << 16) | 0xFFFE, 0x42415443,
+        28, 0, 0xFFFF0300, 1, 28, 0, 0,
+        48, (2u << 16) | 3, 1, 0, 0,
+        0x69617267, 0x7865546E, 0x65727574, 0, 0, 0,
+        0x0000FFFF};
+    Check(grain::IsGrainShader(reinterpret_cast<const DWORD*>(withGrain)), "shader du grain reconnu");
+    const std::uint32_t noTable[] = {0xFFFF0300, 0x0000FFFF};
+    Check(!grain::IsGrainShader(reinterpret_cast<const DWORD*>(noTable)), "autre shader ignoré");
+}
+
 }  // namespace
 
 int main() {
@@ -80,6 +133,9 @@ int main() {
     TestBorderless();
     TestFramePeriod();
     TestShaderConstantTable();
+    TestShadowResolution();
+    TestProjection();
+    TestFilmGrain();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

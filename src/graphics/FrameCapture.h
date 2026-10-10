@@ -19,7 +19,6 @@ void Install(IDirect3DDevice9* device);
 // Appelé au début de Present, avant nos propres dessins : lit la touche, termine ou démarre un relevé.
 void OnPresent(IDirect3DDevice9* device);
 
-// Nos propres dessins (SMAA) ne doivent pas apparaître dans le relevé.
-void SetInternalDraw(bool internal) noexcept;
+// Nos propres dessins (SMAA, SSAO) n'apparaissent pas dans le relevé : voir graphics/InternalDraw.h.
 
 }  // namespace hca::graphics::capture

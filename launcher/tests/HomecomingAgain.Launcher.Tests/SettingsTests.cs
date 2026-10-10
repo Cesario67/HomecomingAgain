@@ -40,6 +40,8 @@ public sealed class SettingsTests
         Assert.True(settings.Smaa);
         Assert.Equal(16, settings.Anisotropy);
         Assert.Equal(60, settings.TargetFps);
+        Assert.True(settings.Ssao);
+        Assert.Equal(4096, settings.ShadowResolution);
         Assert.True(settings.WindowThreadLock && settings.D3DMultithreaded && settings.HangDetection);
     }
 
@@ -68,7 +70,8 @@ public sealed class SettingsTests
             DisplayMode = DisplayMode.Windowed, Width = 2560, Height = 1440, HighQualityShaders = true,
             FullResolutionTextures = true, Smaa = false, Anisotropy = 4, TargetFps = 144, PreciseTimer = false,
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
-            HangDetection = false, FrameStats = false,
+            HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
+            FilmGrain = 0,
         };
         IniDocument mod = IniDocument.Parse("");
         KeyValueDocument game = KeyValueDocument.Parse(OriginalGameSettings);
@@ -78,6 +81,17 @@ public sealed class SettingsTests
         Assert.Equal(written, PatchSettings.Read(mod, game));
         Assert.Equal("0", game.Get("AutoDownResTextures"));
         Assert.Equal("false", game.Get("LowQualityShaders"));
+    }
+
+    [Theory]
+    [InlineData(3000, "2048")]
+    [InlineData(4096, "4096")]
+    [InlineData(8192, "8192")]
+    public void ShadowResolutionIsLimitedToSupportedSizes(int requested, string written)
+    {
+        IniDocument mod = IniDocument.Parse("");
+        (new PatchSettings() with { ShadowResolution = requested }).WriteMod(mod);
+        Assert.Equal(written, mod.Get("Graphics", "ShadowResolution"));
     }
 
     [Fact]

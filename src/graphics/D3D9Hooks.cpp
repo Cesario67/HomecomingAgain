@@ -14,8 +14,13 @@
 #include "crash/CrashHandler.h"
 #include "crash/HangWatchdog.h"
 #include "framepacing/FrameMonitor.h"
+#include "graphics/BackBufferDump.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/D3D9On12.h"
 #include "graphics/FrameCapture.h"
+#include "graphics/InternalDraw.h"
+#include "graphics/SceneHooks.h"
+#include "graphics/Ssao.h"
 #include "graphics/Smaa.h"
 
 namespace hca::graphics {
@@ -41,18 +46,16 @@ ResetFn g_reset = nullptr;
 PresentFn g_present = nullptr;
 SetSamplerStateFn g_setSamplerState = nullptr;
 Smaa g_smaa;
-// Vrai pendant nos propres dessins (SMAA) : le filtrage anisotrope forcé ne doit pas toucher à nos samplers.
-thread_local bool t_internalDraw = false;
 std::atomic<bool> g_lateInitDone{false};
 HRESULT g_lastPresentError = S_OK;
 std::uint32_t g_resetFailures = 0;  // échecs consécutifs de Reset
 
 void LogPresentParameters(const char* context, const D3DPRESENT_PARAMETERS& params) {
-    log::Info("{} : {}x{} format {} x{} tampons, MSAA {}, swap {}, fenêtré {}, {} Hz, intervalle 0x{:X}, options 0x{:X}",
+    log::Info("{} : {}x{} format {} x{} tampons, MSAA {}, swap {}, fenêtré {}, {} Hz, intervalle 0x{:X}, options 0x{:X}, fenêtre {}",
               context, params.BackBufferWidth, params.BackBufferHeight, static_cast<int>(params.BackBufferFormat),
               params.BackBufferCount, static_cast<int>(params.MultiSampleType), static_cast<int>(params.SwapEffect),
               params.Windowed ? "oui" : "non", params.FullScreen_RefreshRateInHz, params.PresentationInterval,
-              params.Flags);
+              params.Flags, static_cast<const void*>(params.hDeviceWindow));
 }
 
 HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sourceRect, const RECT* destRect,
@@ -61,11 +64,13 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
         capture::OnPresent(device);
     }
     if (GetConfig().smaa) {
-        t_internalDraw = true;
-        capture::SetInternalDraw(true);
+        InternalDrawScope internal;
         g_smaa.Apply(device);
-        capture::SetInternalDraw(false);
-        t_internalDraw = false;
+    }
+    GetSsao().OnPresent();
+    if (GetConfig().backBufferDump) {
+        InternalDrawScope internal;
+        dump::OnPresent(device);
     }
     frames::OnBeforePresent();
     const HRESULT result = g_present(device, sourceRect, destRect, window, dirtyRegion);
@@ -92,6 +97,7 @@ HRESULT STDMETHODCALLTYPE HookReset(IDirect3DDevice9* device, D3DPRESENT_PARAMET
     }
     // Nos ressources D3DPOOL_DEFAULT doivent être libérées avant Reset, sinon il échoue.
     g_smaa.OnBeforeReset();
+    GetSsao().OnBeforeReset();
     const HRESULT result = g_reset(device, params);
     if (SUCCEEDED(result) && params != nullptr && params->Windowed && GetConfig().borderless) {
         // Un Reset (changement de mode) peut rendre son cadre à la fenêtre.
@@ -156,6 +162,7 @@ void PatchDevice(IDirect3DDevice9* device) {
             log::Warn("Filtrage anisotrope : interception de SetSamplerState impossible");
         }
     }
+    scene::Install(device);
     if (GetConfig().frameCapture) {
         capture::Install(device);
     }
@@ -184,6 +191,9 @@ HRESULT STDMETHODCALLTYPE HookCreateDevice(IDirect3D9* direct3d, UINT adapter, D
     log::Info("CreateDevice (adaptateur {}, type {}, comportement 0x{:08X}) -> 0x{:08X}", adapter,
               static_cast<int>(deviceType), behaviorFlags, static_cast<unsigned long>(result));
     if (SUCCEEDED(result) && device != nullptr && *device != nullptr) {
+        if (GetConfig().d3d9On12) {
+            on12::LogDevice(*device);
+        }
         try {
             PatchDevice(*device);
         } catch (...) {
@@ -229,7 +239,10 @@ IDirect3D9* WINAPI HookDirect3DCreate9(UINT sdkVersion) {
         LateInit();
     } catch (...) {
     }
-    IDirect3D9* direct3d = g_direct3DCreate9(sdkVersion);
+    IDirect3D9* direct3d = GetConfig().d3d9On12 ? on12::Create(sdkVersion, g_direct3DCreate9) : nullptr;
+    if (direct3d == nullptr) {
+        direct3d = g_direct3DCreate9(sdkVersion);
+    }
     log::Info("Direct3DCreate9({}) -> {}", sdkVersion, direct3d != nullptr ? "ok" : "échec");
     if (direct3d != nullptr && g_createDevice == nullptr) {
         if (!hooking::PatchVtable(direct3d, kCreateDeviceIndex, &HookCreateDevice, &g_createDevice)) {

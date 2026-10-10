@@ -3,7 +3,7 @@ using HomecomingAgain.Launcher.Core;
 
 namespace HomecomingAgain.Launcher.ViewModels;
 
-/// <summary>Onglet Graphismes : affichage et qualité du jeu (vars_pc.cfg), SMAA et filtrage du mod (HomecomingAgain.ini).</summary>
+/// <summary>Onglet Graphismes : affichage et qualité du jeu (vars_pc.cfg), SMAA, filtrage, SSAO et ombres du mod (HomecomingAgain.ini).</summary>
 public sealed partial class GraphicsViewModel : LocalizedViewModel
 {
     public IReadOnlyList<Choice<DisplayMode>> DisplayModes { get; } =
@@ -22,6 +22,26 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         new(16, "16x"),
     ];
 
+    public IReadOnlyList<Choice<int>> SsaoStrengths { get; } =
+    [
+        Choice<int>.Localized(50, "SsaoLight"),
+        Choice<int>.Localized(100, "SsaoNormal"),
+        Choice<int>.Localized(150, "SsaoStrong"),
+    ];
+
+    public IReadOnlyList<Choice<int>> ShadowResolutions { get; } =
+    [
+        Choice<int>.Localized(2048, "ShadowOriginal"),
+        new(4096, "4096 × 4096"),
+    ];
+
+    public IReadOnlyList<Choice<int>> FilmGrainLevels { get; } =
+    [
+        Choice<int>.Localized(0, "GrainOff"),
+        Choice<int>.Localized(50, "GrainHalf"),
+        Choice<int>.Localized(100, "GrainOriginal"),
+    ];
+
     public IReadOnlyList<Choice<(int Width, int Height)>> Resolutions { get; private set; } = BuildResolutions(1920, 1080);
 
     [ObservableProperty]
@@ -38,6 +58,18 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     public partial Choice<int> SelectedAnisotropy { get; set; }
 
     [ObservableProperty]
+    public partial bool Ssao { get; set; } = true;
+
+    [ObservableProperty]
+    public partial Choice<int> SelectedSsaoStrength { get; set; }
+
+    [ObservableProperty]
+    public partial Choice<int> SelectedShadowResolution { get; set; }
+
+    [ObservableProperty]
+    public partial Choice<int> SelectedFilmGrain { get; set; }
+
+    [ObservableProperty]
     public partial bool HighQualityShaders { get; set; }
 
     [ObservableProperty]
@@ -51,12 +83,15 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedDisplayMode = DisplayModes[0];
         SelectedResolution = Resolutions.First(choice => choice.Value == (1920, 1080));
         SelectedAnisotropy = AnisotropyLevels[^1];
+        SelectedSsaoStrength = SsaoStrengths[1];
+        SelectedShadowResolution = ShadowResolutions[1];
+        SelectedFilmGrain = FilmGrainLevels[^1];
         Loc.Instance.LanguageChanged += RefreshLabels;
     }
 
     private void RefreshLabels()
     {
-        foreach (ChoiceBase choice in DisplayModes.Cast<ChoiceBase>().Concat(AnisotropyLevels))
+        foreach (ChoiceBase choice in DisplayModes.Cast<ChoiceBase>().Concat(AnisotropyLevels).Concat(SsaoStrengths).Concat(ShadowResolutions).Concat(FilmGrainLevels))
         {
             choice.RefreshLabel();
         }
@@ -70,6 +105,10 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedResolution = Resolutions.First(choice => choice.Value == (settings.Width, settings.Height));
         Smaa = settings.Smaa;
         SelectedAnisotropy = AnisotropyLevels.LastOrDefault(choice => choice.Value <= settings.Anisotropy) ?? AnisotropyLevels[0];
+        Ssao = settings.Ssao;
+        SelectedSsaoStrength = SsaoStrengths.LastOrDefault(choice => choice.Value <= settings.SsaoStrength) ?? SsaoStrengths[0];
+        SelectedShadowResolution = ShadowResolutions.LastOrDefault(choice => choice.Value <= settings.ShadowResolution) ?? ShadowResolutions[0];
+        SelectedFilmGrain = FilmGrainLevels.LastOrDefault(choice => choice.Value <= settings.FilmGrain) ?? FilmGrainLevels[0];
         HighQualityShaders = settings.HighQualityShaders;
         FullResolutionTextures = settings.FullResolutionTextures;
     }
@@ -81,6 +120,10 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         Height = SelectedResolution.Value.Height,
         Smaa = Smaa,
         Anisotropy = SelectedAnisotropy.Value,
+        Ssao = Ssao,
+        SsaoStrength = SelectedSsaoStrength.Value,
+        ShadowResolution = SelectedShadowResolution.Value,
+        FilmGrain = SelectedFilmGrain.Value,
         HighQualityShaders = HighQualityShaders,
         FullResolutionTextures = FullResolutionTextures,
     };

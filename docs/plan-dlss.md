@@ -14,7 +14,7 @@ les obstacles identifiés et l'ordre des travaux. Tout point marqué *hypothèse
 
 | Obstacle | Constat | Réponse prévue |
 |---|---|---|
-| Le jeu est en D3D9 | Vérifié (imports de g_SilentHill.sgl) | Passer le jeu en D3D9Ex (même interface, ajoute le partage de surfaces) |
+| Le jeu est en D3D9 | Vérifié (imports de g_SilentHill.sgl) | Exécuter le jeu par **D3D9On12** (couche de Windows, présente en 32 bits) : ressources Direct3D 12, partageables entre processus avec des fences. D3D9Ex, envisagé d'abord, refuse D3DPOOL_MANAGED |
 | Le jeu est 32 bits, le DLSS 64 bits seulement | Les SDK ne livrent que `Windows_x86_64` (*hypothèse forte* : aucune version 32 bits trouvée) | Un **processus auxiliaire 64 bits** (`HomecomingAgain.Dlss.exe`) fait le DLSS en D3D11 sur des textures partagées |
 | Partage D3D9Ex vers D3D11 | Documenté : texture 2D, 1 niveau, format A8R8G8B8 / A16B16G16R16F / A2B10G10R10, créée par D3D9Ex avec `pSharedHandle`, ouverte par `OpenSharedResource`. Pas de keyed mutex avec D3D9Ex | Textures créées côté jeu, synchronisation par requête `D3DQUERYTYPE_EVENT` + événements Win32 |
 | Deux GPU dans la machine | Le partage n'est possible que sur le même adaptateur | Le processus auxiliaire choisit l'adaptateur par LUID, transmis par le mod |
@@ -53,8 +53,8 @@ Chaque étape se termine par un essai en jeu. On s'arrête dès qu'une étape mo
    `SetRenderTarget`, `SetDepthStencilSurface`, `Clear`, création de surface, `DrawIndexedPrimitive` (nombre
    seulement) et chaque `SetVertexShaderConstantF` (registres et valeurs). Objectif : trouver le tampon de
    profondeur, les registres de la vue et de la projection, la fin de la scène 3D et le début du HUD.
-2. **Passage en D3D9Ex et profondeur INTZ** : vérifier que le jeu tourne identique, puis afficher la profondeur
-   en surimpression (touche de debug).
+2. **Passage par D3D9On12** ([Graphics] D3D9On12, expérimental) : vérifier que le jeu tourne identique (image,
+   cadence, overlay Steam, SMAA, SSAO). La lecture de la profondeur est déjà validée par le SSAO (10/10/2026).
 3. **Vecteurs de mouvement** : shader de reconstruction, affichage en couleurs pour contrôle.
 4. **Processus auxiliaire et partage** : sans DLSS d'abord (il recopie l'image telle quelle), pour mesurer le
    coût et valider la synchronisation, Alt-Tab, `Reset` et l'overlay Steam.
@@ -91,6 +91,17 @@ Conséquences pour le plan :
   mouvement à l'étape 4.
 - **Point d'insertion du DLSS** : juste avant les post-traitements (fin de l'étape 3), l'interface venant après.
 
+## 4 ter. Essais D3D9On12 (10/10/2026, vérifiés)
+
+- Le rendu fonctionne : l'image du tampon arrière, enregistrée juste avant Present (`[Debug] BackBufferDump`), est
+  correcte (menu complet). Present ne renvoie aucune erreur. Mais la fenêtre reste noire.
+- Éliminé : nos effets (SMAA, SSAO), le mode sans bordure, la fenêtre de présentation (hDeviceWindow et fenêtre
+  forcée bien renseignés), le mode COPY (DISCARD essayé), le choix de la carte (périphérique Direct3D 12 créé sur la
+  RTX), l'overlay Steam (jeu lancé sans), toutes les fonctions du mod, la rampe gamma (normale, ignorée sans effet).
+- Un programme de test minimal (fenêtre, effacement rouge, Present) affiche correctement par D3D9On12 sur la même
+  machine, y compris en COPY, multithread, Present depuis un autre thread et avec fenêtre forcée.
+- Conclusion : incompatibilité entre ce moteur et D3D9On12, cause non trouvée. Cadence aussi divisée par deux
+  (31 i/s au menu au lieu de 60).
 ## 5. Plans de repli
 
 - Si les traînées sont inacceptables et que les animations ne peuvent pas être suivies : garder DLAA sur les

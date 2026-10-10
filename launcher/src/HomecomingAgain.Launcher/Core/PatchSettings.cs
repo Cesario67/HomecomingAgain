@@ -25,6 +25,10 @@ public sealed record PatchSettings
     // --- Graphismes du mod ([Graphics])
     public bool Smaa { get; init; } = true;
     public int Anisotropy { get; init; } = 16;
+    public bool Ssao { get; init; } = true;
+    public int SsaoStrength { get; init; } = 100;
+    public int ShadowResolution { get; init; } = 4096;
+    public int FilmGrain { get; init; } = 100;
 
     // --- Cadence ([Frames])
     public int TargetFps { get; init; } = 60;
@@ -57,6 +61,10 @@ public sealed record PatchSettings
             FullResolutionTextures = game.GetInt("AutoDownResTextures", DefaultTextureLimit) == 0,
             Smaa = mod.GetBool("Graphics", "SMAA", defaults.Smaa),
             Anisotropy = mod.GetInt("Graphics", "Anisotropy", defaults.Anisotropy),
+            Ssao = mod.GetBool("Graphics", "SSAO", defaults.Ssao),
+            SsaoStrength = mod.GetInt("Graphics", "SsaoStrength", defaults.SsaoStrength),
+            ShadowResolution = mod.GetInt("Graphics", "ShadowResolution", defaults.ShadowResolution),
+            FilmGrain = mod.GetInt("Graphics", "FilmGrain", defaults.FilmGrain),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
             WindowThreadLock = mod.GetBool("Compat", "WindowThreadLock", defaults.WindowThreadLock),
@@ -73,6 +81,10 @@ public sealed record PatchSettings
         mod.SetBool("Window", "Borderless", DisplayMode == DisplayMode.Borderless);
         mod.SetBool("Graphics", "SMAA", Smaa);
         mod.SetInt("Graphics", "Anisotropy", Math.Clamp(Anisotropy, 0, 16));
+        mod.SetBool("Graphics", "SSAO", Ssao);
+        mod.SetInt("Graphics", "SsaoStrength", Math.Clamp(SsaoStrength, 10, 400));
+        mod.SetInt("Graphics", "ShadowResolution", ShadowResolution is 4096 or 8192 ? ShadowResolution : 2048);
+        mod.SetInt("Graphics", "FilmGrain", Math.Clamp(FilmGrain, 0, 100));
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Compat", "WindowThreadLock", WindowThreadLock);
