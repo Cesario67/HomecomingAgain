@@ -84,6 +84,7 @@ constexpr size_t kSubmitSourceBufferIndex = 19;
 using SubmitSourceBufferFn = HRESULT(STDMETHODCALLTYPE*)(void*, const void*, const void*);
 SubmitSourceBufferFn g_submitSourceBuffer = nullptr;
 void* g_surroundVoice = nullptr;  // la voix 6 canaux du moteur
+UINT32 g_masterChannels = 2;      // canaux de la voix maîtresse
 
 // Mesure d'énergie par canal pour chaque voix source du moteur (il n'en crée que trois : 1, 2 et 6 canaux).
 struct VoiceMeter {
@@ -119,8 +120,15 @@ HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer
     if (voice == g_surroundVoice && buffer != nullptr && GetConfig().audioChannelFix) {
         const auto* b = static_cast<const XAudio2Buffer*>(buffer);
         if (b->audioData != nullptr) {
-            RemapSurroundFrames(const_cast<float*>(reinterpret_cast<const float*>(b->audioData)),
-                                b->audioBytes / (6 * sizeof(float)), GetConfig().audioChannelOrder);
+            auto* samples = const_cast<float*>(reinterpret_cast<const float*>(b->audioData));
+            const std::uint32_t frames = b->audioBytes / (6 * sizeof(float));
+            // XAudio2 2.1 ne garde que les deux premiers canaux en sortie stéréo (hypothèse, d'après l'écoute) : le mod
+            // fait lui-même le mélange vers la stéréo.
+            if (g_masterChannels == 2) {
+                DownmixSurroundToStereo(samples, frames);
+            } else {
+                RemapSurroundFrames(samples, frames, GetConfig().audioChannelOrder);
+            }
         }
     }
     if (buffer != nullptr && g_energyLogs < 12) {
@@ -162,7 +170,6 @@ HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer
     }
     return g_submitSourceBuffer(voice, buffer, wma);
 }
-UINT32 g_masterChannels = 2;
 
 HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, const WAVEFORMATEX* format, UINT32 flags,
                                                 float maxRatio, void* callback, const void* sends,
@@ -328,6 +335,23 @@ void RemapSurroundFrames(float* samples, std::uint32_t frames, const int order[6
         for (int c = 0; c < 6; ++c) {
             frame[c] = source[order[c]];
         }
+    }
+}
+void DownmixSurroundToStereo(float* samples, std::uint32_t frames) noexcept {
+    if (samples == nullptr) {
+        return;
+    }
+    constexpr float kShared = 0.7071f;
+    for (std::uint32_t i = 0; i < frames; ++i) {
+        float* f = samples + static_cast<std::size_t>(i) * 6;
+        // Canaux du moteur (mesures du 10/10/2026) : 2 et 4 = musique gauche et droite, 1 et 3 = bruitages, 5 = faible,
+        // 0 = toujours vide. Les bruitages et le canal 5 sont envoyés des deux côtés.
+        const float shared = kShared * (f[1] + f[3] + f[5]);
+        const float left = f[2] + shared;
+        const float right = f[4] + shared;
+        f[0] = left;
+        f[1] = right;
+        f[2] = f[3] = f[4] = f[5] = 0.0f;
     }
 }
 void InstallAudioProbe(HMODULE engineModule) {

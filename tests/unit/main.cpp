@@ -157,6 +157,12 @@ void TestChannelFix() {
     const int map[6] = {2, 4, 1, 3, 5, 0};
     hca::audio::RemapSurroundFrames(frames, 1, map);
     Check(frames[0] == 20 && frames[1] == 40 && frames[2] == 10 && frames[5] == 0, "canaux réordonnés");
+    float mono[6] = {0, 1, 0, 0, 0, 0};
+    hca::audio::DownmixSurroundToStereo(mono, 1);
+    Check(mono[0] == mono[1] && mono[0] > 0.7f && mono[2] == 0 && mono[5] == 0, "bruitage du canal 1 centré en stéréo");
+    float music[6] = {0, 0, 1, 0, 0.5f, 0};
+    hca::audio::DownmixSurroundToStereo(music, 1);
+    Check(music[0] == 1.0f && music[1] == 0.5f, "musique gauche et droite conservées");
 }
 
 }  // namespace
