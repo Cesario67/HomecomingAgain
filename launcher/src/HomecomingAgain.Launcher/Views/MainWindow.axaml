@@ -54,6 +54,20 @@
                         ItemsSource="{Binding AnisotropyLevels}" SelectedItem="{Binding SelectedAnisotropy}" />
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[AnisotropyHint]}" />
+            <TextBlock Classes="section" Text="{Binding L[SecLighting]}" />
+            <CheckBox Content="{Binding L[Ssao]}" IsChecked="{Binding Ssao}" />
+            <Grid ColumnDefinitions="220,*">
+              <TextBlock Text="{Binding L[SsaoStrength]}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" IsEnabled="{Binding Ssao}"
+                        ItemsSource="{Binding SsaoStrengths}" SelectedItem="{Binding SelectedSsaoStrength}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[SsaoHint]}" />
+            <Grid ColumnDefinitions="220,*">
+              <TextBlock Text="{Binding L[ShadowResolution]}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding ShadowResolutions}" SelectedItem="{Binding SelectedShadowResolution}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[ShadowResolutionHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
             <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />

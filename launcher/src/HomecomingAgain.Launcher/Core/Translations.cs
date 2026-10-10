@@ -73,7 +73,20 @@ public static class Translations
             ["AnisoOff"] = ("Désactivé (jeu d'origine)", "Off (original game)"),
             ["AnisotropyHint"] = ("Textures nettes au sol et vues de biais. Impact négligeable sur une carte graphique récente.",
                                   "Sharp textures on the ground and at an angle. Negligible cost on a recent graphics card."),
-            ["SecGameQuality"] = ("Qualité du jeu", "Game quality"),
+            ["SecLighting"] = ("Éclairage", "Lighting"),
+            ["Ssao"] = ("Occlusion ambiante (SSAO)", "Ambient occlusion (SSAO)"),
+            ["SsaoStrength"] = ("Intensité du SSAO", "SSAO strength"),
+            ["SsaoLight"] = ("Légère", "Light"),
+            ["SsaoNormal"] = ("Normale", "Normal"),
+            ["SsaoStrong"] = ("Marquée", "Strong"),
+            ["SsaoHint"] = ("Assombrit légèrement les coins et le contact entre les objets. Appliqué avant l'interface, qui " +
+                            "reste intacte.",
+                            "Slightly darkens corners and contact between objects. Applied before the interface, which " +
+                            "stays untouched."),
+            ["ShadowResolution"] = ("Résolution des ombres", "Shadow resolution"),
+            ["ShadowOriginal"] = ("2048 × 2048 (jeu d'origine)", "2048 × 2048 (original game)"),
+            ["ShadowResolutionHint"] = ("Ombres plus nettes. 8192 demande quatre fois plus de mémoire graphique que 4096.",
+                                        "Sharper shadows. 8192 needs four times as much video memory as 4096."),            ["SecGameQuality"] = ("Qualité du jeu", "Game quality"),
             ["HighQualityShaders"] = ("Shaders en haute qualité", "High quality shaders"),
             ["FullResolutionTextures"] = ("Textures en pleine résolution", "Full resolution textures"),
             ["GameQualityHint"] = ("Réglages du jeu lui-même, en basse qualité par défaut (shaders simplifiés, textures " +
