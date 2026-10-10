@@ -35,6 +35,8 @@ struct Config {
     bool ssaoDebug = false;
     // Intensité du grain de pellicule du jeu en % (100 = jeu d'origine, 0 = aucun), voir graphics/FilmGrain.h.
     int filmGrain = 100;
+    // Jeu exécuté par D3D9On12 (Direct3D 12), préparation du DLSS, expérimental (voir graphics/D3D9On12.h).
+    bool d3d9On12 = false;
 
     // [Frames]
     bool frameStats = true;         // mesures de cadence, de Sleep et de mémoire dans le journal

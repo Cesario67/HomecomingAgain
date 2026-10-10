@@ -15,6 +15,7 @@
 #include "crash/HangWatchdog.h"
 #include "framepacing/FrameMonitor.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/D3D9On12.h"
 #include "graphics/FrameCapture.h"
 #include "graphics/InternalDraw.h"
 #include "graphics/SceneHooks.h"
@@ -185,6 +186,9 @@ HRESULT STDMETHODCALLTYPE HookCreateDevice(IDirect3D9* direct3d, UINT adapter, D
     log::Info("CreateDevice (adaptateur {}, type {}, comportement 0x{:08X}) -> 0x{:08X}", adapter,
               static_cast<int>(deviceType), behaviorFlags, static_cast<unsigned long>(result));
     if (SUCCEEDED(result) && device != nullptr && *device != nullptr) {
+        if (GetConfig().d3d9On12) {
+            on12::LogDevice(*device);
+        }
         try {
             PatchDevice(*device);
         } catch (...) {
@@ -230,7 +234,10 @@ IDirect3D9* WINAPI HookDirect3DCreate9(UINT sdkVersion) {
         LateInit();
     } catch (...) {
     }
-    IDirect3D9* direct3d = g_direct3DCreate9(sdkVersion);
+    IDirect3D9* direct3d = GetConfig().d3d9On12 ? on12::Create(sdkVersion) : nullptr;
+    if (direct3d == nullptr) {
+        direct3d = g_direct3DCreate9(sdkVersion);
+    }
     log::Info("Direct3DCreate9({}) -> {}", sdkVersion, direct3d != nullptr ? "ok" : "échec");
     if (direct3d != nullptr && g_createDevice == nullptr) {
         if (!hooking::PatchVtable(direct3d, kCreateDeviceIndex, &HookCreateDevice, &g_createDevice)) {

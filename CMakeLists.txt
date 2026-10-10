@@ -68,6 +68,7 @@ add_library(HomecomingAgain SHARED
     src/framepacing/WaitProfiler.cpp
     src/graphics/BorderlessWindow.cpp
     src/graphics/D3D9Hooks.cpp
+    src/graphics/D3D9On12.cpp
     src/graphics/FilmGrain.cpp
     src/graphics/FrameCapture.cpp
     src/graphics/Projection.cpp
