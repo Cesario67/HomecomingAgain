@@ -148,10 +148,15 @@ void TestMovieSkip() {
 
 void TestChannelFix() {
     std::printf("Canaux audio\n");
-    float frames[12] = {0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15};
-    hca::audio::RotateSurroundFrames(frames, 2);
-    Check(frames[0] == 1 && frames[1] == 2 && frames[2] == 3 && frames[5] == 0, "première image remise dans l'ordre");
-    Check(frames[6] == 11 && frames[11] == 10, "deuxième image remise dans l'ordre");
+    int order[6]{};
+    Check(hca::audio::ParseChannelOrder("2,4,1,3,5,0", order) && order[0] == 2 && order[5] == 0, "ordre lu");
+    Check(!hca::audio::ParseChannelOrder("2,4,1,3,5", order) && !hca::audio::ParseChannelOrder("2,2,1,3,5,0", order) &&
+              !hca::audio::ParseChannelOrder("2,4,1,3,5,9", order),
+          "ordre incomplet, en double ou hors limites refusé");
+    float frames[6] = {0, 10, 20, 30, 40, 50};
+    const int map[6] = {2, 4, 1, 3, 5, 0};
+    hca::audio::RemapSurroundFrames(frames, 1, map);
+    Check(frames[0] == 20 && frames[1] == 40 && frames[2] == 10 && frames[5] == 0, "canaux réordonnés");
 }
 
 }  // namespace

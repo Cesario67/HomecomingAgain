@@ -11,10 +11,11 @@ namespace hca::audio {
 // sortie (canaux) : XAudio2 CreateMasteringVoice, DirectSound CreateSoundBuffer. Applique aussi [Audio] Channels
 // (sortie forcée) et [Audio] ChannelFix (ordre des canaux du flux 5.1 du moteur).
 //
-// Fonction pure (testée par tests/unit) : le flux 5.1 du moteur arrive décalé d'un canal (canal 0 toujours vide,
-// mesuré le 10/10/2026). Remet chaque image de 6 échantillons dans l'ordre de Windows : la source 1 devient l'avant gauche,
-// 2 l'avant droit, 3 le centre, 4 les basses, 5 l'arrière gauche et 0 l'arrière droit.
-void RotateSurroundFrames(float* samples, std::uint32_t frames) noexcept;
+// Fonctions pures (testées par tests/unit). Le flux 5.1 du moteur n'est pas dans l'ordre de Windows (canal 0 toujours
+// vide, sons à droite, mesuré le 10/10/2026). order[c] = canal du moteur à placer dans le canal c de Windows (AvG AvD
+// C Basses ArG ArD). ParseChannelOrder lit « 2,4,1,3,5,0 » (chaque canal 0 à 5 une seule fois), false sinon.
+bool ParseChannelOrder(const char* text, int order[6]) noexcept;
+void RemapSurroundFrames(float* samples, std::uint32_t frames, const int order[6]) noexcept;
 
 void InstallAudioProbe(HMODULE engineModule);
 

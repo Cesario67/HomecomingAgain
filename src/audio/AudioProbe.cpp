@@ -115,12 +115,12 @@ void TrackVoice(void* voice, UINT32 channels) {
 // Énergie de chaque canal de chaque voix (flottants entrelacés), journalisée toutes les 5 s : montre par quelle voix et
 // dans quel canal passent les sons.
 HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer, const void* wma) {
-    // Correction : canaux du flux 5.1 remis dans l'ordre directement dans les échantillons (voir RotateSurroundFrames).
+    // Correction : canaux du flux 5.1 remis dans l'ordre directement dans les échantillons (voir RemapSurroundFrames).
     if (voice == g_surroundVoice && buffer != nullptr && GetConfig().audioChannelFix) {
         const auto* b = static_cast<const XAudio2Buffer*>(buffer);
         if (b->audioData != nullptr) {
-            RotateSurroundFrames(const_cast<float*>(reinterpret_cast<const float*>(b->audioData)),
-                                 b->audioBytes / (6 * sizeof(float)));
+            RemapSurroundFrames(const_cast<float*>(reinterpret_cast<const float*>(b->audioData)),
+                                b->audioBytes / (6 * sizeof(float)), GetConfig().audioChannelOrder);
         }
     }
     if (buffer != nullptr && g_energyLogs < 12) {
@@ -183,7 +183,9 @@ HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, cons
     if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr && format->nChannels == 6) {
         g_surroundVoice = *voice;
         if (GetConfig().audioChannelFix) {
-            log::Info("Audio : ordre des canaux du flux 5.1 corrigé dans les échantillons");
+            const int* o = GetConfig().audioChannelOrder;
+            log::Info("Audio : canaux du flux 5.1 réordonnés dans les échantillons (AvG AvD C Basses ArG ArD <- {},{},{},{},{},{})",
+                      o[0], o[1], o[2], o[3], o[4], o[5]);
         }
         if (format->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
             log::Info("Audio : masque de canaux du flux 6 canaux : 0x{:X}",
@@ -281,19 +283,51 @@ HRESULT WINAPI HookCoCreateInstance(REFCLSID clsid, LPUNKNOWN outer, DWORD conte
 
 }  // namespace
 
-void RotateSurroundFrames(float* samples, std::uint32_t frames) noexcept {
+bool ParseChannelOrder(const char* text, int order[6]) noexcept {
+    int parsed[6]{};
+    int count = 0;
+    bool used[6]{};
+    const char* p = text;
+    while (p != nullptr && *p != '\0' && count < 6) {
+        while (*p == ' ' || *p == ',') {
+            ++p;
+        }
+        if (*p < '0' || *p > '5') {
+            return false;
+        }
+        const int value = *p - '0';
+        if (used[value]) {
+            return false;  // chaque canal du moteur une seule fois
+        }
+        used[value] = true;
+        parsed[count++] = value;
+        ++p;
+        while (*p == ' ') {
+            ++p;
+        }
+        if (*p != ',' && *p != '\0') {
+            return false;
+        }
+    }
+    if (count != 6) {
+        return false;
+    }
+    for (int i = 0; i < 6; ++i) {
+        order[i] = parsed[i];
+    }
+    return true;
+}
+
+void RemapSurroundFrames(float* samples, std::uint32_t frames, const int order[6]) noexcept {
     if (samples == nullptr) {
         return;
     }
     for (std::uint32_t i = 0; i < frames; ++i) {
         float* frame = samples + static_cast<std::size_t>(i) * 6;
-        const float first = frame[0];
-        frame[0] = frame[1];
-        frame[1] = frame[2];
-        frame[2] = frame[3];
-        frame[3] = frame[4];
-        frame[4] = frame[5];
-        frame[5] = first;
+        const float source[6] = {frame[0], frame[1], frame[2], frame[3], frame[4], frame[5]};
+        for (int c = 0; c < 6; ++c) {
+            frame[c] = source[order[c]];
+        }
     }
 }
 void InstallAudioProbe(HMODULE engineModule) {

@@ -68,6 +68,10 @@ struct Config {
 
     bool audioChannelFix = true;
 
+    // Pour chaque canal de Windows (AvG AvD C Basses ArG ArD), canal du moteur à utiliser (voir audio/AudioProbe.h).
+
+    int audioChannelOrder[6] = {2, 4, 1, 3, 5, 0};
+
 
     // [Movies]
 

@@ -1,5 +1,8 @@
 #include "core/Config.h"
 
+#include "audio/AudioProbe.h"
+#include "core/Strings.h"
+
 #include <windows.h>
 
 #include <algorithm>
@@ -72,6 +75,22 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.audioChannels = ReadInt(iniPath, L"Audio", L"Channels", defaults.audioChannels, 0, 8);
 
     config.audioChannelFix = ReadBool(iniPath, L"Audio", L"ChannelFix", defaults.audioChannelFix);
+
+    {
+
+        char order[64]{};
+
+        GetPrivateProfileStringA("Audio", "ChannelOrder", "", order, sizeof(order), WideToUtf8(iniPath).c_str());
+
+        int parsed[6]{};
+
+        if (audio::ParseChannelOrder(order, parsed)) {
+
+            std::copy(parsed, parsed + 6, config.audioChannelOrder);
+
+        }
+
+    }
 
     config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
 
