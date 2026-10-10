@@ -148,6 +148,12 @@ void LateInit() {
     crash::PreloadDbgHelp();
     // Direct3DCreate9 est appelé par le thread principal, celui qui possède la fenêtre du jeu.
     crash::StartHangWatchdog(GetCurrentThreadId());
+    // Pendant le chargement (~20 s), le thread principal charge sans traiter les messages de la fenêtre, et un
+    // autre thread affiche l'écran de chargement. En fenêtré, un clic pendant ce temps fait déclarer le jeu « ne
+    // répond pas » par Windows au bout de 5 s (fenêtre fantôme), puis fermer (« Application Hang », constaté le
+    // 10/10/2026 à 15 s du lancement). Sans effet en plein écran exclusif, où Windows ne crée pas de fantôme.
+    DisableProcessWindowsGhosting();
+    log::Info("Fenêtre fantôme de Windows désactivée (chargement sans traitement des messages)");
 
     // L'IAT peut pointer vers un shim de compatibilité de Windows (apphelp.dll) plutôt que vers d3d9.dll.
     const std::wstring caller = sysinfo::ModulePathOf(reinterpret_cast<const void*>(g_direct3DCreate9));
