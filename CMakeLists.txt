@@ -54,6 +54,7 @@ add_custom_target(smaa_shaders DEPENDS ${HCA_SHADER_HEADERS})
 # de la table d'imports de SilentHill.exe : voir docs/a-faire.md. En attendant, elle se compile sous son
 add_library(HomecomingAgain SHARED
     src/dllmain.cpp
+    src/audio/AudioProbe.cpp
     src/compat/MovieSkip.cpp
     src/compat/SkipMovies.cpp
     src/compat/WindowThreadLock.cpp
