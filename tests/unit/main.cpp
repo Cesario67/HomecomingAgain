@@ -8,6 +8,7 @@
 #include <iterator>
 #include <string>
 
+#include "compat/SkipMovies.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
 #include "graphics/FilmGrain.h"
@@ -126,6 +127,14 @@ void TestFilmGrain() {
     Check(!grain::IsGrainShader(reinterpret_cast<const DWORD*>(noTable)), "autre shader ignoré");
 }
 
+void TestSkipMovies() {
+    std::printf("Vidéos ignorées\n");
+    Check(hca::compat::IsMoviePath(L"..\\Engine\\movies\\New_GURNEY_RIDE_FINAL.bik") && hca::compat::IsMoviePath(L"X.BIK"),
+          "vidéos Bink reconnues, casse ignorée");
+    Check(!hca::compat::IsMoviePath(L"vars_pc.cfg") && !hca::compat::IsMoviePath(L"bik") && !hca::compat::IsMoviePath(L"a.bikx"),
+          "autres fichiers ouverts normalement");
+}
+
 }  // namespace
 
 int main() {
@@ -136,6 +145,7 @@ int main() {
     TestShadowResolution();
     TestProjection();
     TestFilmGrain();
+    TestSkipMovies();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

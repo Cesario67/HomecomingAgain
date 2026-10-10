@@ -66,6 +66,8 @@ struct Config {
     int frameCaptureKey = 0x7A;
     // Enregistre l'image affichée toutes les 15 s (voir graphics/BackBufferDump.h).
     bool backBufferDump = false;
+    // Option de test : le moteur ne lit plus ses vidéos (voir compat/SkipMovies.h).
+    bool skipMovies = false;
 };
 
 // Retourne false si le fichier .ini est absent (les valeurs par défaut sont alors utilisées).

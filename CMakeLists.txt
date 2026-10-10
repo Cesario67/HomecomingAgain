@@ -54,6 +54,7 @@ add_custom_target(smaa_shaders DEPENDS ${HCA_SHADER_HEADERS})
 # de la table d'imports de SilentHill.exe : voir docs/a-faire.md. En attendant, elle se compile sous son
 add_library(HomecomingAgain SHARED
     src/dllmain.cpp
+    src/compat/SkipMovies.cpp
     src/compat/WindowThreadLock.cpp
     src/core/Config.cpp
     src/core/Hooking.cpp
@@ -63,6 +64,7 @@ add_library(HomecomingAgain SHARED
     src/core/SystemInfo.cpp
     src/crash/CrashHandler.cpp
     src/crash/HangWatchdog.cpp
+    src/dlss/DxvkInterop.cpp
     src/engine/EngineSettings.cpp
     src/framepacing/FrameMonitor.cpp
     src/framepacing/WaitProfiler.cpp
@@ -89,7 +91,7 @@ configure_file(src/version.rc.in "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
 # Le jeu charge cette DLL à la place de la vraie version.dll (voir src/proxy/VersionProxy.cpp).
 set_target_properties(HomecomingAgain PROPERTIES OUTPUT_NAME "version")
 
-target_include_directories(HomecomingAgain PRIVATE src third_party/smaa "${HCA_SHADER_DIR}")
+target_include_directories(HomecomingAgain PRIVATE src third_party/smaa third_party/dxvk "${HCA_SHADER_DIR}")
 add_dependencies(HomecomingAgain smaa_shaders)
 target_compile_features(HomecomingAgain PRIVATE cxx_std_20)
 target_compile_definitions(HomecomingAgain PRIVATE
@@ -118,7 +120,7 @@ add_custom_command(TARGET HomecomingAgain POST_BUILD
 # Tests unitaires des fonctions pures, sans jeu ni matériel (tests/run-tests.ps1).
 option(HCA_BUILD_TESTS "Compiler les tests" ON)
 if(HCA_BUILD_TESTS)
-    add_executable(HomecomingAgainUnitTests tests/unit/main.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp src/patches/FrameRateCap.cpp src/core/Config.cpp src/core/Hooking.cpp src/graphics/ShaderConstantTable.cpp src/graphics/ShadowResolution.cpp src/graphics/Projection.cpp src/graphics/FilmGrain.cpp)
+    add_executable(HomecomingAgainUnitTests tests/unit/main.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp src/patches/FrameRateCap.cpp src/core/Config.cpp src/core/Hooking.cpp src/graphics/ShaderConstantTable.cpp src/graphics/ShadowResolution.cpp src/graphics/Projection.cpp src/graphics/FilmGrain.cpp src/compat/SkipMovies.cpp)
     target_include_directories(HomecomingAgainUnitTests PRIVATE src)
     target_compile_features(HomecomingAgainUnitTests PRIVATE cxx_std_20)
     target_compile_definitions(HomecomingAgainUnitTests PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)

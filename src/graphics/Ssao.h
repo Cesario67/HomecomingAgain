@@ -33,6 +33,11 @@ public:
     void OnPresent() noexcept;
     void OnBeforeReset() noexcept;
 
+    // Textures du moteur repérées (non possédées), pour l'interopérabilité DXVK (dlss/DxvkInterop.h). La texture de
+    // la scène n'est connue qu'après une première application de l'effet.
+    IDirect3DTexture9* DepthTexture() const noexcept { return depthTexture_; }
+    IDirect3DTexture9* SceneTexture() const noexcept { return sceneTexture_; }
+
 private:
     bool Apply(IDirect3DDevice9* device) noexcept;
     bool EnsureResources(IDirect3DDevice9* device, UINT width, UINT height) noexcept;
@@ -43,6 +48,7 @@ private:
     // utilisées que pendant une image où le moteur vient de s'en servir, donc vivantes.
     IDirect3DTexture9* depthTexture_ = nullptr;
     IDirect3DSurface9* depthSurface_ = nullptr;
+    IDirect3DTexture9* sceneTexture_ = nullptr;
     bool depthWritten_ = false;
     bool applied_ = false;
     Projection projection_;

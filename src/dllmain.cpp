@@ -8,6 +8,7 @@
 
 #include <string_view>
 
+#include "compat/SkipMovies.h"
 #include "compat/WindowThreadLock.h"
 #include "core/Config.h"
 #include "core/Log.h"
@@ -69,6 +70,7 @@ void Startup() {
         hca::graphics::Install(engine);
         hca::patches::ApplyFrameRateCap(engine);
         hca::compat::InstallWindowThreadLock(engine);
+        hca::compat::InstallSkipMovies(engine);
         if (hca::GetConfig().frameStats) {
             hca::frames::waits::Install(engine);
         }

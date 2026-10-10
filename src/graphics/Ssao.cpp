@@ -75,6 +75,7 @@ void Ssao::OnBeforeReset() noexcept {
     // Le moteur recrée sa texture de profondeur après Reset : on l'oublie.
     depthTexture_ = nullptr;
     depthSurface_ = nullptr;
+    sceneTexture_ = nullptr;
     depthWritten_ = false;
     failed_ = false;
 }
@@ -200,6 +201,12 @@ bool Ssao::Apply(IDirect3DDevice9* device) noexcept {
         failed_ = true;  // ne pas réessayer à chaque image
         sceneTarget->Release();
         return false;
+    }
+    IDirect3DTexture9* container = nullptr;
+    if (SUCCEEDED(sceneTarget->GetContainer(__uuidof(IDirect3DTexture9), reinterpret_cast<void**>(&container))) &&
+        container != nullptr) {
+        sceneTexture_ = container;
+        container->Release();
     }
     if (!loggedFirstApply_) {
         loggedFirstApply_ = true;
