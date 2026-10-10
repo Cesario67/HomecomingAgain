@@ -3,6 +3,8 @@
 #include <mmreg.h>
 #include <objbase.h>
 
+#include <cmath>
+#include <cstdint>
 #include <format>
 #include <string>
 
@@ -76,6 +78,56 @@ HRESULT STDMETHODCALLTYPE HookSetOutputMatrix(void* voice, void* destination, UI
     return g_setOutputMatrix(voice, destination, sourceChannels, destinationChannels, matrix, operationSet);
 }
 
+// IXAudio2SourceVoice::SubmitSourceBuffer, hypothèse 2.1 : index 19 (17 méthodes de IXAudio2Voice, puis Start, Stop).
+// XAUDIO2_BUFFER : Flags, AudioBytes, pAudioData, PlayBegin, PlayLength, LoopBegin, LoopLength, LoopCount, pContext.
+constexpr size_t kSubmitSourceBufferIndex = 19;
+using SubmitSourceBufferFn = HRESULT(STDMETHODCALLTYPE*)(void*, const void*, const void*);
+SubmitSourceBufferFn g_submitSourceBuffer = nullptr;
+void* g_surroundVoice = nullptr;  // la voix 6 canaux du moteur
+double g_channelEnergy[8]{};
+std::uint64_t g_frames = 0;
+ULONGLONG g_nextEnergyLog = 0;
+int g_energyLogs = 0;
+
+struct XAudio2Buffer {
+    UINT32 flags;
+    UINT32 audioBytes;
+    const BYTE* audioData;
+};
+
+// Énergie de chaque canal du flux 6 canaux (flottants entrelacés), journalisée toutes les 5 s : montre dans quel canal
+// le moteur écrit ses sons.
+HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer, const void* wma) {
+    if (voice == g_surroundVoice && buffer != nullptr && g_energyLogs < 12) {
+        const auto* b = static_cast<const XAudio2Buffer*>(buffer);
+        const auto* samples = reinterpret_cast<const float*>(b->audioData);
+        const UINT32 frames = b->audioBytes / (6 * sizeof(float));
+        for (UINT32 i = 0; samples != nullptr && i < frames; ++i) {
+            for (int c = 0; c < 6; ++c) {
+                const double s = samples[i * 6 + c];
+                g_channelEnergy[c] += s * s;
+            }
+        }
+        g_frames += frames;
+        const ULONGLONG now = GetTickCount64();
+        if (g_nextEnergyLog == 0) {
+            g_nextEnergyLog = now + 5000;
+        } else if (now >= g_nextEnergyLog && g_frames > 0) {
+            g_nextEnergyLog = now + 5000;
+            ++g_energyLogs;
+            std::string text;
+            for (int c = 0; c < 6; ++c) {
+                text += std::format(" {:.4f}", std::sqrt(g_channelEnergy[c] / static_cast<double>(g_frames)));
+                g_channelEnergy[c] = 0.0;
+            }
+            g_frames = 0;
+            log::Info("Audio : niveau des canaux du flux 6 canaux (ordre de Windows : AvG AvD Centre Basses ArG ArD) :{}",
+                      text);
+        }
+    }
+    return g_submitSourceBuffer(voice, buffer, wma);
+}
+
 HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, const WAVEFORMATEX* format, UINT32 flags,
                                                 float maxRatio, void* callback, const void* sends,
                                                 const void* effects) {
@@ -85,6 +137,16 @@ HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, cons
         log::Info("Audio : voix source {} : {} canal(aux), {} Hz, format 0x{:X}, envois {}",
                   SUCCEEDED(result) && voice != nullptr ? *voice : nullptr, format->nChannels, format->nSamplesPerSec,
                   format->wFormatTag, sends != nullptr ? "définis" : "par défaut");
+    }
+    if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr && format->nChannels == 6) {
+        g_surroundVoice = *voice;
+        if (g_submitSourceBuffer == nullptr) {
+            hooking::PatchVtable(*voice, kSubmitSourceBufferIndex, &HookSubmitSourceBuffer, &g_submitSourceBuffer);
+        }
+        if (format->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
+            log::Info("Audio : masque de canaux du flux 6 canaux : 0x{:X}",
+                      reinterpret_cast<const WAVEFORMATEXTENSIBLE*>(format)->dwChannelMask);
+        }
     }
     if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && g_setOutputMatrix == nullptr) {
         hooking::PatchVtable(*voice, kSetOutputMatrixIndex, &HookSetOutputMatrix, &g_setOutputMatrix);
