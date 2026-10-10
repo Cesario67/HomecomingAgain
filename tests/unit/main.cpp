@@ -8,6 +8,7 @@
 #include <iterator>
 #include <string>
 
+#include "compat/MovieSkip.h"
 #include "compat/SkipMovies.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
@@ -135,6 +136,15 @@ void TestSkipMovies() {
           "autres fichiers ouverts normalement");
 }
 
+void TestMovieSkip() {
+    std::printf("Passer les cinématiques\n");
+    std::uint32_t target = 0;
+    Check(hca::compat::ShouldSkipTo({1280, 720, 900, 120}, true, target) && target == 900, "saut à la dernière image");
+    Check(!hca::compat::ShouldSkipTo({1280, 720, 900, 120}, false, target), "rien sans la touche");
+    Check(!hca::compat::ShouldSkipTo({1280, 720, 900, 900}, true, target) && !hca::compat::ShouldSkipTo({0, 0, 1, 1}, true, target),
+          "vidéo déjà finie ou vide ignorée");
+}
+
 }  // namespace
 
 int main() {
@@ -146,6 +156,7 @@ int main() {
     TestProjection();
     TestFilmGrain();
     TestSkipMovies();
+    TestMovieSkip();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

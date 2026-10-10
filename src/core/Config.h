@@ -58,6 +58,13 @@ struct Config {
     // les chargements sans ce drapeau (interblocage constaté dans le pilote NVIDIA, voir graphics/D3D9Hooks.cpp).
     bool d3dMultithreaded = true;
 
+    // [Movies]
+
+    // Touche pour passer les cinématiques en vidéo (code de touche virtuelle Windows, 0x2E = Suppr, 0 = aucune).
+
+    int movieSkipKey = 0x2E;
+
+
     // [Debug]
     int logKeepCount = 10;
     // Relevé d'images pour préparer le DLSS (voir graphics/FrameCapture.h). Touche : code de touche virtuelle

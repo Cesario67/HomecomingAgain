@@ -69,6 +69,9 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.windowThreadLock = ReadBool(iniPath, L"Compat", L"WindowThreadLock", defaults.windowThreadLock);
     config.d3dMultithreaded = ReadBool(iniPath, L"Compat", L"D3DMultithreaded", defaults.d3dMultithreaded);
 
+    config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
+
+
     config.logKeepCount = ReadInt(iniPath, L"Debug", L"LogKeepCount", defaults.logKeepCount, 1, 500);
     config.frameCapture = ReadBool(iniPath, L"Debug", L"FrameCapture", defaults.frameCapture);
     config.frameCaptureKey = ReadInt(iniPath, L"Debug", L"FrameCaptureKey", defaults.frameCaptureKey, 1, 254);
