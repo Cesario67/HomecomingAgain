@@ -15,6 +15,7 @@
 #include "crash/HangWatchdog.h"
 #include "framepacing/FrameMonitor.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/Smaa.h"
 
 namespace shhf::graphics {
 
@@ -25,16 +26,22 @@ using CreateDeviceFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3D9*, UINT, D3DDEVTYPE
                                                    IDirect3DDevice9**);
 using ResetFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, D3DPRESENT_PARAMETERS*);
 using PresentFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const RECT*, const RECT*, HWND, const RGNDATA*);
+using SetSamplerStateFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, DWORD, D3DSAMPLERSTATETYPE, DWORD);
 
 // Indices dans les vtables COM (ordre de déclaration de d3d9.h, IUnknown compris).
 constexpr size_t kCreateDeviceIndex = 16;  // IDirect3D9::CreateDevice
 constexpr size_t kResetIndex = 16;         // IDirect3DDevice9::Reset
 constexpr size_t kPresentIndex = 17;       // IDirect3DDevice9::Present
+constexpr size_t kSetSamplerStateIndex = 69;  // IDirect3DDevice9::SetSamplerState
 
 Direct3DCreate9Fn g_direct3DCreate9 = nullptr;
 CreateDeviceFn g_createDevice = nullptr;
 ResetFn g_reset = nullptr;
 PresentFn g_present = nullptr;
+SetSamplerStateFn g_setSamplerState = nullptr;
+Smaa g_smaa;
+// Vrai pendant nos propres dessins (SMAA) : le filtrage anisotrope forcé ne doit pas toucher à nos samplers.
+thread_local bool t_internalDraw = false;
 std::atomic<bool> g_lateInitDone{false};
 HRESULT g_lastPresentError = S_OK;
 std::uint32_t g_resetFailures = 0;  // échecs consécutifs de Reset
@@ -49,6 +56,11 @@ void LogPresentParameters(const char* context, const D3DPRESENT_PARAMETERS& para
 
 HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sourceRect, const RECT* destRect,
                                       HWND window, const RGNDATA* dirtyRegion) {
+    if (GetConfig().smaa) {
+        t_internalDraw = true;
+        g_smaa.Apply(device);
+        t_internalDraw = false;
+    }
     frames::OnBeforePresent();
     const HRESULT result = g_present(device, sourceRect, destRect, window, dirtyRegion);
     if (frames::OnAfterPresent()) {
@@ -72,6 +84,8 @@ HRESULT STDMETHODCALLTYPE HookReset(IDirect3DDevice9* device, D3DPRESENT_PARAMET
     if (params != nullptr && g_resetFailures == 0) {
         LogPresentParameters("Reset du périphérique", *params);
     }
+    // Nos ressources D3DPOOL_DEFAULT doivent être libérées avant Reset, sinon il échoue.
+    g_smaa.OnBeforeReset();
     const HRESULT result = g_reset(device, params);
     if (SUCCEEDED(result) && params != nullptr && params->Windowed && GetConfig().borderless) {
         // Un Reset (changement de mode) peut rendre son cadre à la fenêtre.
@@ -98,6 +112,20 @@ HRESULT STDMETHODCALLTYPE HookReset(IDirect3DDevice9* device, D3DPRESENT_PARAMET
     return result;
 }
 
+// Filtrage anisotrope forcé (repris de l'option filteringOverride de DPfix, en plus prudent) : seul le filtrage
+// LINEAR devient ANISOTROPIC ; le filtrage POINT (interface, effets plein écran, ombres) est laissé tel quel.
+HRESULT STDMETHODCALLTYPE HookSetSamplerState(IDirect3DDevice9* device, DWORD sampler, D3DSAMPLERSTATETYPE type,
+                                              DWORD value) {
+    if (!t_internalDraw && (type == D3DSAMP_MINFILTER || type == D3DSAMP_MAGFILTER) && value == D3DTEXF_LINEAR) {
+        g_setSamplerState(device, sampler, D3DSAMP_MAXANISOTROPY, static_cast<DWORD>(GetConfig().anisotropy));
+        return g_setSamplerState(device, sampler, type, D3DTEXF_ANISOTROPIC);
+    }
+    if (!t_internalDraw && type == D3DSAMP_MAXANISOTROPY) {
+        value = static_cast<DWORD>(GetConfig().anisotropy);
+    }
+    return g_setSamplerState(device, sampler, type, value);
+}
+
 void PatchDevice(IDirect3DDevice9* device) {
     // Toutes les instances d'une même classe partagent la vtable : une seule modification suffit.
     // Si un objet d'une autre classe apparaît, on ne l'intercepte pas (l'original mémorisé serait faux).
@@ -115,6 +143,14 @@ void PatchDevice(IDirect3DDevice9* device) {
     }
     log::Info("Present intercepté (implémentation : {})",
               WideToUtf8(sysinfo::ModulePathOf(reinterpret_cast<const void*>(g_present))));
+    if (GetConfig().anisotropy > 1) {
+        if (hooking::PatchVtable(device, kSetSamplerStateIndex, &HookSetSamplerState, &g_setSamplerState)) {
+            log::Info("Filtrage anisotrope forcé : x{}", GetConfig().anisotropy);
+        } else {
+            log::Warn("Filtrage anisotrope : interception de SetSamplerState impossible");
+        }
+    }
+    log::Info("SMAA : {}", GetConfig().smaa ? "activé (appliqué à chaque image avant Present)" : "désactivé");
 }
 
 HRESULT STDMETHODCALLTYPE HookCreateDevice(IDirect3D9* direct3d, UINT adapter, D3DDEVTYPE deviceType, HWND window,

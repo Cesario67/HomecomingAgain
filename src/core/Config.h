@@ -18,6 +18,12 @@ struct Config {
     // tout le moniteur : plein écran « sans bordure », sans périphérique perdu à l'Alt-Tab.
     bool borderless = true;
 
+    // [Graphics]
+    // Anticrénelage SMAA appliqué à l'image finale (voir graphics/Smaa.h).
+    bool smaa = true;
+    // Filtrage anisotrope forcé sur les textures filtrées en linéaire (0 ou 1 = jeu d'origine, 2 à 16).
+    int anisotropy = 16;
+
     // [Frames]
     bool frameStats = true;         // mesures de cadence, de Sleep et de mémoire dans le journal
     int reportIntervalSeconds = 10;

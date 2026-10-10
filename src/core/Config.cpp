@@ -33,6 +33,9 @@ bool LoadConfig(const std::wstring& iniPath) {
 
     config.borderless = ReadBool(iniPath, L"Window", L"Borderless", defaults.borderless);
 
+    config.smaa = ReadBool(iniPath, L"Graphics", L"SMAA", defaults.smaa);
+    config.anisotropy = ReadInt(iniPath, L"Graphics", L"Anisotropy", defaults.anisotropy, 0, 16);
+
     config.frameStats = ReadBool(iniPath, L"Frames", L"FrameStats", defaults.frameStats);
     config.reportIntervalSeconds =
         ReadInt(iniPath, L"Frames", L"ReportIntervalSeconds", defaults.reportIntervalSeconds, 1, 3600);

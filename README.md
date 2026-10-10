@@ -23,3 +23,8 @@ powershell -ExecutionPolicy Bypass -File tools\build.ps1
 ## License
 
 GPL-3.0-or-later. No game files are included or distributed; this project contains only its own code.
+
+## Third-party
+
+Uses SMAA. Copyright (C) 2011 by Jorge Jimenez, Jose I. Echevarria, Belen Masia, Fernando Navarro and Diego
+Gutierrez. See `third_party/smaa/LICENSE.txt`.
