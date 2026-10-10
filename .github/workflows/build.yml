@@ -14,7 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Environnement MSVC hôte x64, cible x86 (SilentHill.exe est supposé 32 bits).
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Environnement MSVC hôte x64, cible x86 (lanceur et moteur 32 bits).
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64_x86
@@ -27,6 +31,19 @@ jobs:
 
       - name: Tests unitaires
         run: build/x86-release/SHHFixUnitTests.exe
+
+      # Launcher C# (Avalonia), qui embarque la DLL compilée ci-dessus. msvc-dev-cmd définit Platform=x86 pour la
+      # suite du job, que MSBuild rejette pour la solution du launcher : on retire la variable pour ces étapes.
+      - name: Tests du launcher
+        working-directory: launcher
+        run: |
+          Remove-Item Env:Platform -ErrorAction SilentlyContinue
+          dotnet test -c Release
+
+      - name: Publier le launcher
+        run: |
+          Remove-Item Env:Platform -ErrorAction SilentlyContinue
+          dotnet publish launcher/src/SHHFix.Launcher/SHHFix.Launcher.csproj -c Release -r win-x64 --self-contained -p:DebugType=none -o build/x86-release/package
 
       - uses: actions/upload-artifact@v4
         with:

@@ -24,6 +24,23 @@ if ($LASTEXITCODE -ne 0) {
     throw "Échec de la compilation (code $LASTEXITCODE)."
 }
 
+
+# Launcher (C# Avalonia) : un seul .exe autonome qui embarque la DLL, le .ini et les licences compilés ci-dessus.
+$dotnet = (Get-Command dotnet -ErrorAction SilentlyContinue).Source
+if (-not $dotnet) { $dotnet = Join-Path $env:ProgramFiles 'dotnet\dotnet.exe' }
+if (-not (Test-Path $dotnet)) {
+    throw 'SDK .NET introuvable : installer Microsoft.DotNet.SDK.10 (winget install Microsoft.DotNet.SDK.10).'
+}
+$package = Join-Path $root "build\$Preset\package"
+$configuration = if ($Preset -eq 'x86-debug') { 'Debug' } else { 'Release' }
+& $dotnet publish (Join-Path $root 'launcher\src\SHHFix.Launcher\SHHFix.Launcher.csproj') `
+    -c $configuration -r win-x64 --self-contained -p:DebugType=none -o $package --nologo -v quiet
+if ($LASTEXITCODE -ne 0) {
+    throw "Échec de la publication du launcher (code $LASTEXITCODE)."
+}
+# Symboles natifs de SkiaSharp/HarfBuzz : rien à livrer.
+Get-ChildItem $package -Filter '*.pdb' | Remove-Item -Force
+
 Write-Host ''
 Write-Host "DLL      : $root\build\$Preset\version.dll"
 Write-Host "Paquet   : $root\build\$Preset\package"

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SHHFix.Launcher/SHHFix.Launcher.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SHHFix.Launcher.Tests/SHHFix.Launcher.Tests.csproj" />
+  </Folder>
+</Solution>

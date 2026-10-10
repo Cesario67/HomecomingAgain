@@ -124,3 +124,16 @@ Adaptatif :
 - Sujet complexe, ou contexte que l'utilisateur semble ne pas maîtriser (C++, Win32, rétro-ingénierie) :
   expliquer en détail le raisonnement, et proposer les alternatives avec leurs compromis.
 - Quand tu proposes une implémentation, justifie brièvement les choix d'architecture.
+
+## Launcher (`launcher/`)
+
+Repris de DPStabilityFix (mêmes conventions C#, voir le CLAUDE.md de ce projet : MVVM strict, liaisons compilées,
+textes dans `Core/Translations.cs` en français et en anglais, fichiers modifiés en place). Spécificités :
+- Trois onglets : Graphismes, Performances et stabilité, Installation. Les réglages sont répartis entre
+  `Bin\SHHFix.ini` (mod, `IniDocument`) et `Engine\vars_pc.cfg` (jeu, `KeyValueDocument`, copie de secours
+  `vars_pc.cfg.shhf-backup` à la première modification). Correspondance dans `Core/PatchSettings.cs`.
+- Le jeu réécrit `vars_pc.cfg` en quittant : toute écriture est refusée tant qu'il tourne.
+- L'installation ne modifie aucun fichier du jeu (pas de patch 4 Go) : `Bin\version.dll`, `Bin\SHHFix.ini` absent,
+  licences, copie du launcher dans `Bin`.
+- `tools\build.ps1` compile la DLL puis publie `SHHFix.exe` (autonome, ~21 Mo) qui l'embarque.
+- Tests : `dotnet test launcher` (xUnit v3).
