@@ -30,8 +30,7 @@ void TestStrings() {
 }
 
 void TestBorderless() {
-    std::printf("Fenêtre sans bordure
-");
+    std::printf("Fenêtre sans bordure\n");
     const DWORD framed = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_CLIPSIBLINGS;
     const DWORD result = shhf::graphics::BorderlessStyle(framed);
     Check((result & WS_CAPTION) == 0 && (result & WS_THICKFRAME) == 0 && (result & WS_SYSMENU) == 0, "cadre, titre et menu retirés");
