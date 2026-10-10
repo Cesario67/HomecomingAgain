@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/HomecomingAgain.Launcher/HomecomingAgain.Launcher.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/HomecomingAgain.Launcher.Tests/HomecomingAgain.Launcher.Tests.csproj" />
+  </Folder>
+</Solution>

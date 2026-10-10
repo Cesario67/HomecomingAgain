@@ -1,0 +1,19 @@
+LIBRARY version
+EXPORTS
+    GetFileVersionInfoA = HcaStubVersion_GetFileVersionInfoA
+    GetFileVersionInfoByHandle = HcaStubVersion_GetFileVersionInfoByHandle
+    GetFileVersionInfoExA = HcaStubVersion_GetFileVersionInfoExA
+    GetFileVersionInfoExW = HcaStubVersion_GetFileVersionInfoExW
+    GetFileVersionInfoSizeA = HcaStubVersion_GetFileVersionInfoSizeA
+    GetFileVersionInfoSizeExA = HcaStubVersion_GetFileVersionInfoSizeExA
+    GetFileVersionInfoSizeExW = HcaStubVersion_GetFileVersionInfoSizeExW
+    GetFileVersionInfoSizeW = HcaStubVersion_GetFileVersionInfoSizeW
+    GetFileVersionInfoW = HcaStubVersion_GetFileVersionInfoW
+    VerFindFileA = HcaStubVersion_VerFindFileA
+    VerFindFileW = HcaStubVersion_VerFindFileW
+    VerInstallFileA = HcaStubVersion_VerInstallFileA
+    VerInstallFileW = HcaStubVersion_VerInstallFileW
+    VerLanguageNameA = HcaStubVersion_VerLanguageNameA
+    VerLanguageNameW = HcaStubVersion_VerLanguageNameW
+    VerQueryValueA = HcaStubVersion_VerQueryValueA
+    VerQueryValueW = HcaStubVersion_VerQueryValueW
