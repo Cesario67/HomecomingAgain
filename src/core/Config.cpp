@@ -3,6 +3,7 @@
 #include <windows.h>
 
 #include <algorithm>
+#include <cwchar>
 
 namespace hca {
 
@@ -13,6 +14,18 @@ Config g_config;
 int ReadInt(const std::wstring& ini, const wchar_t* section, const wchar_t* key, int fallback, int minValue,
             int maxValue) {
     const int value = static_cast<int>(GetPrivateProfileIntW(section, key, fallback, ini.c_str()));
+    return std::clamp(value, minValue, maxValue);
+}
+
+float ReadFloat(const std::wstring& ini, const wchar_t* section, const wchar_t* key, float fallback, float minValue,
+                float maxValue) {
+    wchar_t text[64]{};
+    GetPrivateProfileStringW(section, key, L"", text, 64, ini.c_str());
+    wchar_t* end = nullptr;
+    const float value = std::wcstof(text, &end);
+    if (end == text) {
+        return fallback;
+    }
     return std::clamp(value, minValue, maxValue);
 }
 
@@ -38,10 +51,10 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.shadowResolution =
         ReadInt(iniPath, L"Graphics", L"ShadowResolution", defaults.shadowResolution, 2048, 8192);
     config.ssao = ReadBool(iniPath, L"Graphics", L"SSAO", defaults.ssao);
-    config.ssaoRadius = ReadInt(iniPath, L"Graphics", L"SsaoRadius", defaults.ssaoRadius, 1, 1000);
+    config.ssaoRadius = ReadFloat(iniPath, L"Graphics", L"SsaoRadius", defaults.ssaoRadius, 0.05f, 100.0f);
     config.ssaoStrength = ReadInt(iniPath, L"Graphics", L"SsaoStrength", defaults.ssaoStrength, 10, 400);
-    config.ssaoFadeStart = ReadInt(iniPath, L"Graphics", L"SsaoFadeStart", defaults.ssaoFadeStart, 0, 100000);
-    config.ssaoFadeEnd = ReadInt(iniPath, L"Graphics", L"SsaoFadeEnd", defaults.ssaoFadeEnd, 1, 100000);
+    config.ssaoFadeStart = ReadFloat(iniPath, L"Graphics", L"SsaoFadeStart", defaults.ssaoFadeStart, 0.0f, 100000.0f);
+    config.ssaoFadeEnd = ReadFloat(iniPath, L"Graphics", L"SsaoFadeEnd", defaults.ssaoFadeEnd, 1.0f, 100000.0f);
     config.ssaoDebug = ReadBool(iniPath, L"Graphics", L"SsaoDebug", defaults.ssaoDebug);
 
     config.frameStats = ReadBool(iniPath, L"Frames", L"FrameStats", defaults.frameStats);

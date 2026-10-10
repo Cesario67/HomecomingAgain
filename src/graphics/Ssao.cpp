@@ -166,7 +166,7 @@ bool Ssao::EnsureResources(IDirect3DDevice9* device, UINT width, UINT height) no
     if (width != width_ || height != height_) {
         SafeRelease(aoSurface_);
         SafeRelease(aoTex_);
-        if (FAILED(device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L8, D3DPOOL_DEFAULT, &aoTex_,
+        if (FAILED(device->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, &aoTex_,
                                          nullptr)) ||
             FAILED(aoTex_->GetSurfaceLevel(0, &aoSurface_))) {
             log::Error("SSAO : création de la cible {}x{} impossible, effet désactivé", width, height);
@@ -175,7 +175,7 @@ bool Ssao::EnsureResources(IDirect3DDevice9* device, UINT width, UINT height) no
         }
         width_ = width;
         height_ = height;
-        log::Info("SSAO actif : {}x{}, rayon {}, intensité {} %", width, height, GetConfig().ssaoRadius,
+        log::Info("SSAO actif : {}x{}, rayon {:.2f}, intensité {} %", width, height, GetConfig().ssaoRadius,
                   GetConfig().ssaoStrength);
     }
     return true;
@@ -217,8 +217,8 @@ bool Ssao::Apply(IDirect3DDevice9* device) noexcept {
     const float screen[4] = {1.0f / static_cast<float>(desc.Width), 1.0f / static_cast<float>(desc.Height),
                              static_cast<float>(desc.Width), static_cast<float>(desc.Height)};
     // Intensité en % : exposant appliqué à l'occlusion (100 % = 1, 200 % = 2...).
-    const float params[4] = {static_cast<float>(config.ssaoRadius), static_cast<float>(config.ssaoStrength) / 100.0f,
-                             static_cast<float>(config.ssaoFadeStart), static_cast<float>(config.ssaoFadeEnd)};
+    const float params[4] = {config.ssaoRadius, static_cast<float>(config.ssaoStrength) / 100.0f, config.ssaoFadeStart,
+                             config.ssaoFadeEnd};
 
     device->SetDepthStencilSurface(nullptr);
     device->SetVertexDeclaration(vertexDeclaration_);
@@ -291,13 +291,20 @@ void Ssao::LogDiagnostics(IDirect3DDevice9* device) noexcept {
     IDirect3DSurface9* aoCopy = nullptr;
     D3DSURFACE_DESC desc{};
     depthSurface_->GetDesc(&desc);
-    if (FAILED(device->CreateOffscreenPlainSurface(desc.Width, desc.Height, D3DFMT_R32F, D3DPOOL_SYSTEMMEM, &depthCopy,
-                                                   nullptr)) ||
-        FAILED(device->CreateOffscreenPlainSurface(desc.Width, desc.Height, D3DFMT_L8, D3DPOOL_SYSTEMMEM, &aoCopy,
-                                                   nullptr)) ||
-        FAILED(device->GetRenderTargetData(depthSurface_, depthCopy)) ||
-        FAILED(device->GetRenderTargetData(aoSurface_, aoCopy))) {
-        log::Warn("SSAO : relevé de diagnostic impossible");
+    HRESULT steps[4] = {
+        device->CreateOffscreenPlainSurface(desc.Width, desc.Height, D3DFMT_R32F, D3DPOOL_SYSTEMMEM, &depthCopy, nullptr),
+        device->CreateOffscreenPlainSurface(desc.Width, desc.Height, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM, &aoCopy, nullptr),
+        E_FAIL, E_FAIL};
+    if (SUCCEEDED(steps[0]) && SUCCEEDED(steps[1])) {
+        steps[2] = device->GetRenderTargetData(depthSurface_, depthCopy);
+        steps[3] = device->GetRenderTargetData(aoSurface_, aoCopy);
+    }
+    if (FAILED(steps[0]) || FAILED(steps[1]) || FAILED(steps[2]) || FAILED(steps[3])) {
+        log::Warn("SSAO : relevé de diagnostic impossible (copies 0x{:08X} 0x{:08X}, lectures 0x{:08X} 0x{:08X}, "
+                  "profondeur {}x{} format {})",
+                  static_cast<unsigned long>(steps[0]), static_cast<unsigned long>(steps[1]),
+                  static_cast<unsigned long>(steps[2]), static_cast<unsigned long>(steps[3]), desc.Width, desc.Height,
+                  static_cast<int>(desc.Format));
         SafeRelease(depthCopy);
         SafeRelease(aoCopy);
         return;
@@ -316,6 +323,7 @@ void Ssao::LogDiagnostics(IDirect3DDevice9* device) noexcept {
         for (UINT y = 0; y < desc.Height; y += 16) {
             const auto* depthRow = reinterpret_cast<const float*>(static_cast<const BYTE*>(depthRect.pBits) +
                                                                   y * depthRect.Pitch);
+            // A8R8G8B8 : octets B, G, R, A ; l'occlusion est la même dans les trois couleurs.
             const auto* aoRow = static_cast<const BYTE*>(aoRect.pBits) + y * aoRect.Pitch;
             for (UINT x = 0; x < desc.Width; x += 16) {
                 const float d = depthRow[x];
@@ -323,8 +331,8 @@ void Ssao::LogDiagnostics(IDirect3DDevice9* device) noexcept {
                 maxDepth = d > maxDepth ? d : maxDepth;
                 zeros += d <= 0.0001f ? 1 : 0;
                 ones += d >= 0.99999f ? 1 : 0;
-                aoSum += aoRow[x];
-                aoDark += aoRow[x] < 64 ? 1 : 0;
+                aoSum += aoRow[x * 4 + 2];
+                aoDark += aoRow[x * 4 + 2] < 64 ? 1 : 0;
                 ++samples;
             }
         }

@@ -28,10 +28,10 @@ struct Config {
     // Occlusion ambiante en espace écran (voir graphics/Ssao.h). Rayon en unités du jeu, intensité en %, fondu
     // entre deux distances (unités du jeu), mode de réglage qui affiche l'occlusion seule.
     bool ssao = true;
-    int ssaoRadius = 40;
+    float ssaoRadius = 1.5f;  // le jeu ne mesure pas en centimètres : une pièce est à 25-30 unités (relevé 10/10/2026)
     int ssaoStrength = 100;
-    int ssaoFadeStart = 1500;
-    int ssaoFadeEnd = 4000;
+    float ssaoFadeStart = 150.0f;
+    float ssaoFadeEnd = 450.0f;
     bool ssaoDebug = false;
 
     // [Frames]

@@ -71,7 +71,10 @@ float4 OcclusionPS(float2 uv : TEXCOORD0, float2 pixel : VPOS) : COLOR0 {
     const float3 dx = abs(left.z) < abs(right.z) ? left : right;
     const float3 dy = abs(up.z) < abs(down.z) ? up : down;
     const float3 rawNormal = cross(dy, dx);
-    const float3 normal = dot(rawNormal, rawNormal) > 1e-12 ? normalize(rawNormal) : float3(0.0, 0.0, -1.0);
+    float3 normal = dot(rawNormal, rawNormal) > 1e-12 ? normalize(rawNormal) : float3(0.0, 0.0, -1.0);
+    // La normale doit faire face à la caméra (p va de la caméra au point) : sinon les échantillons partent dans la
+    // surface et tout paraît caché (image noire constatée le 10/10/2026).
+    normal = dot(normal, p) > 0.0 ? -normal : normal;
 
     const float angle = InterleavedNoise(pixel) * 6.2831853;
     const float3 random = float3(cos(angle), sin(angle), 0.0);
@@ -93,6 +96,8 @@ float4 OcclusionPS(float2 uv : TEXCOORD0, float2 pixel : VPOS) : COLOR0 {
     ao = pow(saturate(ao), gParams.y);
     // Fondu avec la distance : le brouillard du jeu masque déjà le lointain.
     ao = lerp(ao, 1.0, saturate((p.z - gParams.z) / max(gParams.w - gParams.z, 1.0)));
+    // Plancher : l'effet n'assombrit jamais de plus de 60 %, même mal réglé.
+    ao = max(ao, 0.4);
     return float4(ao, ao, ao, 1.0);
 }
 
