@@ -14,7 +14,20 @@ namespace {
 // Borne de lecture du bytecode : la table de constantes est au début, la lecture s'arrête à la première instruction.
 constexpr std::size_t kMaxTokens = 1u << 16;
 
-std::atomic<IDirect3DPixelShader9*> g_grainShader{nullptr};
+// Le moteur crée plusieurs variantes du shader du grain (8 constatées le 10/10/2026) : on les garde toutes.
+constexpr std::size_t kMaxGrainShaders = 32;
+std::atomic<IDirect3DPixelShader9*> g_grainShaders[kMaxGrainShaders]{};
+std::atomic<std::size_t> g_grainShaderCount{0};
+
+bool IsKnownGrainShader(IDirect3DPixelShader9* shader) noexcept {
+    const std::size_t count = g_grainShaderCount.load();
+    for (std::size_t i = 0; i < count && i < kMaxGrainShaders; ++i) {
+        if (g_grainShaders[i].load() == shader) {
+            return true;
+        }
+    }
+    return false;
+}
 // Seul le thread de rendu change de shader et de constantes à ce moment de l'image : pas de verrou.
 bool g_bound = false;
 bool g_haveIntensity = false;
@@ -53,13 +66,20 @@ bool Active() noexcept {
 
 void OnPixelShaderCreated(const DWORD* bytecode, IDirect3DPixelShader9* shader) noexcept {
     if (shader != nullptr && bytecode != nullptr && IsGrainShader(bytecode)) {
-        g_grainShader.store(shader);
-        log::Info("Grain de pellicule : shader repéré, intensité {} % de celle du jeu", GetConfig().filmGrain);
+        const std::size_t index = g_grainShaderCount.load();
+        if (index >= kMaxGrainShaders) {
+            log::Warn("Grain de pellicule : plus de {} variantes du shader, les suivantes gardent leur grain", kMaxGrainShaders);
+            return;
+        }
+        g_grainShaders[index].store(shader);
+        g_grainShaderCount.store(index + 1);
+        log::Info("Grain de pellicule : variante {} du shader repérée, intensité {} % de celle du jeu", index + 1,
+                  GetConfig().filmGrain);
     }
 }
 
 bool OnSetPixelShader(IDirect3DPixelShader9* shader) noexcept {
-    const bool bound = shader != nullptr && shader == g_grainShader.load();
+    const bool bound = shader != nullptr && IsKnownGrainShader(shader);
     const bool changed = bound != g_bound;
     g_bound = bound;
     return changed;
