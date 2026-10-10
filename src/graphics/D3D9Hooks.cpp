@@ -5,12 +5,14 @@
 #include <atomic>
 #include <cstdint>
 
+#include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
 #include "core/Strings.h"
 #include "core/SystemInfo.h"
 #include "crash/CrashHandler.h"
 #include "framepacing/FrameMonitor.h"
+#include "graphics/BorderlessWindow.h"
 
 namespace shhf::graphics {
 
@@ -69,6 +71,13 @@ HRESULT STDMETHODCALLTYPE HookReset(IDirect3DDevice9* device, D3DPRESENT_PARAMET
         LogPresentParameters("Reset du périphérique", *params);
     }
     const HRESULT result = g_reset(device, params);
+    if (SUCCEEDED(result) && params != nullptr && params->Windowed && GetConfig().borderless) {
+        // Un Reset (changement de mode) peut rendre son cadre à la fenêtre.
+        D3DDEVICE_CREATION_PARAMETERS creation{};
+        if (SUCCEEDED(device->GetCreationParameters(&creation))) {
+            ApplyBorderless(params->hDeviceWindow != nullptr ? params->hDeviceWindow : creation.hFocusWindow);
+        }
+    }
     if (SUCCEEDED(result)) {
         if (g_resetFailures > 0) {
             log::Info("Reset réussi après {} échec(s)", g_resetFailures);
@@ -111,6 +120,10 @@ HRESULT STDMETHODCALLTYPE HookCreateDevice(IDirect3D9* direct3d, UINT adapter, D
                                            IDirect3DDevice9** device) {
     if (params != nullptr) {
         LogPresentParameters("CreateDevice demandé", *params);
+        // En mode fenêtré, la fenêtre existe déjà : on la rend sans bordure avant la création du périphérique.
+        if (params->Windowed && GetConfig().borderless) {
+            ApplyBorderless(params->hDeviceWindow != nullptr ? params->hDeviceWindow : window);
+        }
     }
     const HRESULT result = g_createDevice(direct3d, adapter, deviceType, window, behaviorFlags, params, device);
     log::Info("CreateDevice (adaptateur {}, type {}, comportement 0x{:08X}) -> 0x{:08X}", adapter,

@@ -11,6 +11,11 @@ struct Config {
     bool fullMemoryDumps = false;   // dump complet (jusqu'à 2 Go) au lieu d'un dump réduit
     int dumpKeepCount = 10;
 
+    // [Window]
+    // Mode fenêtré du jeu (FullScreen=false dans Engine, fichier vars_pc.cfg) sans bordure ni barre de titre, étendu à
+    // tout le moniteur : plein écran « sans bordure », sans périphérique perdu à l'Alt-Tab.
+    bool borderless = true;
+
     // [Frames]
     bool frameStats = true;         // mesures de cadence, de Sleep et de mémoire dans le journal
     int reportIntervalSeconds = 10;
