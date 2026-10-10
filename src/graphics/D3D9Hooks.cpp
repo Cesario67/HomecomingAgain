@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstdint>
 
+#include "compat/WindowThreadLock.h"
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
@@ -126,6 +127,14 @@ HRESULT STDMETHODCALLTYPE HookCreateDevice(IDirect3D9* direct3d, UINT adapter, D
             ApplyBorderless(params->hDeviceWindow != nullptr ? params->hDeviceWindow : window);
         }
     }
+    // Le moteur crée le périphérique sans D3DCREATE_MULTITHREADED (comportement 0x40) mais l'utilise depuis deux
+    // threads pendant les chargements (écran de chargement + thread principal). Constaté le 10/10/2026 : les deux
+    // threads bloqués dans le pilote NVIDIA, chacun dans un appel Direct3D. Le drapeau fait sérialiser les appels
+    // par Direct3D.
+    if (GetConfig().d3dMultithreaded && (behaviorFlags & D3DCREATE_MULTITHREADED) == 0) {
+        behaviorFlags |= D3DCREATE_MULTITHREADED;
+        log::Info("D3DCREATE_MULTITHREADED ajouté : appels Direct3D des threads de chargement et principal sérialisés");
+    }
     const HRESULT result = g_createDevice(direct3d, adapter, deviceType, window, behaviorFlags, params, device);
     log::Info("CreateDevice (adaptateur {}, type {}, comportement 0x{:08X}) -> 0x{:08X}", adapter,
               static_cast<int>(deviceType), behaviorFlags, static_cast<unsigned long>(result));
@@ -148,6 +157,9 @@ void LateInit() {
     crash::PreloadDbgHelp();
     // Direct3DCreate9 est appelé par le thread principal, celui qui possède la fenêtre du jeu.
     crash::StartHangWatchdog(GetCurrentThreadId());
+    compat::SetWindowThread(GetCurrentThreadId());
+    // L'overlay Steam est injecté avant Direct3DCreate9 : utile pour relier un blocage à sa présence.
+    log::Info("Overlay Steam : {}", GetModuleHandleW(L"gameoverlayrenderer.dll") != nullptr ? "chargé" : "absent");
     // Pendant le chargement (~20 s), le thread principal charge sans traiter les messages de la fenêtre, et un
     // autre thread affiche l'écran de chargement. En fenêtré, un clic pendant ce temps fait déclarer le jeu « ne
     // répond pas » par Windows au bout de 5 s (fenêtre fantôme), puis fermer (« Application Hang », constaté le

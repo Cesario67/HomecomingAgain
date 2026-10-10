@@ -8,6 +8,7 @@
 
 #include <string_view>
 
+#include "compat/WindowThreadLock.h"
 #include "core/Config.h"
 #include "core/Log.h"
 #include "core/Paths.h"
@@ -67,6 +68,7 @@ void Startup() {
     if (engine != nullptr) {
         shhf::graphics::Install(engine);
         shhf::patches::ApplyFrameRateCap(engine);
+        shhf::compat::InstallWindowThreadLock(engine);
         if (shhf::GetConfig().frameStats) {
             shhf::frames::waits::Install(engine);
         }

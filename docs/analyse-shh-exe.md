@@ -154,3 +154,17 @@ Constat : **3 lancements sur 3 sans overlay** (exécutable lancé directement) s
 via Steam avec overlay (plus le blocage de 08:49, même phase de chargement).
 Contournement : désactiver l'overlay Steam pour ce jeu. Correctif dans le mod à étudier (Present du thread de
 chargement quand l'overlay est présent).
+
+## Correctifs des blocages au chargement avec l'overlay Steam (10/10/2026)
+
+Deux interblocages distincts, tous deux pendant le chargement initial en fenêtré, overlay Steam chargé :
+1. **Thread de la fenêtre bloqué sur un verrou du moteur** (`EnterCriticalSection` en `0x10891F07`) pendant que le
+   thread de chargement, dans `Present` (overlay), attend ce même thread. Correctif `compat/WindowThreadLock` : pour
+   le seul thread de la fenêtre, attente du verrou en traitant les messages envoyés. Le journal montre qu'à
+   **chaque** lancement, le thread de la fenêtre attend ce verrou et traite un message envoyé pendant l'attente.
+2. **Les deux threads bloqués dans le pilote NVIDIA** (`nvd3dum.dll`), chacun dans un appel Direct3D (principal
+   depuis `0x10B8A0D3`). Cause : périphérique créé sans `D3DCREATE_MULTITHREADED` (comportement `0x40`) mais utilisé
+   par deux threads. Correctif : le drapeau est ajouté à `CreateDevice` (option `[Compat] D3DMultithreaded`).
+
+Mesure avec les deux correctifs : **8 lancements sur 8 via Steam, overlay chargé, sans blocage**, 59,5 i/s en
+1920x1080 sans bordure (avant : 1 blocage sur 3 avec le seul correctif 1, 2 sur 5 sans correctif).

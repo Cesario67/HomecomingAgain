@@ -17,6 +17,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 # de la table d'imports de SilentHill.exe : voir docs/a-faire.md. En attendant, elle se compile sous son
 add_library(SHHFix SHARED
     src/dllmain.cpp
+    src/compat/WindowThreadLock.cpp
     src/core/Config.cpp
     src/core/Hooking.cpp
     src/core/Log.cpp

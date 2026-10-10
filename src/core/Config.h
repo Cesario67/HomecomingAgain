@@ -30,6 +30,14 @@ struct Config {
     // 0 = jeu d'origine. fpsLimit de vars_pc.cfg n'a aucun effet sur ce limiteur (vérifié le 10/10/2026).
     int targetFps = 60;
 
+    // [Compat]
+    // Le thread de la fenêtre traite les messages envoyés pendant qu'il attend un verrou du moteur : évite
+    // l'interblocage du chargement en fenêtré avec l'overlay Steam (voir compat/WindowThreadLock.h).
+    bool windowThreadLock = true;
+    // Périphérique Direct3D créé avec D3DCREATE_MULTITHREADED : le moteur l'utilise depuis deux threads pendant
+    // les chargements sans ce drapeau (interblocage constaté dans le pilote NVIDIA, voir graphics/D3D9Hooks.cpp).
+    bool d3dMultithreaded = true;
+
     // [Debug]
     int logKeepCount = 10;
 };

@@ -40,6 +40,9 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.frameLimitFps = ReadInt(iniPath, L"Frames", L"FrameLimitFps", defaults.frameLimitFps, 0, 1000);
     config.targetFps = ReadInt(iniPath, L"Frames", L"TargetFps", defaults.targetFps, 0, 1000);
 
+    config.windowThreadLock = ReadBool(iniPath, L"Compat", L"WindowThreadLock", defaults.windowThreadLock);
+    config.d3dMultithreaded = ReadBool(iniPath, L"Compat", L"D3DMultithreaded", defaults.d3dMultithreaded);
+
     config.logKeepCount = ReadInt(iniPath, L"Debug", L"LogKeepCount", defaults.logKeepCount, 1, 500);
 
     g_config = config;
