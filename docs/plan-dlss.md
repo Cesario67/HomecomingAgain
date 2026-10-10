@@ -64,6 +64,33 @@ Chaque étape se termine par un essai en jeu. On s'arrête dès qu'une étape mo
 7. **Launcher** : options DLSS (Désactivé / DLAA / Qualité / Équilibré / Performance), détection de la carte
    RTX et de la DLL, réglage de netteté.
 
+## 4 bis. Résultats du relevé (10/10/2026, prologue, vérifié par relevé)
+
+Ordre d'une image (environ 10 000 appels, 800 dessins) :
+
+1. Trois cartes d'ombres 2048x2048 (R32F, profondeur D24S8 dédiée).
+2. **Pré-passe de profondeur** dans une texture 1920x1080 **R32F** (texture 0x79bc7e0 au relevé, effacée à 1.0),
+   avec le tampon D24S8 1920x1080 principal. La profondeur est donc déjà lisible : INTZ inutile (à confirmer en
+   affichant cette texture).
+3. Scène principale dans une texture 1920x1080 A8R8G8B8 (0x7a4d8e0), même tampon de profondeur.
+4. Post-traitements : cibles A16B16G16R16F 1920x1080 sans profondeur, puis chaîne de flou lumineux (960x540
+   jusqu'à 15x8), recopiée par StretchRect.
+5. **Interface** : dernière scène (BeginScene ... EndScene) sur la même texture couleur, avec profondeur.
+6. StretchRect de la texture couleur vers le backbuffer, puis Present.
+
+Shaders : la table de constantes est présente, les noms sont lisibles. `mWorldViewProj` est toujours en c0..c3
+des vertex shaders (24 shaders), `mWorld` en c4..c6, `mSkinningMatrices` en c14..c193 pour les personnages,
+`mWorldView` et `mProj` dans quelques shaders seulement.
+
+Conséquences pour le plan :
+- **Jitter** : il peut s'appliquer directement à `mWorldViewProj` à chaque envoi (décalage ajouté en espace de
+  découpage), sans isoler la projection.
+- **Vecteurs de mouvement de caméra** : la vue-projection se déduit de `mWorldViewProj` et `mWorld` quand un shader
+  a les deux.
+- **Personnages** : les matrices d'os passent par `mSkinningMatrices`, une piste pour de vrais vecteurs de
+  mouvement à l'étape 4.
+- **Point d'insertion du DLSS** : juste avant les post-traitements (fin de l'étape 3), l'interface venant après.
+
 ## 5. Plans de repli
 
 - Si les traînées sont inacceptables et que les animations ne peuvent pas être suivies : garder DLAA sur les
