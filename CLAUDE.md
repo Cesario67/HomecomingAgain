@@ -133,7 +133,8 @@ textes dans `Core/Translations.cs` en français et en anglais, fichiers modifié
   `Bin\SHHFix.ini` (mod, `IniDocument`) et `Engine\vars_pc.cfg` (jeu, `KeyValueDocument`, copie de secours
   `vars_pc.cfg.shhf-backup` à la première modification). Correspondance dans `Core/PatchSettings.cs`.
 - Le jeu réécrit `vars_pc.cfg` en quittant : toute écriture est refusée tant qu'il tourne.
-- L'installation ne modifie aucun fichier du jeu (pas de patch 4 Go) : `Bin\version.dll`, `Bin\SHHFix.ini` absent,
-  licences, copie du launcher dans `Bin`.
+- L'installation applique le patch 4 Go à `Bin\SilentHill.exe` (original : `SilentHill.exe.shhf-original`, remis à
+  la désinstallation, voir `Core/ExePatcher.cs`), puis copie `Bin\version.dll`, `Bin\SHHFix.ini` s'il est absent,
+  les licences et le launcher dans `Bin`.
 - `tools\build.ps1` compile la DLL puis publie `SHHFix.exe` (autonome, ~21 Mo) qui l'embarque.
 - Tests : `dotnet test launcher` (xUnit v3).
