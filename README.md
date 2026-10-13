@@ -37,11 +37,16 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
   engine's depth and applied before the interface.
 - **Sharper shadows**: 8192x8192 shadow map instead of 2048x2048, with the slope bias scaled to match.
 - **Adjustable film grain**: off, halved or as in the original.
+- **DLSS (DLAA, experimental)**: NVIDIA AI anti-aliasing, more stable and sharper than SMAA, at native resolution.
+  NVIDIA RTX cards only; the launcher option also installs DXVK (Direct3D 9 on Vulkan). As the game is 32-bit and DLSS
+  is 64-bit, a small 64-bit program (`HomecomingAgain.Dlss.exe`) receives the game's images, applies DLSS and hands
+  them back before the interface. Off by default.
+- **High quality game shaders**: SSAO and DLSS also work in this mode (16-bit scene).
 
 ### Comfort
 
 - **Skip cutscenes**: the Delete key skips video cutscenes.
-- **Launcher** (`HomecomingAgain.exe`): all settings, install and uninstall, in English and French.
+- **Launcher** (`HomecomingAgain.exe`): all settings, install and uninstall, in English (default) and French.
 
 ## Installation
 
@@ -62,12 +67,13 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Graphics]` | `FilmGrain=100` | Film grain in % (0 = none) |
 | `[Audio]` | `ChannelFix=1` | Fixed sound (0 = original sound) |
 | `[Movies]` | `SkipKey=46` | Key to skip cutscenes (46 = Delete, 0 = none) |
+| `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA): all three at 1 to enable it, with DXVK (done by the launcher) |
 
 ## Known limitations
 
 - Exclusive fullscreen still crashes on Alt-Tab (original game): use borderless mode.
 - Controllers: not handled yet.
-- DLSS: in preparation (experimental, inactive).
+- DLSS: experimental. Only camera motion is passed on: slight trails are possible on fast-moving characters.
 
 ## Building
 

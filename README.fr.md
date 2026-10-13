@@ -39,12 +39,17 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   de la profondeur du moteur et appliqué avant l'interface.
 - **Ombres plus fines** : carte d'ombres en 8192x8192 au lieu de 2048x2048, avec un décalage de pente adapté.
 - **Grain de pellicule réglable** : désactivé, réduit de moitié ou comme à l'origine.
+- **DLSS (DLAA, expérimental)** : anticrénelage par l'IA de NVIDIA, plus stable et plus net que le SMAA, à la
+  résolution d'origine. Cartes NVIDIA RTX uniquement ; l'option du launcher installe aussi DXVK (Direct3D 9 sur
+  Vulkan). Le jeu étant 32 bits et le DLSS 64 bits, un petit programme 64 bits (`HomecomingAgain.Dlss.exe`) reçoit les
+  images du jeu, applique le DLSS et les lui rend avant l'interface. Désactivé par défaut.
+- **Shaders du jeu en haute qualité** : le SSAO et le DLSS fonctionnent aussi dans ce mode (scène en 16 bits).
 
 ### Confort
 
 - **Passer les cinématiques** : la touche Suppr passe les cinématiques en vidéo.
-- **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en français et en
-  anglais.
+- **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par
+  défaut) et en français.
 
 ## Installation
 
@@ -65,12 +70,14 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Graphics]` | `FilmGrain=100` | Grain de pellicule en % (0 = aucun) |
 | `[Audio]` | `ChannelFix=1` | Son corrigé (0 = son d'origine) |
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
+| `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA) : les trois à 1 pour l'activer, avec DXVK (fait par le launcher) |
 
 ## Limites connues
 
 - Le plein écran exclusif plante toujours à l'Alt-Tab (jeu d'origine) : utiliser le mode sans bordure.
 - Manettes : pas encore traitées.
-- DLSS : en préparation (expérimental, inactif).
+- DLSS : expérimental. Seul le mouvement de la caméra est transmis : de légères traînées sont possibles sur les
+  personnages en mouvement rapide.
 
 ## Compilation
 
