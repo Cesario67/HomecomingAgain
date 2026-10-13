@@ -121,6 +121,14 @@ Conséquences pour le plan :
 - Vecteurs de mouvement de la caméra (vérifié en jeu le 13/10/2026, rotation de la caméra sur place) : avec la
   profondeur décodée, l'écart moyen avec l'image précédente recalée passe d'environ 4,5 sans vecteurs à 1,1-1,3 avec,
   sur 6 contrôles ; le signe (position précédente - position actuelle, en pixels) est le bon.
+- Décalage de caméra (vérifié en jeu le 13/10/2026, amplitude 8 px) : toute la scène 3D tremble d'un bloc,
+  l'interface reste fixe.
+- **DLSS en mode DLAA rendu au jeu (vérifié en jeu le 13/10/2026)** : SDK v310.9.1, RTX 5070 Ti, 0,5 ms par image ;
+  `[DLSS] ShareFrames=1`, `Jitter=1`, `Apply=1`. Image du DLSS rendue 494 fois sur 494 en 10 s, 59 i/s, plus de
+  tremblement, fluide. Chien de garde (500 ms) vérifié : il a coupé le retour quand le programme DLSS s'est bloqué
+  sur l'enregistrement des images de contrôle (corrigé : plus de relecture pendant le retour).
+- **À faire** : vecteurs de mouvement des personnages (mSkinningMatrices), signal de réinitialisation aux
+  changements de plan, SMAA à couper quand le DLSS est actif, installation par le launcher, réglage dans le launcher.
 - **À faire : test en jeu réel** (mis de côté le 13/10/2026). Non vérifié : marche et course (vrai déplacement de la
   caméra), autres lieux (extérieurs, grandes pièces), coupures de caméra (cinématiques, portes, changements de pièce,
   à signaler au DLSS par un indicateur de réinitialisation). Méthode : 1 à 2 minutes de jeu normal, puis compter les
