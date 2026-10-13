@@ -35,10 +35,11 @@ public:
                     const std::wstring& dllDirectory, const std::wstring& dataDirectory);
 
     // Exécute le DLSS sur l'emplacement `slot` et attend la fin du travail sur la carte. `jitter` en pixels.
-    bool Evaluate(std::size_t slot, float jitterX, float jitterY, bool reset);
+    // `value` : numéro de l'image, passé au compteur « traitées » quand le mod attend le retour de l'image.
+    bool Evaluate(std::size_t slot, std::uint64_t value, float jitterX, float jitterY, bool reset);
 
-    // Copie la sortie en mémoire (BGRA 8 bits, pour WriteColorBmp).
-    bool ReadOutput(std::vector<std::uint8_t>& bgra);
+    // Copie la sortie de l'emplacement en mémoire (BGRA 8 bits, pour WriteColorBmp).
+    bool ReadOutput(std::size_t slot, std::vector<std::uint8_t>& bgra);
 
 private:
     struct Impl;

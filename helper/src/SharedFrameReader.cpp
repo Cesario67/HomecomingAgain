@@ -27,6 +27,9 @@ struct SharedFrameReader::Impl {
     VkDeviceMemory depthMemory[kSlots]{};
     VkImage motion[kSlots]{};
     VkDeviceMemory motionMemory[kSlots]{};
+    VkImage output[kSlots]{};  // sorties du DLSS rendues au jeu (facultatives)
+    VkDeviceMemory outputMemory[kSlots]{};
+    VkSemaphore processed = VK_NULL_HANDLE;  // « traitées » (signalé par ce processus)
     VkSemaphore timeline = VK_NULL_HANDLE;  // « produites »
     VkSemaphore consumed = VK_NULL_HANDLE;  // « consommées »
     VkCommandPool pool = VK_NULL_HANDLE;
@@ -45,7 +48,7 @@ struct SharedFrameReader::Impl {
     bool CreateInstance();
     bool CreateDevice();
     bool ImportImage(const SharedImageArgs& shared, std::uint64_t handle, VkImage& image, VkDeviceMemory& memory,
-                     const std::string& name);
+                     const std::string& name, VkImageUsageFlags extraUsage = 0);
     bool ImportSemaphore(std::uint64_t handle, VkSemaphore& semaphore, const char* name);
     std::uint32_t FindMemoryType(std::uint32_t bits, VkMemoryPropertyFlags flags);
 };
@@ -162,7 +165,8 @@ std::uint32_t SharedFrameReader::Impl::FindMemoryType(std::uint32_t bits, VkMemo
 }
 
 bool SharedFrameReader::Impl::ImportImage(const SharedImageArgs& shared, std::uint64_t handle, VkImage& image,
-                                          VkDeviceMemory& memory, const std::string& name) {
+                                          VkDeviceMemory& memory, const std::string& name,
+                                          VkImageUsageFlags extraUsage) {
     // Paramètres identiques à ceux du mod (dlss/SharedFrames.cpp, CreateSharedImage) : obligatoire pour l'import.
     VkExternalMemoryImageCreateInfo external{VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO};
     external.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
@@ -175,7 +179,8 @@ bool SharedFrameReader::Impl::ImportImage(const SharedImageArgs& shared, std::ui
     info.arrayLayers = 1;
     info.samples = VK_SAMPLE_COUNT_1_BIT;
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    info.usage =
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | extraUsage;
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     if (Device<PFN_vkCreateImage>("vkCreateImage")(device, &info, nullptr, &image) != VK_SUCCESS) {
@@ -236,6 +241,7 @@ SharedFrameReader::~SharedFrameReader() {
         s.Device<PFN_vkDestroyCommandPool>("vkDestroyCommandPool")(s.device, s.pool, nullptr);
         s.Device<PFN_vkDestroySemaphore>("vkDestroySemaphore")(s.device, s.timeline, nullptr);
         s.Device<PFN_vkDestroySemaphore>("vkDestroySemaphore")(s.device, s.consumed, nullptr);
+        s.Device<PFN_vkDestroySemaphore>("vkDestroySemaphore")(s.device, s.processed, nullptr);
         for (std::size_t i = 0; i < kSlots; ++i) {
             s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.color[i], nullptr);
             s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.depth[i], nullptr);
@@ -243,6 +249,8 @@ SharedFrameReader::~SharedFrameReader() {
             s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.depthMemory[i], nullptr);
             s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.motion[i], nullptr);
             s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.motionMemory[i], nullptr);
+            s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.output[i], nullptr);
+            s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.outputMemory[i], nullptr);
         }
         s.Device<PFN_vkDestroyDevice>("vkDestroyDevice")(s.device, nullptr);
     }
@@ -260,12 +268,13 @@ void SharedFrameReader::AddExtensions(const std::vector<std::string>& instanceEx
 
 VulkanContext SharedFrameReader::Context() const {
     const Impl& s = *impl_;
-    return {s.instance, s.physicalDevice, s.device, s.queue, s.queueFamily, s.pool, s.getInstanceProc, s.getDeviceProc};
+    return {s.instance,  s.physicalDevice,  s.device,        s.queue,    s.queueFamily,
+            s.pool,      s.getInstanceProc, s.getDeviceProc, s.processed};
 }
 
 SlotImages SharedFrameReader::Images(std::size_t slot) const {
     const Impl& s = *impl_;
-    return {s.color[slot % kSlots], s.depth[slot % kSlots], s.motion[slot % kSlots]};
+    return {s.color[slot % kSlots], s.depth[slot % kSlots], s.motion[slot % kSlots], s.output[slot % kSlots]};
 }
 
 bool SharedFrameReader::Open() {
@@ -282,8 +291,23 @@ bool SharedFrameReader::Open() {
             return false;
         }
     }
-    return s.ImportSemaphore(s.args.semaphore, s.timeline, "produites") &&
-           s.ImportSemaphore(s.args.consumed, s.consumed, "consommées");
+    if (!s.ImportSemaphore(s.args.semaphore, s.timeline, "produites") ||
+        !s.ImportSemaphore(s.args.consumed, s.consumed, "consommées")) {
+        return false;
+    }
+    // Retour vers le jeu (facultatif) : sorties écrites par le DLSS (STORAGE), même création que dans le mod.
+    if (s.args.processed != 0) {
+        for (std::size_t i = 0; i < kSlots; ++i) {
+            if (!s.ImportImage(s.args.output, s.args.output.handles[i], s.output[i], s.outputMemory[i],
+                               std::format("sortie {}", i), VK_IMAGE_USAGE_STORAGE_BIT)) {
+                return false;
+            }
+        }
+        if (!s.ImportSemaphore(s.args.processed, s.processed, "traitées")) {
+            return false;
+        }
+    }
+    return true;
 }
 
 std::uint64_t SharedFrameReader::WaitNext(std::uint64_t lastValue, std::uint32_t timeoutMs) {

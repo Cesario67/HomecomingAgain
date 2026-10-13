@@ -8,6 +8,7 @@
 #include <d3d9_vk_interop.h>
 #include <vulkan/vulkan_win32.h>
 
+#include <atomic>
 #include <format>
 #include <string>
 #include <vector>
@@ -48,6 +49,10 @@ struct VulkanFunctions {
     PFN_vkGetFenceStatus getFenceStatus = nullptr;
     PFN_vkResetFences resetFences = nullptr;
     PFN_vkQueueSubmit queueSubmit = nullptr;
+    // Retour de l'image du DLSS vers le jeu.
+    PFN_vkGetPhysicalDeviceFormatProperties getFormatProperties = nullptr;
+    PFN_vkCmdBlitImage cmdBlitImage = nullptr;
+    PFN_vkSignalSemaphore signalSemaphore = nullptr;
 };
 
 struct SharedImage {
@@ -87,6 +92,16 @@ struct State {
     VkCommandPool pool = VK_NULL_HANDLE;
     VkCommandBuffer commands[kSharedSlots]{};
     VkFence fences[kSharedSlots]{};
+    // Retour de l'image du DLSS ([DLSS] Apply=1) : le processus DLSS écrit dans output[slot] et passe le compteur
+    // « traitées » à v ; la carte graphique attend ce compteur avant de recopier la sortie dans la scène du jeu.
+    SharedImage output[kSharedSlots];
+    ExportedTimeline processed;
+    VkCommandBuffer back[kSharedSlots]{};
+    std::atomic<bool> returnEnabled{false};  // arrêté pour de bon par le chien de garde (autre thread)
+    std::atomic<std::uint64_t> waitingFor{0};  // dernière valeur attendue par la carte graphique
+    HANDLE watchdog = nullptr;
+    std::uint32_t returned = 0;
+    std::uint32_t notReturned = 0;  // processus DLSS en retard : image d'origine gardée
     // Statistiques journalisées toutes les 10 s.
     std::uint32_t shared = 0;
     std::uint32_t skippedCopy = 0;      // copie précédente de l'emplacement pas finie sur la carte
@@ -145,7 +160,11 @@ bool LoadFunctions(State& s) {
     ok &= LoadDevice(getDeviceProc, s.device, "vkGetFenceStatus", s.vk.getFenceStatus);
     ok &= LoadDevice(getDeviceProc, s.device, "vkResetFences", s.vk.resetFences);
     ok &= LoadDevice(getDeviceProc, s.device, "vkQueueSubmit", s.vk.queueSubmit);
-    return ok;
+    ok &= LoadDevice(getDeviceProc, s.device, "vkCmdBlitImage", s.vk.cmdBlitImage);
+    ok &= LoadDevice(getDeviceProc, s.device, "vkSignalSemaphore", s.vk.signalSemaphore);
+    s.vk.getFormatProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceFormatProperties>(
+        getInstanceProc(s.instance, "vkGetPhysicalDeviceFormatProperties"));
+    return ok && s.vk.getFormatProperties != nullptr;
 }
 
 // Image du jeu (Vulkan) derrière une texture Direct3D 9 de DXVK, avec son format et sa taille.
@@ -169,19 +188,22 @@ bool GameImage(IDirect3DBaseTexture9* texture, VkImage& image, VkImageCreateInfo
     return SUCCEEDED(result) && image != VK_NULL_HANDLE;
 }
 
-bool CreateSharedImage(State& s, const VkImageCreateInfo& source, SharedImage& out, const std::string& name) {
+// `extraUsage` et `format` (si défini) servent aux images de sortie du DLSS, écrites par un shader (STORAGE).
+bool CreateSharedImage(State& s, const VkImageCreateInfo& source, SharedImage& out, const std::string& name,
+                       VkImageUsageFlags extraUsage = 0, VkFormat format = VK_FORMAT_UNDEFINED) {
     VkExternalMemoryImageCreateInfo external{VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO};
     external.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
     VkImageCreateInfo info{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     info.pNext = &external;
     info.imageType = VK_IMAGE_TYPE_2D;
-    info.format = source.format;
+    info.format = format != VK_FORMAT_UNDEFINED ? format : source.format;
     info.extent = {source.extent.width, source.extent.height, 1};
     info.mipLevels = 1;
     info.arrayLayers = 1;
     info.samples = VK_SAMPLE_COUNT_1_BIT;
     info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    info.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+    info.usage =
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | extraUsage;
     info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     if (s.vk.createImage(s.device, &info, nullptr, &out.image) != VK_SUCCESS) {
@@ -305,8 +327,92 @@ bool Initialize(State& s, IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTextur
             return false;
         }
     }
-    return CreateTimeline(s, s.produced, "images produites") && CreateTimeline(s, s.consumed, "images consommées") &&
-           CreateCommands(s);
+    if (!CreateTimeline(s, s.produced, "images produites") || !CreateTimeline(s, s.consumed, "images consommées") ||
+        !CreateCommands(s)) {
+        return false;
+    }
+    if (GetConfig().dlssApply) {
+        // Sortie du DLSS au format de la scène si la carte permet de l'écrire depuis un shader, sinon en R8G8B8A8
+        // (la recopie vers la scène se fait par vkCmdBlitImage, qui convertit l'ordre des canaux).
+        VkFormatProperties properties{};
+        s.vk.getFormatProperties(s.physicalDevice, colorInfo.format, &properties);
+        const VkFormat outputFormat = (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) != 0
+                                          ? colorInfo.format
+                                          : VK_FORMAT_R8G8B8A8_UNORM;
+        bool ok = true;
+        for (std::uint32_t i = 0; i < kSharedSlots && ok; ++i) {
+            ok = CreateSharedImage(s, colorInfo, s.output[i], std::format("sortie {}", i), VK_IMAGE_USAGE_STORAGE_BIT,
+                                   outputFormat);
+        }
+        VkCommandBufferAllocateInfo allocate{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+        allocate.commandPool = s.pool;
+        allocate.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocate.commandBufferCount = kSharedSlots;
+        ok = ok && CreateTimeline(s, s.processed, "images traitées") &&
+             s.vk.allocateCommandBuffers(s.device, &allocate, s.back) == VK_SUCCESS;
+        s.returnEnabled = ok;
+        log::Info("DLSS : retour de l'image vers le jeu {}", ok ? "préparé" : "impossible");
+    }
+    return true;
+}
+
+VkImageMemoryBarrier Barrier(VkImage image, VkImageLayout from, VkImageLayout to, VkAccessFlags srcAccess,
+                             VkAccessFlags dstAccess);
+
+// Chien de garde du retour : si le processus DLSS ne passe pas le compteur « traitées » à la valeur attendue par la
+// carte graphique dans les 300 ms (processus planté ou figé), le mod le fait lui-même depuis le processeur pour débloquer
+// la carte, et coupe le retour : le jeu continue avec son image d'origine.
+DWORD WINAPI WatchdogThread(void* parameter) {
+    State& s = *static_cast<State*>(parameter);
+    ULONGLONG stuckSince = 0;
+    while (s.returnEnabled) {
+        Sleep(50);
+        const std::uint64_t waiting = s.waitingFor.load();
+        std::uint64_t processed = 0;
+        s.vk.getSemaphoreCounterValue(s.device, s.processed.semaphore, &processed);
+        if (processed >= waiting) {
+            stuckSince = 0;
+            continue;
+        }
+        const ULONGLONG now = GetTickCount64();
+        if (stuckSince == 0) {
+            stuckSince = now;
+        } else if (now - stuckSince > 300) {
+            s.returnEnabled = false;
+            VkSemaphoreSignalInfo signal{VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO};
+            signal.semaphore = s.processed.semaphore;
+            signal.value = waiting;
+            s.vk.signalSemaphore(s.device, &signal);
+            log::Error("DLSS : le processus DLSS ne répond plus (image {} attendue, {} traitée) : retour de l'image "
+                       "arrêté, image d'origine du jeu",
+                       waiting, processed);
+        }
+    }
+    return 0;
+}
+
+// Recopie de la sortie du DLSS (emplacement slot) dans la scène du jeu, après l'attente du compteur « traitées ».
+void RecordReturn(State& s, VkCommandBuffer commands, VkImage game, const SharedImage& output) {
+    VkImageMemoryBarrier before[2] = {
+        Barrier(output.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_WRITE_BIT,
+                VK_ACCESS_TRANSFER_READ_BIT),
+        Barrier(game, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL,
+                VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT)};
+    s.vk.cmdPipelineBarrier(commands, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
+                            0, nullptr, 2, before);
+    VkImageBlit region{};
+    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.dstSubresource = region.srcSubresource;
+    region.srcOffsets[1] = {static_cast<std::int32_t>(output.extent.width),
+                            static_cast<std::int32_t>(output.extent.height), 1};
+    region.dstOffsets[1] = region.srcOffsets[1];
+    s.vk.cmdBlitImage(commands, output.image, VK_IMAGE_LAYOUT_GENERAL, game, VK_IMAGE_LAYOUT_GENERAL, 1, &region,
+                      VK_FILTER_NEAREST);
+    VkMemoryBarrier after{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+    after.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT;
+    after.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    s.vk.cmdPipelineBarrier(commands, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &after,
+                            0, nullptr, 0, nullptr);
 }
 
 VkImageMemoryBarrier Barrier(VkImage image, VkImageLayout from, VkImageLayout to, VkAccessFlags srcAccess,
@@ -367,6 +473,15 @@ void Report(State& s) {
               "moyen {:.3f} ms, produites {}, consommées {}",
               s.shared, s.skippedCopy, s.skippedConsumer, s.shared > 0 ? s.cpuMs / s.shared : 0.0, s.producedValue,
               consumed);
+    if (GetConfig().dlssApply) {
+        std::uint64_t processed = 0;
+        s.vk.getSemaphoreCounterValue(s.device, s.processed.semaphore, &processed);
+        log::Info("DLSS : image du DLSS rendue au jeu {} fois, image d'origine gardée {} fois (DLSS en retard), "
+                  "traitées {}, retour {}",
+                  s.returned, s.notReturned, processed, s.returnEnabled ? "actif" : "arrêté");
+    }
+    s.returned = 0;
+    s.notReturned = 0;
     s.shared = 0;
     s.skippedCopy = 0;
     s.skippedConsumer = 0;
@@ -429,6 +544,19 @@ void LaunchHelper(State& s) {
     if (s.info != nullptr) {
         command += std::format(L" --info 0x{:X}", reinterpret_cast<std::uintptr_t>(s.infoMapping));
     }
+    if (s.returnEnabled) {
+        std::wstring outputs;
+        for (std::uint32_t i = 0; i < kSharedSlots; ++i) {
+            outputs += std::format(L"{}0x{:X}", i == 0 ? L"" : L",", reinterpret_cast<std::uintptr_t>(s.output[i].handle));
+            handles.push_back(s.output[i].handle);
+            SetHandleInformation(s.output[i].handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+        }
+        handles.push_back(s.processed.handle);
+        SetHandleInformation(s.processed.handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+        command += std::format(L" --output {} --output-format {} --output-size {} --processed 0x{:X}", outputs,
+                               static_cast<int>(s.output[0].format), s.output[0].size,
+                               reinterpret_cast<std::uintptr_t>(s.processed.handle));
+    }
 
     SIZE_T attributeSize = 0;
     InitializeProcThreadAttributeList(nullptr, 1, 0, &attributeSize);
@@ -453,11 +581,18 @@ void LaunchHelper(State& s) {
     }
     if (!ok) {
         log::Warn("DLSS : lancement de HomecomingAgain.Dlss.exe impossible (erreur {})", error);
+        s.returnEnabled = false;
         return;
     }
     CloseHandle(process.hThread);
     CloseHandle(process.hProcess);
     log::Info("DLSS : HomecomingAgain.Dlss.exe lancé (processus {})", process.dwProcessId);
+    if (s.returnEnabled) {
+        s.watchdog = CreateThread(nullptr, 0, &WatchdogThread, &s, 0, nullptr);
+        if (s.watchdog == nullptr) {
+            s.returnEnabled = false;  // sans chien de garde, pas d'attente de la carte graphique
+        }
+    }
 }
 
 }  // namespace
@@ -540,10 +675,41 @@ bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
         MemoryBarrier();
         info.value = value;
     }
+    // Retour de l'image du DLSS : seulement si le processus DLSS a déjà rendu au moins une image et suit le rythme
+    // (image v - 2 traitée), sinon la scène d'origine est gardée pour cette image. La carte graphique attend « traitées »
+    // = v avant la recopie ; le processeur, lui, n'attend jamais (chien de garde en cas de blocage).
+    VkSubmitInfo submits[2] = {submit, {VK_STRUCTURE_TYPE_SUBMIT_INFO}};
+    std::uint32_t submitCount = 1;
+    VkTimelineSemaphoreSubmitInfo waitInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
+    const VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    if (s.returnEnabled) {
+        std::uint64_t processed = 0;
+        s.vk.getSemaphoreCounterValue(s.device, s.processed.semaphore, &processed);
+        if (processed >= 1 && processed + 2 >= value) {
+            VkCommandBuffer back = s.back[slot];
+            s.vk.resetCommandBuffer(back, 0);
+            s.vk.beginCommandBuffer(back, &begin);
+            RecordReturn(s, back, game[0], s.output[slot]);
+            s.vk.endCommandBuffer(back);
+            waitInfo.waitSemaphoreValueCount = 1;
+            waitInfo.pWaitSemaphoreValues = &value;
+            submits[1].pNext = &waitInfo;
+            submits[1].waitSemaphoreCount = 1;
+            submits[1].pWaitSemaphores = &s.processed.semaphore;
+            submits[1].pWaitDstStageMask = &waitStage;
+            submits[1].commandBufferCount = 1;
+            submits[1].pCommandBuffers = &back;
+            submitCount = 2;
+            s.waitingFor.store(value);
+            ++s.returned;
+        } else {
+            ++s.notReturned;
+        }
+    }
     s.vk.resetFences(s.device, 1, &s.fences[slot]);
     // Pendant le verrou de la file, aucun appel Direct3D 9 depuis ce thread (documentation DXVK).
     interop->LockSubmissionQueue();
-    const VkResult result = s.vk.queueSubmit(s.queue, 1, &submit, s.fences[slot]);
+    const VkResult result = s.vk.queueSubmit(s.queue, submitCount, submits, s.fences[slot]);
     interop->ReleaseSubmissionQueue();
     if (result != VK_SUCCESS) {
         log::Error("DLSS : soumission de la copie refusée ({}), partage arrêté", static_cast<int>(result));

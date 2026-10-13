@@ -94,6 +94,7 @@ bool LoadConfig(const std::wstring& iniPath) {
 
     config.dlssShareFrames = ReadBool(iniPath, L"DLSS", L"ShareFrames", defaults.dlssShareFrames);
     config.dlssJitter = ReadFloat(iniPath, L"DLSS", L"Jitter", defaults.dlssJitter, 0.0f, 16.0f);
+    config.dlssApply = ReadBool(iniPath, L"DLSS", L"Apply", defaults.dlssApply);
 
     config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
 

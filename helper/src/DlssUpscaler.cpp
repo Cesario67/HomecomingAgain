@@ -39,6 +39,11 @@ struct DlssUpscaler::Impl {
         VkImageView colorView = VK_NULL_HANDLE;
         VkImageView depthView = VK_NULL_HANDLE;
         VkImageView motionView = VK_NULL_HANDLE;
+        // Sortie : image partagée de l'emplacement (retour vers le jeu) ou image propre à ce processus.
+        VkImage output = VK_NULL_HANDLE;
+        VkImageView outputView = VK_NULL_HANDLE;
+        VkFormat outputFormat = VK_FORMAT_UNDEFINED;
+        VkImageLayout outputLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     };
     std::vector<Inputs> inputs;
     VkFormat colorFormat = VK_FORMAT_UNDEFINED;
@@ -48,7 +53,7 @@ struct DlssUpscaler::Impl {
     VkImage output = VK_NULL_HANDLE;
     VkDeviceMemory outputMemory = VK_NULL_HANDLE;
     VkImageView outputView = VK_NULL_HANDLE;
-    VkImageLayout outputLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
     VkCommandBuffer commands = VK_NULL_HANDLE;
     VkFence fence = VK_NULL_HANDLE;
 
@@ -65,7 +70,7 @@ struct DlssUpscaler::Impl {
     VkImageView CreateView(VkImage image, VkFormat format) const;
     bool CreateOutput();
     bool Begin() const;
-    bool SubmitAndWait() const;
+    bool SubmitAndWait(std::uint64_t processedValue = 0) const;
     void Barrier(VkImage image, VkImageLayout from, VkImageLayout to, VkAccessFlags srcAccess,
                  VkAccessFlags dstAccess) const;
 };
@@ -130,7 +135,7 @@ bool DlssUpscaler::Impl::Begin() const {
     return Device<PFN_vkBeginCommandBuffer>("vkBeginCommandBuffer")(commands, &begin) == VK_SUCCESS;
 }
 
-bool DlssUpscaler::Impl::SubmitAndWait() const {
+bool DlssUpscaler::Impl::SubmitAndWait(std::uint64_t processedValue) const {
     if (Device<PFN_vkEndCommandBuffer>("vkEndCommandBuffer")(commands) != VK_SUCCESS) {
         return false;
     }
@@ -138,6 +143,16 @@ bool DlssUpscaler::Impl::SubmitAndWait() const {
     VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &commands;
+    // Compteur « traitées » passé à la valeur de l'image par la carte graphique, dès la fin du DLSS : le mod attend ce
+    // signal (sur la carte) avant de recopier la sortie dans la scène du jeu.
+    VkTimelineSemaphoreSubmitInfo timeline{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
+    if (processedValue != 0 && vk.processed != VK_NULL_HANDLE) {
+        timeline.signalSemaphoreValueCount = 1;
+        timeline.pSignalSemaphoreValues = &processedValue;
+        submit.pNext = &timeline;
+        submit.signalSemaphoreCount = 1;
+        submit.pSignalSemaphores = &vk.processed;
+    }
     if (Device<PFN_vkQueueSubmit>("vkQueueSubmit")(vk.queue, 1, &submit, fence) != VK_SUCCESS) {
         return false;
     }
@@ -184,6 +199,9 @@ DlssUpscaler::~DlssUpscaler() {
         destroyView(s.vk.device, input.colorView, nullptr);
         destroyView(s.vk.device, input.depthView, nullptr);
         destroyView(s.vk.device, input.motionView, nullptr);
+        if (input.outputView != s.outputView) {
+            destroyView(s.vk.device, input.outputView, nullptr);
+        }
     }
     destroyView(s.vk.device, s.outputView, nullptr);
     s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.vk.device, s.output, nullptr);
@@ -252,6 +270,12 @@ bool DlssUpscaler::Initialize(const VulkanContext& context, const Arguments& arg
         return false;
     }
 
+    // Sans retour vers le jeu, une seule image de sortie propre à ce processus, commune aux emplacements.
+    const bool sharedOutput = !slots.empty() && slots[0].output != VK_NULL_HANDLE;
+    if (!sharedOutput && !s.CreateOutput()) {
+        s.log("DLSS : image de sortie impossible");
+        return false;
+    }
     for (const SlotImages& slot : slots) {
         Impl::Inputs input;
         input.color = slot.color;
@@ -260,17 +284,24 @@ bool DlssUpscaler::Initialize(const VulkanContext& context, const Arguments& arg
         input.colorView = s.CreateView(slot.color, s.colorFormat);
         input.depthView = s.CreateView(slot.depth, s.depthFormat);
         input.motionView = s.CreateView(slot.motion, s.motionFormat);
+        if (sharedOutput) {
+            input.output = slot.output;
+            input.outputFormat = static_cast<VkFormat>(args.output.format);
+            input.outputView = s.CreateView(slot.output, input.outputFormat);
+        } else {
+            input.output = s.output;
+            input.outputFormat = Impl::kOutputFormat;
+            input.outputView = s.outputView;
+        }
         s.inputs.push_back(input);
         if (input.colorView == VK_NULL_HANDLE || input.depthView == VK_NULL_HANDLE ||
-            input.motionView == VK_NULL_HANDLE) {
+            input.motionView == VK_NULL_HANDLE || input.outputView == VK_NULL_HANDLE) {
             s.log("DLSS : vues des images partagées impossibles");
             return false;
         }
     }
-    if (!s.CreateOutput()) {
-        s.log("DLSS : image de sortie impossible");
-        return false;
-    }
+    s.log(std::format("DLSS : sortie {}", sharedOutput ? "partagée avec le jeu (retour de l'image)"
+                                                         : "propre au processus (pas de retour)"));
     VkCommandBufferAllocateInfo allocate{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     allocate.commandPool = s.vk.pool;
     allocate.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -303,12 +334,12 @@ bool DlssUpscaler::Initialize(const VulkanContext& context, const Arguments& arg
     return true;
 }
 
-bool DlssUpscaler::Evaluate(std::size_t slot, float jitterX, float jitterY, bool reset) {
+bool DlssUpscaler::Evaluate(std::size_t slot, std::uint64_t value, float jitterX, float jitterY, bool reset) {
     Impl& s = *impl_;
     if (s.feature == nullptr || s.inputs.empty() || !s.Begin()) {
         return false;
     }
-    const Impl::Inputs& input = s.inputs[slot % s.inputs.size()];
+    Impl::Inputs& input = s.inputs[slot % s.inputs.size()];
     // Les images partagées restent en GENERAL entre deux images (disposition attendue par le mod) : lecture par le DLSS
     // dans cette même disposition, sans transition.
     s.Barrier(input.color, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_WRITE_BIT,
@@ -317,9 +348,10 @@ bool DlssUpscaler::Evaluate(std::size_t slot, float jitterX, float jitterY, bool
               VK_ACCESS_SHADER_READ_BIT);
     s.Barrier(input.motion, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_WRITE_BIT,
               VK_ACCESS_SHADER_READ_BIT);
-    s.Barrier(s.output, s.outputLayout, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_READ_BIT,
+    // Sortie laissée en GENERAL : le mod la recopie dans cette disposition.
+    s.Barrier(input.output, input.outputLayout, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_READ_BIT,
               VK_ACCESS_SHADER_WRITE_BIT);
-    s.outputLayout = VK_IMAGE_LAYOUT_GENERAL;
+    input.outputLayout = VK_IMAGE_LAYOUT_GENERAL;
 
     const VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
     NVSDK_NGX_Resource_VK color = NVSDK_NGX_Create_ImageView_Resource_VK(input.colorView, input.color, range,
@@ -328,8 +360,8 @@ bool DlssUpscaler::Evaluate(std::size_t slot, float jitterX, float jitterY, bool
                                                                           s.depthFormat, s.width, s.height, false);
     NVSDK_NGX_Resource_VK motion = NVSDK_NGX_Create_ImageView_Resource_VK(input.motionView, input.motion, range,
                                                                            s.motionFormat, s.width, s.height, false);
-    NVSDK_NGX_Resource_VK output = NVSDK_NGX_Create_ImageView_Resource_VK(s.outputView, s.output, range,
-                                                                           Impl::kOutputFormat, s.width, s.height, true);
+    NVSDK_NGX_Resource_VK output = NVSDK_NGX_Create_ImageView_Resource_VK(input.outputView, input.output, range,
+                                                                           input.outputFormat, s.width, s.height, true);
     NVSDK_NGX_VK_DLSS_Eval_Params eval{};
     eval.Feature.pInColor = &color;
     eval.Feature.pInOutput = &output;
@@ -342,7 +374,8 @@ bool DlssUpscaler::Evaluate(std::size_t slot, float jitterX, float jitterY, bool
     eval.InMVScaleX = 1.0f;  // vecteurs déjà en pixels (position précédente - position actuelle)
     eval.InMVScaleY = 1.0f;
     const NVSDK_NGX_Result result = NGX_VULKAN_EVALUATE_DLSS_EXT(s.commands, s.feature, s.parameters, &eval);
-    const bool submitted = s.SubmitAndWait();
+    // « Traitées » n'est signalé que si le DLSS a réussi : sinon le chien de garde du mod coupe le retour.
+    const bool submitted = s.SubmitAndWait(NVSDK_NGX_FAILED(result) ? 0 : value);
     if (NVSDK_NGX_FAILED(result) || !submitted) {
         s.log(std::format("DLSS : exécution impossible ({}, soumission {})", ResultText(result),
                           submitted ? "ok" : "refusée"));
@@ -351,9 +384,13 @@ bool DlssUpscaler::Evaluate(std::size_t slot, float jitterX, float jitterY, bool
     return true;
 }
 
-bool DlssUpscaler::ReadOutput(std::vector<std::uint8_t>& bgra) {
+bool DlssUpscaler::ReadOutput(std::size_t slot, std::vector<std::uint8_t>& bgra) {
     Impl& s = *impl_;
-    if (s.output == VK_NULL_HANDLE || s.outputLayout != VK_IMAGE_LAYOUT_GENERAL) {
+    if (s.inputs.empty()) {
+        return false;
+    }
+    const Impl::Inputs& input = s.inputs[slot % s.inputs.size()];
+    if (input.output == VK_NULL_HANDLE || input.outputLayout != VK_IMAGE_LAYOUT_GENERAL) {
         return false;
     }
     const VkDeviceSize size = static_cast<VkDeviceSize>(s.width) * s.height * 4;
@@ -376,7 +413,7 @@ bool DlssUpscaler::ReadOutput(std::vector<std::uint8_t>& bgra) {
         VkBufferImageCopy region{};
         region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
         region.imageExtent = {s.width, s.height, 1};
-        s.Device<PFN_vkCmdCopyImageToBuffer>("vkCmdCopyImageToBuffer")(s.commands, s.output, VK_IMAGE_LAYOUT_GENERAL,
+        s.Device<PFN_vkCmdCopyImageToBuffer>("vkCmdCopyImageToBuffer")(s.commands, input.output, VK_IMAGE_LAYOUT_GENERAL,
                                                                        buffer, 1, &region);
         ok = s.SubmitAndWait();
     }
@@ -385,11 +422,12 @@ bool DlssUpscaler::ReadOutput(std::vector<std::uint8_t>& bgra) {
         s.Device<PFN_vkMapMemory>("vkMapMemory")(s.vk.device, memory, 0, size, 0, &mapped);
         bgra.resize(static_cast<std::size_t>(size));
         const auto* rgba = static_cast<const std::uint8_t*>(mapped);
-        // R8G8B8A8 vers B8G8R8A8.
+        // Vers B8G8R8A8 (ordre de WriteColorBmp) ; R8G8B8A8 : rouge et bleu échangés.
+        const bool swap = input.outputFormat != VK_FORMAT_B8G8R8A8_UNORM;
         for (std::size_t i = 0; i < bgra.size(); i += 4) {
-            bgra[i] = rgba[i + 2];
+            bgra[i] = rgba[swap ? i + 2 : i];
             bgra[i + 1] = rgba[i + 1];
-            bgra[i + 2] = rgba[i];
+            bgra[i + 2] = rgba[swap ? i : i + 2];
             bgra[i + 3] = rgba[i + 3];
         }
         s.Device<PFN_vkUnmapMemory>("vkUnmapMemory")(s.vk.device, memory);

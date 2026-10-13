@@ -101,7 +101,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             // précédente est encore dans son emplacement : les emplacements sont rendus au mod avec une image de
             // retard, voir plus bas). Les vecteurs de l'image v se rapportent à l'image v - 1 transmise, même quand le
             // mod a sauté des images du jeu entre les deux.
-            if (total >= nextMotionCheck && consecutive) {
+            // Pas pendant le retour de l'image : la relecture retarderait le jeu, dont la carte attend le DLSS.
+            if (parsed->processed == 0 && total >= nextMotionCheck && consecutive) {
                 std::vector<std::uint8_t> previousColor;
                 std::vector<std::uint8_t> color;
                 std::vector<float> depth;
@@ -168,7 +169,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                 LARGE_INTEGER end{};
                 LARGE_INTEGER frequency{};
                 QueryPerformanceCounter(&start);
-                if (dlss.Evaluate(slot, jitterX, jitterY, reset)) {
+                if (dlss.Evaluate(slot, value, jitterX, jitterY, reset)) {
                     ++evaluated;
                     firstEvaluation = false;
                 } else {
@@ -185,7 +186,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                     std::vector<float> depth;
                     std::vector<std::uint16_t> motion;
                     const std::wstring dir = parsed->outputDir.empty() ? L"." : parsed->outputDir;
-                    const bool a = dlss.ReadOutput(output) &&
+                    const bool a = dlss.ReadOutput(slot, output) &&
                                    hca::dlss::WriteColorBmp(dir + L"\\dlss_sortie.bmp", output.data(), parsed->width,
                                                             parsed->height);
                     const bool b = reader.ReadBack(slot, input, depth, motion) &&

@@ -82,6 +82,13 @@ std::optional<Arguments> ParseArguments(const std::vector<std::wstring>& args) {
         } else if (key == L"--device" && ParseNumber(text, n)) {
             result.deviceId = static_cast<std::uint32_t>(n);
             seen[10] = true;
+        } else if (key == L"--output" && ParseList(text, result.output.handles)) {
+        } else if (key == L"--output-format" && ParseNumber(text, n)) {
+            result.output.format = static_cast<std::uint32_t>(n);
+        } else if (key == L"--output-size" && ParseNumber(text, n)) {
+            result.output.allocationSize = n;
+        } else if (key == L"--processed" && ParseNumber(text, n)) {
+            result.processed = n;
         } else if (key == L"--info" && ParseNumber(text, n)) {
             result.info = n;  // facultatif : sans lui, pas de décalage de caméra transmis
         } else if (key == L"--log") {

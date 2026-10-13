@@ -37,6 +37,15 @@ int main() {
     const auto parsedInfo = ParseArguments(withInfo);
     Check(parsed && parsed->info == 0 && parsedInfo && parsedInfo->info == 0xD10,
           "bloc des données d'image facultatif");
+    std::vector<std::wstring> withOutput = full;
+    for (const wchar_t* item : {L"--output", L"0xE00,0xE04,0xE08", L"--output-format", L"44", L"--output-size", L"8847360",
+                                L"--processed", L"0xE0C"}) {
+        withOutput.push_back(item);
+    }
+    const auto parsedOutput = ParseArguments(withOutput);
+    Check(parsed && parsed->processed == 0 && parsedOutput && parsedOutput->output.handles[2] == 0xE08 &&
+              parsedOutput->output.format == 44 && parsedOutput->processed == 0xE0C,
+          "sorties du DLSS et compteur « traitées » facultatifs");
     std::vector<std::wstring> missing = full;
     missing.erase(missing.begin() + 6, missing.begin() + 8);  // sans --color
     Check(!ParseArguments(missing), "paramètre manquant refusé");

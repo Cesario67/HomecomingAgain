@@ -82,6 +82,8 @@ struct Config {
     bool dlssShareFrames = false;
     // Décalage de caméra (jitter) pour le DLSS, amplitude en pixels (0 = aucun, 1 = normal). Voir graphics/Jitter.h.
     float dlssJitter = 0.0f;
+    // Image traitée par le DLSS rendue au jeu (avant les post-traitements). Exige ShareFrames=1.
+    bool dlssApply = false;
 
 
 

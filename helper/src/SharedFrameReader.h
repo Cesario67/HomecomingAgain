@@ -27,6 +27,7 @@ struct VulkanContext {
     VkCommandPool pool = VK_NULL_HANDLE;
     PFN_vkGetInstanceProcAddr getInstanceProc = nullptr;
     PFN_vkGetDeviceProcAddr getDeviceProc = nullptr;
+    VkSemaphore processed = VK_NULL_HANDLE;  // « traitées », si le mod attend le retour de l'image
 };
 
 // Images partagées d'un emplacement de l'anneau (disposition GENERAL, posée par le mod).
@@ -34,6 +35,7 @@ struct SlotImages {
     VkImage color = VK_NULL_HANDLE;
     VkImage depth = VK_NULL_HANDLE;
     VkImage motion = VK_NULL_HANDLE;
+    VkImage output = VK_NULL_HANDLE;  // sortie du DLSS rendue au jeu (VK_NULL_HANDLE sans retour)
 };
 
 class SharedFrameReader {
