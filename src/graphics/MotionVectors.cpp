@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 
 #include "core/Log.h"
 #include "graphics/CameraTracker.h"
@@ -47,29 +48,87 @@ std::array<double, 4> Transform(const Matrix4& m, const std::array<double, 4>& v
     return r;
 }
 
-// Diagnostic des vecteurs faux (13/10/2026) : mouvement du centre de l'écran calculé sur le processeur avec les mêmes
-// matrices que le shader, et angle entre les directions du regard des deux caméras. Toutes les 300 images.
-void LogCenterMotion(const Matrix4& current, const Matrix4& previous, const Matrix4& inverseCurrent, UINT width,
-                     UINT height) noexcept {
+float HalfToFloat(std::uint16_t h) noexcept {
+    const std::uint32_t sign = (h >> 15) & 1u;
+    const std::uint32_t exponent = (h >> 10) & 0x1Fu;
+    const std::uint32_t mantissa = h & 0x3FFu;
+    float value = 0.0f;
+    if (exponent == 0) {
+        value = std::ldexp(static_cast<float>(mantissa), -24);
+    } else if (exponent == 31) {
+        value = mantissa == 0 ? INFINITY : NAN;
+    } else {
+        value = std::ldexp(static_cast<float>(mantissa | 0x400u), static_cast<int>(exponent) - 25);
+    }
+    return sign != 0 ? -value : value;
+}
+
+// Copie d'une texture de rendu (niveau 0) en mémoire système ; nullptr en cas d'échec.
+IDirect3DSurface9* ReadBack(IDirect3DDevice9* device, IDirect3DTexture9* texture) noexcept {
+    IDirect3DSurface9* source = nullptr;
+    if (FAILED(texture->GetSurfaceLevel(0, &source))) {
+        return nullptr;
+    }
+    D3DSURFACE_DESC desc{};
+    source->GetDesc(&desc);
+    IDirect3DSurface9* copy = nullptr;
+    if (FAILED(device->CreateOffscreenPlainSurface(desc.Width, desc.Height, desc.Format, D3DPOOL_SYSTEMMEM, &copy,
+                                                   nullptr)) ||
+        FAILED(device->GetRenderTargetData(source, copy))) {
+        SafeRelease(copy);
+    }
+    SafeRelease(source);
+    return copy;
+}
+
+// Diagnostic des vecteurs faux (13/10/2026) : toutes les 300 images, relit la profondeur et les vecteurs produits par le
+// shader en cinq points de l'écran et les compare au même calcul fait sur le processeur (en double) avec les mêmes
+// matrices et la même profondeur. Lent (copie de la carte vers la mémoire), d'où la fréquence réduite.
+void LogSampledMotion(IDirect3DDevice9* device, IDirect3DTexture9* depth, IDirect3DTexture9* motion,
+                      const Matrix4& previous, const Matrix4& inverseCurrent, UINT width, UINT height) noexcept {
     static int counter = 0;
     if (++counter % 300 != 0) {
         return;
     }
-    std::array<double, 4> world = Transform(inverseCurrent, {0.0, 0.0, 0.99, 1.0});
-    for (double& c : world) {
-        c /= world[3];
+    IDirect3DSurface9* depthCopy = ReadBack(device, depth);
+    IDirect3DSurface9* motionCopy = ReadBack(device, motion);
+    D3DLOCKED_RECT depthRect{};
+    D3DLOCKED_RECT motionRect{};
+    if (depthCopy != nullptr && motionCopy != nullptr &&
+        SUCCEEDED(depthCopy->LockRect(&depthRect, nullptr, D3DLOCK_READONLY))) {
+        if (SUCCEEDED(motionCopy->LockRect(&motionRect, nullptr, D3DLOCK_READONLY))) {
+            constexpr double kPoints[5][2] = {{0.5, 0.5}, {0.1, 0.1}, {0.9, 0.1}, {0.1, 0.9}, {0.9, 0.9}};
+            for (const auto& point : kPoints) {
+                const UINT x = static_cast<UINT>(point[0] * width);
+                const UINT y = static_cast<UINT>(point[1] * height);
+                const float z = reinterpret_cast<const float*>(static_cast<const std::uint8_t*>(depthRect.pBits) +
+                                                               y * depthRect.Pitch)[x];
+                const std::uint16_t* m = reinterpret_cast<const std::uint16_t*>(
+                                             static_cast<const std::uint8_t*>(motionRect.pBits) + y * motionRect.Pitch) +
+                                         x * 2;
+                const double u = (x + 0.5) / width;
+                const double v = (y + 0.5) / height;
+                std::array<double, 4> world = Transform(inverseCurrent, {u * 2.0 - 1.0, 1.0 - v * 2.0, z, 1.0});
+                const double w = world[3];
+                for (double& c : world) {
+                    c /= w;
+                }
+                const std::array<double, 4> before = Transform(previous, world);
+                const double cx = ((before[0] / before[3]) * 0.5 + 0.5 - u) * width;
+                const double cy = (0.5 - (before[1] / before[3]) * 0.5 - v) * height;
+                log::Info("Vecteurs ({:.1f}, {:.1f}) : profondeur {:.6f}, monde ({:.1f} {:.1f} {:.1f}), shader ({:.2f}, "
+                          "{:.2f}) px, processeur ({:.2f}, {:.2f}) px",
+                          point[0], point[1], z, world[0], world[1], world[2], HalfToFloat(m[0]), HalfToFloat(m[1]), cx,
+                          cy);
+            }
+            motionCopy->UnlockRect();
+        }
+        depthCopy->UnlockRect();
+    } else {
+        log::Warn("Vecteurs : relecture impossible");
     }
-    const std::array<double, 4> before = Transform(previous, world);
-    const double dx = (before[0] / before[3]) * 0.5 * width;
-    const double dy = -(before[1] / before[3]) * 0.5 * height;
-    const double a = std::sqrt(current[12] * current[12] + current[13] * current[13] + current[14] * current[14]);
-    const double b = std::sqrt(previous[12] * previous[12] + previous[13] * previous[13] + previous[14] * previous[14]);
-    const double cosine = (current[12] * previous[12] + current[13] * previous[13] + current[14] * previous[14]) / (a * b);
-    const double degrees = std::acos(std::fmin(1.0, std::fmax(-1.0, cosine))) * 57.29577951308232;
-    log::Info("Vecteurs (processeur) : centre ({:.2f}, {:.2f}) px, rotation du regard {:.3f} degré(s), regard ({:.3f} "
-              "{:.3f} {:.3f}) avant ({:.3f} {:.3f} {:.3f}), w {:.1f} / {:.1f}",
-              dx, dy, degrees, current[12], current[13], current[14], previous[12], previous[13], previous[14],
-              current[15], previous[15]);
+    SafeRelease(depthCopy);
+    SafeRelease(motionCopy);
 }
 
 }  // namespace
@@ -147,7 +206,7 @@ IDirect3DTexture9* MotionVectors::Render(IDirect3DDevice9* device, IDirect3DText
         logged_ = true;
         log::Info("Vecteurs de mouvement de la caméra calculés : {}x{}, G16R16F", desc.Width, desc.Height);
     }
-    LogCenterMotion(current, previous, inverseCurrent, desc.Width, desc.Height);
+
 
     IDirect3DSurface9* savedTarget = nullptr;
     IDirect3DSurface9* savedDepth = nullptr;
@@ -197,6 +256,7 @@ IDirect3DTexture9* MotionVectors::Render(IDirect3DDevice9* device, IDirect3DText
     device->SetViewport(&savedViewport);
     SafeRelease(savedTarget);
     SafeRelease(savedDepth);
+    LogSampledMotion(device, depth, target_, previous, inverseCurrent, desc.Width, desc.Height);
     return target_;
 }
 
