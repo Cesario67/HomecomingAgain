@@ -27,8 +27,15 @@ public sealed record PatchSettings
     public int Anisotropy { get; init; } = 16;
     public bool Ssao { get; init; } = true;
     public int SsaoStrength { get; init; } = 100;
-    public int ShadowResolution { get; init; } = 4096;
+    public int ShadowResolution { get; init; } = 8192;
     public int FilmGrain { get; init; } = 100;
+
+    // --- DLSS ([DLSS]) : ShareFrames, Jitter et Apply ensemble. Désactivé par défaut (NVIDIA RTX et DXVK nécessaires).
+    public bool Dlss { get; init; }
+
+    // --- Manette ([Input]) : icônes de boutons, 0 = auto (Xbox 360 si une manette est branchée), 1 = clavier,
+    // 2 = Xbox 360, 3 = PS3.
+    public int ButtonIcons { get; init; }
 
     // --- Cadence ([Frames])
     public int TargetFps { get; init; } = 60;
@@ -65,6 +72,8 @@ public sealed record PatchSettings
             SsaoStrength = mod.GetInt("Graphics", "SsaoStrength", defaults.SsaoStrength),
             ShadowResolution = mod.GetInt("Graphics", "ShadowResolution", defaults.ShadowResolution),
             FilmGrain = mod.GetInt("Graphics", "FilmGrain", defaults.FilmGrain),
+            Dlss = mod.GetBool("DLSS", "ShareFrames", false) && mod.GetBool("DLSS", "Apply", false),
+            ButtonIcons = Math.Clamp(mod.GetInt("Input", "ButtonIcons", 0), 0, 3),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
             WindowThreadLock = mod.GetBool("Compat", "WindowThreadLock", defaults.WindowThreadLock),
@@ -85,6 +94,10 @@ public sealed record PatchSettings
         mod.SetInt("Graphics", "SsaoStrength", Math.Clamp(SsaoStrength, 10, 400));
         mod.SetInt("Graphics", "ShadowResolution", ShadowResolution is 4096 or 8192 ? ShadowResolution : 2048);
         mod.SetInt("Graphics", "FilmGrain", Math.Clamp(FilmGrain, 0, 100));
+        mod.SetBool("DLSS", "ShareFrames", Dlss);
+        mod.SetInt("DLSS", "Jitter", Dlss ? 1 : 0);
+        mod.SetBool("DLSS", "Apply", Dlss);
+        mod.SetInt("Input", "ButtonIcons", Math.Clamp(ButtonIcons, 0, 3));
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Compat", "WindowThreadLock", WindowThreadLock);

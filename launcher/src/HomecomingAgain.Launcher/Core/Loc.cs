@@ -93,12 +93,14 @@ public sealed class Loc : INotifyPropertyChanged
         }
         catch (IOException)
         {
-            // Fichier illisible : on retombe sur la langue de Windows.
+            // Fichier illisible : langue par défaut.
         }
         catch (UnauthorizedAccessException)
         {
         }
-        return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr" ? Language.French : Language.English;
+        // Sans choix enregistré : anglais par défaut, quelle que soit la langue de Windows (le français se choisit dans
+        // la liste des langues et reste mémorisé).
+        return Language.English;
     }
 
     private static void Remember(Language language)

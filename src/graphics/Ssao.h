@@ -3,6 +3,7 @@
 #include <d3d9.h>
 
 #include "graphics/Projection.h"
+#include "graphics/SceneEnd.h"
 
 namespace hca::graphics {
 
@@ -36,7 +37,15 @@ public:
     // Textures du moteur repérées (non possédées), pour l'interopérabilité DXVK (dlss/DxvkInterop.h). La texture de
     // la scène n'est connue qu'après une première application de l'effet.
     IDirect3DTexture9* DepthTexture() const noexcept { return depthTexture_; }
+    IDirect3DSurface9* DepthSurface() const noexcept { return depthSurface_; }
     IDirect3DTexture9* SceneTexture() const noexcept { return sceneTexture_; }
+    // Vrai une fois, juste après le dernier OnSetRenderTarget si la scène 3D vient de se terminer (avant les
+    // post-traitements et l'interface).
+    bool ConsumeSceneReady() noexcept {
+        const bool ready = sceneReady_;
+        sceneReady_ = false;
+        return ready;
+    }
 
 private:
     bool Apply(IDirect3DDevice9* device) noexcept;
@@ -51,6 +60,8 @@ private:
     IDirect3DTexture9* sceneTexture_ = nullptr;
     bool depthWritten_ = false;
     bool applied_ = false;
+    bool sceneReady_ = false;
+    SceneEndDetector sceneEnd_;
     Projection projection_;
     bool projectionSeen_ = false;
     bool failed_ = false;

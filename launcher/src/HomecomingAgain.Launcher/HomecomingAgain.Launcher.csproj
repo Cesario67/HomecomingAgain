@@ -45,6 +45,14 @@
     <EmbeddedResource Include="$(PayloadDir)\LICENSE.txt" LogicalName="payload/LICENSE.txt" />
     <EmbeddedResource Include="$(PayloadDir)\LICENSE-SMAA.txt" LogicalName="payload/LICENSE-SMAA.txt" />
   </ItemGroup>
+  <!-- Option DLSS : DXVK, programme DLSS 64 bits, moteur DLSS de NVIDIA et licences (environ 67 Mo). -->
+  <ItemGroup Condition="Exists('$(PayloadDir)\HomecomingAgain.Dlss.exe') And Exists('$(PayloadDir)\d3d9.dll')">
+    <EmbeddedResource Include="$(PayloadDir)\d3d9.dll" LogicalName="payload/d3d9.dll" />
+    <EmbeddedResource Include="$(PayloadDir)\HomecomingAgain.Dlss.exe" LogicalName="payload/HomecomingAgain.Dlss.exe" />
+    <EmbeddedResource Include="$(PayloadDir)\nvngx_dlss.dll" LogicalName="payload/nvngx_dlss.dll" />
+    <EmbeddedResource Include="$(PayloadDir)\LICENSE-DXVK.txt" LogicalName="payload/LICENSE-DXVK.txt" />
+    <EmbeddedResource Include="$(PayloadDir)\LICENSE-NVIDIA-DLSS.txt" LogicalName="payload/LICENSE-NVIDIA-DLSS.txt" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="HomecomingAgain.Launcher.Tests" />

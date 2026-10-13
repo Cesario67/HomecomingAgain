@@ -33,6 +33,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [
         Choice<int>.Localized(2048, "ShadowOriginal"),
         new(4096, "4096 × 4096"),
+        new(8192, "8192 × 8192"),
     ];
 
     public IReadOnlyList<Choice<int>> FilmGrainLevels { get; } =
@@ -41,6 +42,22 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         Choice<int>.Localized(50, "GrainHalf"),
         Choice<int>.Localized(100, "GrainOriginal"),
     ];
+
+    /// <summary>Icônes de boutons à l'écran ([Input] ButtonIcons : 0 auto, 1 PC, 2 Xbox 360, 3 PS3).</summary>
+    public IReadOnlyList<Choice<int>> ButtonIconSets { get; } =
+    [
+        Choice<int>.Localized(0, "IconsAuto"),
+        Choice<int>.Localized(1, "IconsPc"),
+        new(2, "Xbox (A, B, X, Y)"),
+        Choice<int>.Localized(3, "IconsPlayStation"),
+    ];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ButtonIconPreview))]
+    public partial Choice<int> SelectedButtonIcons { get; set; }
+
+    /// <summary>Aperçu des icônes A, B, X, Y du choix courant.</summary>
+    public IReadOnlyList<ButtonGlyph> ButtonIconPreview => ButtonGlyph.For(SelectedButtonIcons.Value);
 
     public IReadOnlyList<Choice<(int Width, int Height)>> Resolutions { get; private set; } = BuildResolutions(1920, 1080);
 
@@ -53,6 +70,14 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
 
     [ObservableProperty]
     public partial bool Smaa { get; set; } = true;
+
+    /// <summary>DLSS en mode DLAA (NVIDIA RTX, DXVK installé avec l'option).</summary>
+    [ObservableProperty]
+    public partial bool Dlss { get; set; }
+
+    /// <summary>Le launcher contient-il les fichiers de l'option DLSS ? Sinon la case est désactivée.</summary>
+    [ObservableProperty]
+    public partial bool DlssAvailable { get; set; }
 
     [ObservableProperty]
     public partial Choice<int> SelectedAnisotropy { get; set; }
@@ -84,14 +109,15 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedResolution = Resolutions.First(choice => choice.Value == (1920, 1080));
         SelectedAnisotropy = AnisotropyLevels[^1];
         SelectedSsaoStrength = SsaoStrengths[1];
-        SelectedShadowResolution = ShadowResolutions[1];
+        SelectedShadowResolution = ShadowResolutions[^1];
         SelectedFilmGrain = FilmGrainLevels[^1];
+        SelectedButtonIcons = ButtonIconSets[0];
         Loc.Instance.LanguageChanged += RefreshLabels;
     }
 
     private void RefreshLabels()
     {
-        foreach (ChoiceBase choice in DisplayModes.Cast<ChoiceBase>().Concat(AnisotropyLevels).Concat(SsaoStrengths).Concat(ShadowResolutions).Concat(FilmGrainLevels))
+        foreach (ChoiceBase choice in DisplayModes.Cast<ChoiceBase>().Concat(AnisotropyLevels).Concat(SsaoStrengths).Concat(ShadowResolutions).Concat(FilmGrainLevels).Concat(ButtonIconSets))
         {
             choice.RefreshLabel();
         }
@@ -104,11 +130,13 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedDisplayMode = DisplayModes.First(choice => choice.Value == settings.DisplayMode);
         SelectedResolution = Resolutions.First(choice => choice.Value == (settings.Width, settings.Height));
         Smaa = settings.Smaa;
+        Dlss = settings.Dlss;
         SelectedAnisotropy = AnisotropyLevels.LastOrDefault(choice => choice.Value <= settings.Anisotropy) ?? AnisotropyLevels[0];
         Ssao = settings.Ssao;
         SelectedSsaoStrength = SsaoStrengths.LastOrDefault(choice => choice.Value <= settings.SsaoStrength) ?? SsaoStrengths[0];
         SelectedShadowResolution = ShadowResolutions.LastOrDefault(choice => choice.Value <= settings.ShadowResolution) ?? ShadowResolutions[0];
         SelectedFilmGrain = FilmGrainLevels.LastOrDefault(choice => choice.Value <= settings.FilmGrain) ?? FilmGrainLevels[0];
+        SelectedButtonIcons = ButtonIconSets.FirstOrDefault(choice => choice.Value == settings.ButtonIcons) ?? ButtonIconSets[0];
         HighQualityShaders = settings.HighQualityShaders;
         FullResolutionTextures = settings.FullResolutionTextures;
     }
@@ -119,11 +147,13 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         Width = SelectedResolution.Value.Width,
         Height = SelectedResolution.Value.Height,
         Smaa = Smaa,
+        Dlss = Dlss && DlssAvailable,
         Anisotropy = SelectedAnisotropy.Value,
         Ssao = Ssao,
         SsaoStrength = SelectedSsaoStrength.Value,
         ShadowResolution = SelectedShadowResolution.Value,
         FilmGrain = SelectedFilmGrain.Value,
+        ButtonIcons = SelectedButtonIcons.Value,
         HighQualityShaders = HighQualityShaders,
         FullResolutionTextures = FullResolutionTextures,
     };

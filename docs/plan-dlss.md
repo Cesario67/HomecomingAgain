@@ -71,7 +71,10 @@ Ordre d'une image (environ 10 000 appels, 800 dessins) :
 1. Trois cartes d'ombres 2048x2048 (R32F, profondeur D24S8 dédiée).
 2. **Pré-passe de profondeur** dans une texture 1920x1080 **R32F** (texture 0x79bc7e0 au relevé, effacée à 1.0),
    avec le tampon D24S8 1920x1080 principal. La profondeur est donc déjà lisible : INTZ inutile (à confirmer en
-   affichant cette texture).
+   affichant cette texture). **Codage vérifié le 13/10/2026** (shaders de la passe désassemblés) : la valeur écrite
+   n'est pas z/w mais (z/w) x c98.x + c98.y (`mCommonDepthCoefficients` = [0.9 0 0.1 0.9], viewport z 0..0.9), voir
+   `src/graphics/DepthEncoding.h`. Le SSAO lit encore la valeur brute comme z/w (distances environ 5 fois trop
+   courtes), réglé à l'œil ainsi : à revoir avant d'en changer le rendu.
 3. Scène principale dans une texture 1920x1080 A8R8G8B8 (0x7a4d8e0), même tampon de profondeur.
 4. Post-traitements : cibles A16B16G16R16F 1920x1080 sans profondeur, puis chaîne de flou lumineux (960x540
    jusqu'à 15x8), recopiée par StretchRect.
@@ -102,6 +105,37 @@ Conséquences pour le plan :
   machine, y compris en COPY, multithread, Present depuis un autre thread et avec fenêtre forcée.
 - Conclusion : incompatibilité entre ce moteur et D3D9On12, cause non trouvée. Cadence aussi divisée par deux
   (31 i/s au menu au lieu de 60).
+## 4 quater. Voie DXVK (13/10/2026)
+
+- Jalon 1 (vérifié) : sous DXVK (`d3d9.dll` de DXVK dans `Bin`), le mod obtient le périphérique Vulkan et les images
+  de la scène et de la profondeur par l'interface d'interopérabilité de DXVK.
+- Jalon 2 (vérifié en jeu) : `[DLSS] ShareFrames=1`, la scène (B8G8R8A8) et la profondeur (R32F) sont copiées chaque
+  image dans des images Vulkan exportées (handles NT) avec un sémaphore timeline exporté. 592 images sur 592 en 10 s,
+  0,16 ms de processeur par image, 59 i/s inchangés.
+- Jalon 3 (vérifié en jeu le 13/10/2026 : images de contrôle correctes, ~59 images reçues par seconde) : `HomecomingAgain.Dlss.exe` (64 bits, `helper/`), lancé par le mod avec les trois
+  handles hérités, importe les images en Vulkan, attend le compteur et enregistre une image de contrôle de la scène
+  et de la profondeur dans `HomecomingAgain\captures`. Journal : `HomecomingAgain\logs\HomecomingAgain.Dlss.log`.
+- Corrigé et vérifié en jeu (13/10/2026) : copie à la fin de la scène 3D, avant les post-traitements et l'interface ;
+  anneau de 3 paires d'images et compteur « consommées » en retour (942 produites, 941 consommées, aucune image
+  sautée en régime établi ; 14 sautées au démarrage, pendant la relecture de contrôle).
+- Vecteurs de mouvement de la caméra (vérifié en jeu le 13/10/2026, rotation de la caméra sur place) : avec la
+  profondeur décodée, l'écart moyen avec l'image précédente recalée passe d'environ 4,5 sans vecteurs à 1,1-1,3 avec,
+  sur 6 contrôles ; le signe (position précédente - position actuelle, en pixels) est le bon.
+- Décalage de caméra (vérifié en jeu le 13/10/2026, amplitude 8 px) : toute la scène 3D tremble d'un bloc,
+  l'interface reste fixe.
+- **DLSS en mode DLAA rendu au jeu (vérifié en jeu le 13/10/2026)** : SDK v310.9.1, RTX 5070 Ti, 0,5 ms par image ;
+  `[DLSS] ShareFrames=1`, `Jitter=1`, `Apply=1`. Image du DLSS rendue 494 fois sur 494 en 10 s, 59 i/s, plus de
+  tremblement, fluide. Chien de garde (500 ms) vérifié : il a coupé le retour quand le programme DLSS s'est bloqué
+  sur l'enregistrement des images de contrôle (corrigé : plus de relecture pendant le retour).
+- Changements de plan (vérifié en jeu le 13/10/2026) : réinitialisation du DLSS signalée au démarrage et au passage
+  d'une porte, aucun faux signal en tournant la caméra, aucune image fantôme ; SMAA coupé sur les images du DLSS
+  (vérifié : image propre).
+- **À faire** : vecteurs de mouvement des personnages (mSkinningMatrices),
+  installation par le launcher, réglage dans le launcher.
+- **À faire : test en jeu réel** (mis de côté le 13/10/2026). Non vérifié : marche et course (vrai déplacement de la
+  caméra), autres lieux (extérieurs, grandes pièces), coupures de caméra (cinématiques, portes, changements de pièce,
+  à signaler au DLSS par un indicateur de réinitialisation). Méthode : 1 à 2 minutes de jeu normal, puis compter les
+  contrôles du journal `HomecomingAgain.Dlss.log` où les vecteurs font mieux que sans, et examiner les autres.
 ## 5. Plans de repli
 
 - Si les traînées sont inacceptables et que les animations ne peuvent pas être suivies : garder DLAA sur les

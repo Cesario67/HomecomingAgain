@@ -65,7 +65,7 @@ public sealed partial class StatusViewModel(MainWindowViewModel main, string pac
         }
         main.Run(() =>
         {
-            IReadOnlyList<string> report = ModInstaller.Uninstall(main.Paths!);
+            IReadOnlyList<string> report = ModInstaller.Uninstall(main.Paths!, packageDirectory);
             main.Reload();
             return string.Join(" ", report);
         });

@@ -3,6 +3,7 @@
 
 #include <windows.h>
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <iterator>
@@ -11,8 +12,16 @@
 #include "audio/AudioProbe.h"
 #include "compat/MovieSkip.h"
 #include "compat/SkipMovies.h"
+#include "dlss/SharedFrames.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/CameraMath.h"
+#include "graphics/CameraTracker.h"
+#include "graphics/DepthEncoding.h"
+#include "graphics/Jitter.h"
+#include "graphics/SceneEnd.h"
+#include "input/ButtonIcons.h"
+#include "input/MenuBridge.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -96,6 +105,14 @@ void TestShadowResolution() {
           "décalage du filtre ramené à un texel, autres valeurs intactes");
     float outside[4] = {1, 1, 1.0f / 2048, 1.0f / 2048};
     Check(!shadows::ScaleFilterConstants(80, outside, 1, 4096), "registres hors du filtre ignorés");
+    // Envoi relevé le 13/10/2026 : c92 = [4.5 0 ...] avant le shader des ombres.
+    float bias[4] = {4.5f, 0.0f, 1.0f, 1.0f};
+    Check(shadows::ScaleCasterBias(92, bias, 1, 8192) && bias[0] == 18.0f && bias[1] == 0.0f,
+          "décalage de pente des ombres multiplié par l'agrandissement (8192 : x4)");
+    float biasOriginal[4] = {4.5f, 0.0f, 1.0f, 1.0f};
+    Check(!shadows::ScaleCasterBias(92, biasOriginal, 1, 2048) && !shadows::ScaleCasterBias(93, biasOriginal, 1, 8192) &&
+              biasOriginal[0] == 4.5f,
+          "décalage de pente intact en 2048 ou hors de c92");
 }
 
 void TestProjection() {
@@ -171,6 +188,196 @@ void TestChannelFix() {
     Check(std51[0] == 1.0f && std51[1] > 0.7f && std51[1] < 0.71f, "mélange 5.1 habituel : avant gauche à gauche, arrière droit à droite");
 }
 
+void TestSharedFrames() {
+    std::printf("Partage des images (DLSS)\n");
+    Check(hca::dlss::SlotForFrame(0, 3) == 0 && hca::dlss::SlotForFrame(4, 3) == 1 && hca::dlss::SlotForFrame(5, 0) == 0,
+          "emplacements tournants");
+    using hca::dlss::SlotIsFree;
+    Check(SlotIsFree(1, 0, 3) && SlotIsFree(3, 0, 3) && !SlotIsFree(4, 0, 3) && SlotIsFree(4, 1, 3) && !SlotIsFree(7, 3, 3),
+          "emplacement libre seulement si l'image précédente est consommée");
+}
+
+void TestCameraMath() {
+    using namespace hca::graphics;
+    std::printf("Matrices de la caméra\n");
+    // Projection du relevé (prologue) et vue quelconque (rotation + translation).
+    const Matrix4 proj = {1.6407f, 0, 0, 0, 0, 2.9167f, 0, 0, 0, 0, 1.0002f, -3.0006f, 0, 0, 1, 0};
+    const Matrix4 view = {0.8f, 0, -0.6f, 10, 0, 1, 0, -2, 0.6f, 0, 0.8f, 30, 0, 0, 0, 1};
+    const Matrix4 world = {0, -1, 0, 5, 1, 0, 0, 7, 0, 0, 1, -3, 0, 0, 0, 1};
+    const Matrix4 viewProj = Multiply(proj, view);
+    const Matrix4 wvp = Multiply(viewProj, world);
+    Matrix4 found{};
+    bool close = ViewProjectionFromDraw(wvp.data(), world.data(), found);
+    for (int i = 0; close && i < 16; ++i) {
+        close = std::fabs(found[i] - viewProj[i]) < 1e-3f;
+    }
+    Check(close, "caméra retrouvée à partir de mWorldViewProj et mWorld");
+    Matrix4 inverse{};
+    const Matrix4 identity = Multiply(viewProj, (Inverse(viewProj, inverse), inverse));
+    Check(std::fabs(identity[0] - 1) < 1e-4f && std::fabs(identity[5] - 1) < 1e-4f && std::fabs(identity[1]) < 1e-4f &&
+              std::fabs(identity[15] - 1) < 1e-4f,
+          "inverse de la caméra");
+    Check(hca::graphics::camera::LooksLikePerspectiveCamera(viewProj), "caméra en perspective reconnue");
+    const Matrix4 ortho = {0.001f, 0, 0, -0.999f, 0, -0.002f, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1};
+    Check(!hca::graphics::camera::LooksLikePerspectiveCamera(ortho), "projection d'interface 2D rejetée");
+    Matrix4 nudged = viewProj;
+    nudged[3] += 0.5f;
+    Check(hca::graphics::camera::SameCamera(viewProj, viewProj) && !hca::graphics::camera::SameCamera(viewProj, nudged),
+          "comparaison de caméras");
+    const Matrix4 singular{};
+    Check(!Inverse(singular, inverse), "matrice non inversible refusée");
+}
+
+// Caméra regardant le long de +z depuis (x, 0, 0), tournée de `degrees` autour de l'axe vertical : vue puis projection
+// du jeu (xs 1.6407, ys 2.9167, a 1.00019, b -3.0006).
+hca::graphics::Matrix4 TestCamera(float x, float degrees) {
+    const float r = degrees * 3.14159265f / 180.0f;
+    const float c = std::cos(r);
+    const float s = std::sin(r);
+    // Vue : lignes = axes droite, haut, regard ; translation = -axe . position.
+    const hca::graphics::Matrix4 view = {c, 0, -s, -c * x, 0, 1, 0, 0, s, 0, c, -s * x, 0, 0, 0, 1};
+    const hca::graphics::Matrix4 projection = {1.6407f, 0, 0, 0, 0, 2.9167f, 0, 0, 0, 0, 1.00019f, -3.0006f, 0, 0, 1, 0};
+    return hca::graphics::Multiply(projection, view);
+}
+
+void TestCameraCut() {
+    using hca::graphics::IsCameraCut;
+    const auto base = TestCamera(100.0f, 0.0f);
+    Check(!IsCameraCut(base, base, 15.0f, 20.0f), "même caméra : pas de changement de plan");
+    Check(!IsCameraCut(TestCamera(100.8f, 6.0f), base, 15.0f, 20.0f), "rotation de 6 degrés et petit déplacement : continu");
+    Check(IsCameraCut(TestCamera(100.0f, 30.0f), base, 15.0f, 20.0f), "rotation de 30 degrés : changement de plan");
+    Check(IsCameraCut(TestCamera(150.0f, 0.0f), base, 15.0f, 20.0f), "déplacement de 50 unités : changement de plan");
+    const hca::graphics::Matrix4 singular{};
+    Check(IsCameraCut(singular, base, 15.0f, 20.0f), "caméra non inversible : changement de plan");
+}
+
+// Suites de cibles relevées par F11 le 13/10/2026 (surfaces représentées par des entiers).
+void TestSceneEnd() {
+    using hca::graphics::SceneEndDetector;
+    const int depth = 1, scene = 2, post = 3, shadow = 4, reduced = 5;
+    struct Step {
+        const int* surface;
+        bool full;
+    };
+    // Shaders en basse qualité : profondeur, scène A8R8G8B8, ombres, flou réduit, profondeur, scène, post-traitement.
+    const Step lowQuality[] = {{&depth, true},  {&scene, true}, {&shadow, false}, {&reduced, false},
+                               {&scene, true},  {&depth, true}, {&scene, true},   {&post, true}};
+    // Shaders en haute qualité : la scène est elle-même en A16B16G16R16F, reflet en 1024x512 avant les ombres.
+    const Step highQuality[] = {{&depth, true}, {&scene, true}, {&reduced, false}, {&shadow, false},
+                                {&scene, true}, {&depth, true}, {&scene, true},  {&post, true}};
+    for (const auto* steps : {lowQuality, highQuality}) {
+        SceneEndDetector detector;
+        int endedAt = -1;
+        for (int i = 0; i < 8; ++i) {
+            const bool isDepth = steps[i].surface == &depth;
+            if (detector.OnSetRenderTarget(steps[i].surface, isDepth, steps[i].full)) {
+                endedAt = endedAt < 0 ? i : 100;
+            }
+        }
+        Check(endedAt == 7 && detector.Scene() == &scene, "fin de scène au passage vers le post-traitement");
+    }
+    SceneEndDetector detector;
+    Check(!detector.OnSetRenderTarget(&scene, false, true) && !detector.OnSetRenderTarget(&post, false, true),
+          "pas de fin de scène sans pré-passe de profondeur");
+}
+
+
+void TestMenuPadKeys() {
+    using namespace hca::input;
+    KeySet held{};
+    // Croix bas + A : flèche bas et Entrée ; B : Échap.
+    KeySet keys = KeysForPad(0x0002 | 0x1000, 0, 0, held);
+    Check(keys[kKeyDown] && keys[kKeyReturn] && !keys[kKeyUp] && !keys[kKeyEscape], "croix et A traduits en touches");
+    keys = KeysForPad(0x2000, 0, 0, held);
+    Check(keys[kKeyEscape] && !keys[kKeyReturn], "B traduit en Échap");
+    // Stick : enfoncé au-delà de la moitié, relâché seulement sous un tiers (pas de rebond autour du seuil).
+    keys = KeysForPad(0, 0, 20000, held);
+    const bool pressed = keys[kKeyUp];
+    keys = KeysForPad(0, 0, 14000, held);
+    const bool stillHeld = keys[kKeyUp];
+    keys = KeysForPad(0, 0, 9000, held);
+    Check(pressed && stillHeld && !keys[kKeyUp], "stick vers le haut avec hystérésis");
+    KeySet fresh{};
+    keys = KeysForPad(0, -20000, 0, fresh);
+    Check(keys[kKeyLeft] && !keys[kKeyRight] && !KeysForPad(0, 14000, 0, fresh)[kKeyRight],
+          "stick à gauche, et à droite sous le seuil d'appui");
+}
+
+void TestButtonIcons() {
+    using hca::input::IconTypeFor;
+    Check(IconTypeFor(0, true) == 1 && IconTypeFor(0, false) == 0, "icônes auto : Xbox 360 avec manette, PC sans");
+    Check(IconTypeFor(1, true) == 0 && IconTypeFor(2, false) == 1 && IconTypeFor(3, true) == 2 && IconTypeFor(9, true) == 0,
+          "icônes forcées : PC, Xbox 360, PS3, valeur inconnue = PC");
+    using hca::input::FaceIconName;
+    Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
+              std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(1, 6)) == "shv_x360xflash" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
+          "noms des icônes A, B, X, Y selon le type");
+    using hca::input::ReplacementIconName;
+    const auto same = [](const char* a, const char* b) { return a != nullptr && std::string(a) == b; };
+    Check(same(ReplacementIconName("shv_buttonpccontrol1", 1), "shv_buttonxbox360_a_32") &&
+              same(ReplacementIconName("shv_buttonpccontrol4_64", 2), "shv_buttonps3_triangle_32") &&
+              same(ReplacementIconName("pc_3flash", 1), "shv_x360xflash"),
+          "texture PC remplacée par l'icône Xbox 360 ou PS3");
+    Check(ReplacementIconName("shv_buttonpccontrol1", 0) == nullptr && ReplacementIconName("shv_buttonactionpc", 1) == nullptr &&
+              ReplacementIconName("shv_buttonpccontrol12", 1) == nullptr && ReplacementIconName("pc_1flash_64", 1) == nullptr &&
+              ReplacementIconName(nullptr, 1) == nullptr,
+          "autres textures et type PC laissés tels quels");
+}
+
+void TestDepthEncoding() {
+    using hca::graphics::depth::Encoding;
+    using hca::graphics::depth::ParseEncoding;
+    // Envoi relevé le 13/10/2026 : c98 seul, [0.9 0 0.1 0.9].
+    const float c98[4] = {0.9f, 0.0f, 0.1f, 0.9f};
+    Encoding encoding;
+    Check(ParseEncoding(98, c98, 1, encoding) && encoding.scale == 0.9f && encoding.bias == 0.0f,
+          "codage de la profondeur lu dans c98");
+    // c98 au milieu d'un envoi plus large.
+    float block[3 * 4] = {};
+    block[4] = 0.5f;
+    block[5] = 0.25f;
+    Check(ParseEncoding(97, block, 3, encoding) && encoding.scale == 0.5f && encoding.bias == 0.25f,
+          "codage de la profondeur dans un envoi de plusieurs registres");
+    Encoding untouched;
+    Check(!ParseEncoding(99, c98, 1, untouched) && !ParseEncoding(97, c98, 1, untouched) && untouched.scale == 0.9f,
+          "envois sans c98 ignorés");
+    const float zero[4] = {};
+    Check(!ParseEncoding(98, zero, 1, untouched), "facteur nul refusé");
+}
+
+void TestJitter() {
+    using namespace hca::graphics::jitter;
+    Check(Halton(1, 2) == 0.5f && Halton(2, 2) == 0.25f && Halton(3, 2) == 0.75f &&
+              std::fabs(Halton(1, 3) - 1.0f / 3.0f) < 1e-6f && std::fabs(Halton(2, 3) - 2.0f / 3.0f) < 1e-6f,
+          "suite de Halton (bases 2 et 3)");
+    // 16 phases dans [-0.5, 0.5), de moyenne proche de 0, puis répétition.
+    float sumX = 0.0f;
+    float sumY = 0.0f;
+    bool inRange = true;
+    for (std::uint64_t frame = 0; frame < 16; ++frame) {
+        const Offset o = OffsetForFrame(frame, 1.0f);
+        inRange &= o.x >= -0.5f && o.x < 0.5f && o.y >= -0.5f && o.y < 0.5f;
+        sumX += o.x;
+        sumY += o.y;
+    }
+    const Offset first = OffsetForFrame(0, 2.0f);
+    const Offset again = OffsetForFrame(16, 2.0f);
+    Check(inRange && std::fabs(sumX / 16) < 0.05f && std::fabs(sumY / 16) < 0.05f && first.x == again.x &&
+              first.y == again.y && first.x == (Halton(1, 2) - 0.5f) * 2.0f,
+          "décalages de caméra : 16 phases centrées, amplitude appliquée");
+    // Perspective : un point (x, y, z, w) projeté est déplacé de (dx, dy) en coordonnées normalisées.
+    float m[16] = {1.6f, 0, 0, 0, 0, 2.9f, 0, 0, 0, 0, 1.0002f, -3.0006f, 0, 0, 1, 0};
+    const float point[4] = {10, -5, 100, 1};
+    Check(ApplyToMatrix(m, 0.01f, -0.02f), "décalage appliqué à une perspective");
+    const float x = m[0] * point[0] + m[1] * point[1] + m[2] * point[2] + m[3];
+    const float y = m[4] * point[0] + m[5] * point[1] + m[6] * point[2] + m[7];
+    const float w = m[12] * point[0] + m[13] * point[1] + m[14] * point[2] + m[15];
+    Check(std::fabs(x / w - (1.6f * 10 / 100 + 0.01f)) < 1e-5f && std::fabs(y / w - (2.9f * -5 / 100 - 0.02f)) < 1e-5f,
+          "décalage constant à l'écran");
+    float ortho[16] = {0.001f, 0, 0, -0.999f, 0, -0.002f, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1};
+    Check(!ApplyToMatrix(ortho, 0.01f, 0.01f) && ortho[3] == -0.999f, "projection d'interface laissée telle quelle");
+}
+
 }  // namespace
 
 int main() {
@@ -184,6 +391,14 @@ int main() {
     TestSkipMovies();
     TestMovieSkip();
     TestChannelFix();
+    TestSharedFrames();
+    TestCameraMath();
+    TestCameraCut();
+    TestSceneEnd();
+    TestMenuPadKeys();
+    TestButtonIcons();
+    TestDepthEncoding();
+    TestJitter();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

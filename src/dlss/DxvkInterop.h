@@ -2,6 +2,8 @@
 
 #include <d3d9.h>
 
+struct ID3D9VkInteropDevice;
+
 namespace hca::dlss {
 
 // Accès aux images Vulkan du jeu quand il tourne sous DXVK (d3d9.dll de DXVK placé dans Bin), par l'interface
@@ -13,6 +15,8 @@ namespace hca::dlss {
 // Après CreateDevice. Renvoie true si le périphérique est un périphérique DXVK.
 bool OnDeviceCreated(IDirect3DDevice9* device) noexcept;
 bool Available() noexcept;
+// Interface d'interopérabilité de DXVK (non possédée), ou nullptr sans DXVK.
+ID3D9VkInteropDevice* Interop() noexcept;
 
 // Une fois par session, dès que les textures de la scène et de la profondeur du moteur sont connues.
 void Probe(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth) noexcept;

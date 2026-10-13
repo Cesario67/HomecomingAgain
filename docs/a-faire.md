@@ -43,8 +43,8 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
 ### 3. Manette (objectif 3)
 - Intercepter `XInputGetState` (ordinal 2) et `XInputSetState` (ordinal 3) du moteur : zones mortes, courbe et
   sensibilité de la caméra réglables (point faible signalé par des joueurs), échange des gâchettes, vibration.
-- Branchement à chaud, plusieurs manettes, invites de boutons Xbox correctes (les icônes existent dans les
-  ressources du jeu, à l'écran selon le périphérique actif).
+- Fait (14/10/2026) : icônes de boutons Xbox 360 ou PS3 partout (menus, inventaire, commandes, invites en jeu),
+  menu principal à la manette. Reste : branchement à chaud, plusieurs manettes.
 - Manettes non XInput (PlayStation) : conversion comme `ControllerMapping` de DPStabilityFix.
 - Clavier / souris : touches reconfigurables via `binds_pc_mjs.cfg` (le fichier d'origine est déjà un format texte).
 

@@ -14,12 +14,18 @@
 #include "crash/CrashHandler.h"
 #include "crash/HangWatchdog.h"
 #include "dlss/DxvkInterop.h"
+#include "dlss/SharedFrames.h"
 #include "framepacing/FrameMonitor.h"
 #include "graphics/BackBufferDump.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/CameraTracker.h"
+#include "graphics/Jitter.h"
+#include "input/ButtonIcons.h"
+#include "input/MenuBridge.h"
 #include "graphics/D3D9On12.h"
 #include "graphics/FrameCapture.h"
 #include "graphics/InternalDraw.h"
+#include "graphics/MotionVectors.h"
 #include "graphics/SceneHooks.h"
 #include "graphics/Ssao.h"
 #include "graphics/Smaa.h"
@@ -64,7 +70,8 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
     if (GetConfig().frameCapture) {
         capture::OnPresent(device);
     }
-    if (GetConfig().smaa) {
+    // Image déjà anticrénelée par le DLSS : pas de SMAA par-dessus (double anticrénelage, flou).
+    if (GetConfig().smaa && !dlss::ConsumeFrameReturned()) {
         InternalDrawScope internal;
         g_smaa.Apply(device);
     }
@@ -72,6 +79,10 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
         dlss::Probe(GetSsao().SceneTexture(), GetSsao().DepthTexture());
     }
     GetSsao().OnPresent();
+    camera::OnPresent();
+    jitter::OnPresent();
+    input::OnPresent();
+    input::RefreshButtonIcons();
     if (GetConfig().backBufferDump) {
         InternalDrawScope internal;
         dump::OnPresent(device);
@@ -102,6 +113,7 @@ HRESULT STDMETHODCALLTYPE HookReset(IDirect3DDevice9* device, D3DPRESENT_PARAMET
     // Nos ressources D3DPOOL_DEFAULT doivent être libérées avant Reset, sinon il échoue.
     g_smaa.OnBeforeReset();
     GetSsao().OnBeforeReset();
+    GetMotionVectors().OnBeforeReset();
     const HRESULT result = g_reset(device, params);
     if (SUCCEEDED(result) && params != nullptr && params->Windowed && GetConfig().borderless) {
         // Un Reset (changement de mode) peut rendre son cadre à la fenêtre.

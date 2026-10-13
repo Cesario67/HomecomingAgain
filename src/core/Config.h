@@ -24,7 +24,7 @@ struct Config {
     // Filtrage anisotrope forcé sur les textures filtrées en linéaire (0 ou 1 = jeu d'origine, 2 à 16).
     int anisotropy = 16;
     // Taille de l'atlas d'ombres : 2048 (jeu d'origine), 4096 ou 8192 (voir graphics/ShadowResolution.h).
-    int shadowResolution = 4096;
+    int shadowResolution = 8192;
     // Occlusion ambiante en espace écran (voir graphics/Ssao.h). Rayon en unités du jeu, intensité en %, fondu
     // entre deux distances (unités du jeu), mode de réglage qui affiche l'occlusion seule.
     bool ssao = true;
@@ -73,11 +73,31 @@ struct Config {
     int audioChannelOrder[6] = {2, 4, 1, 3, 5, 0};
 
 
+    // [DLSS]
+
+
+    // Partage des images de la scène et de la profondeur avec le futur processus DLSS (sous DXVK, expérimental).
+
+
+    bool dlssShareFrames = false;
+    // Décalage de caméra (jitter) pour le DLSS, amplitude en pixels (0 = aucun, 1 = normal). Voir graphics/Jitter.h.
+    float dlssJitter = 0.0f;
+    // Image traitée par le DLSS rendue au jeu (avant les post-traitements). Exige ShareFrames=1.
+    bool dlssApply = false;
+
+
+
     // [Movies]
 
     // Touche pour passer les cinématiques en vidéo (code de touche virtuelle Windows, 0x2E = Suppr, 0 = aucune).
 
     int movieSkipKey = 0x2E;
+
+    // [Input]
+    // Dans les menus, croix, stick gauche, A et B traduits en touches du clavier (input/MenuBridge.h).
+    bool menuPad = true;
+    // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
+    int buttonIcons = 0;
 
 
     // [Debug]

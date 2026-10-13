@@ -25,6 +25,14 @@ D3DVIEWPORT9 ScaleViewport(const D3DVIEWPORT9& viewport, UINT atlasSize) noexcep
 // Corrige sur place les décalages de filtre trouvés dans `vectorCount` registres à partir de `startRegister`.
 // Renvoie true si une valeur a été modifiée.
 bool ScaleFilterConstants(UINT startRegister, float* values, UINT vectorCount, UINT atlasSize) noexcept;
+// Décalage de pente du shader qui dessine les ombres (ps_1A5D2A20 au relevé du 13/10/2026, désassemblé) : profondeur +
+// max(|ddx|, |ddy|) x c92.x (`mOneOverFar`, 4.5) + c92.y. La variation ddx/ddy est mesurée par texel : dans un atlas
+// agrandi, elle est divisée par le facteur d'agrandissement, et le décalage avec elle (hypothèse pour l'acné d'ombre
+// constatée sur les vêtements en 8192). c92.x est multiplié par ce facteur pour garder le décalage d'origine dans la
+// scène. Renvoie true si une valeur a été modifiée.
+bool ScaleCasterBias(UINT startRegister, float* values, UINT vectorCount, UINT atlasSize) noexcept;
+// L'atlas des ombres est-il la cible de rendu (dessin des ombres en cours) ?
+bool AtlasBound() noexcept;
 
 // Appelés par les hooks du périphérique (graphics/SceneHooks.cpp).
 void OnTextureCreated(IDirect3DTexture9* texture, UINT width, UINT height, DWORD usage, D3DFORMAT format) noexcept;

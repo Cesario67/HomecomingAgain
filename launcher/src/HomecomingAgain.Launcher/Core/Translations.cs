@@ -69,6 +69,32 @@ public static class Translations
             ["SmaaHint"] = ("Lisse les contours en escalier. Appliqué à l'image finale : les textes de l'interface sont " +
                             "légèrement adoucis aussi.",
                             "Smooths jagged edges. Applied to the final image: interface text is slightly softened too."),
+            ["Dlss"] = ("DLSS (DLAA, expérimental)", "DLSS (DLAA, experimental)"),
+            ["DlssHint"] = ("Anticrénelage par l'IA de NVIDIA, plus stable et plus net que le SMAA, qu'il remplace quand il est " +
+                            "actif. Carte NVIDIA RTX uniquement ; installe aussi DXVK (Direct3D 9 sur Vulkan). Sans carte " +
+                            "compatible, le jeu garde son image normale.",
+                            "NVIDIA AI anti-aliasing, more stable and sharper than SMAA, which it replaces while active. " +
+                            "NVIDIA RTX cards only; also installs DXVK (Direct3D 9 on Vulkan). Without a compatible card, " +
+                            "the game keeps its normal image."),
+            ["DlssCredit"] = ("NVIDIA DLSS : licence NVIDIA RTX SDKs. DXVK : licence zlib. Ce projet n'est ni soutenu ni " +
+                              "approuvé par NVIDIA.",
+                              "NVIDIA DLSS: NVIDIA RTX SDKs License. DXVK: zlib license. This project is not sponsored or " +
+                              "endorsed by NVIDIA."),
+            ["DlssPackageMissing"] = ("Fichiers du DLSS absents de ce launcher.", "DLSS files are missing from this launcher."),
+            ["DlssInstalled"] = ("DLSS et DXVK installés.", "DLSS and DXVK installed."),
+            ["DlssRemoved"] = ("DXVK retiré : le jeu revient à Direct3D 9.", "DXVK removed: the game is back on Direct3D 9."),
+            ["DlssForeignKept"] = ("Une d3d9.dll d'un autre mod a été mise de côté (d3d9.dll.avant-hca).",
+                                   "A d3d9.dll from another mod was set aside (d3d9.dll.avant-hca)."),
+            ["DlssForeignRestored"] = ("La d3d9.dll de l'autre mod a été remise.", "The other mod's d3d9.dll was restored."),
+            ["ButtonIcons"] = ("Icônes des boutons", "Button icons"),
+            ["SecController"] = ("Manette", "Controller"),
+            ["IconsAuto"] = ("Auto (Xbox si une manette est branchée, sinon PC)", "Auto (Xbox if a controller is plugged in, otherwise PC)"),
+            ["IconsPc"] = ("PC (1, 2, 3, 4 : jeu d'origine)", "PC (1, 2, 3, 4: original game)"),
+            ["IconsPlayStation"] = ("PlayStation (croix, rond, carré, triangle)", "PlayStation (cross, circle, square, triangle)"),
+            ["ButtonIconsHint"] = ("Icônes des boutons A, B, X, Y dans les menus, l'inventaire, l'écran des commandes et les " +
+                                   "invites en jeu (Ouvrir, Sauvegarder...). Le jeu d'origine affiche les chiffres 1 à 4.",
+                                   "A, B, X, Y button icons in menus, the inventory, the controls screen and in-game prompts " +
+                                   "(Open, Save...). The original game shows the digits 1 to 4."),
             ["Anisotropy"] = ("Filtrage anisotrope", "Anisotropic filtering"),
             ["AnisoOff"] = ("Désactivé (jeu d'origine)", "Off (original game)"),
             ["AnisotropyHint"] = ("Textures nettes au sol et vues de biais. Impact négligeable sur une carte graphique récente.",
@@ -85,8 +111,9 @@ public static class Translations
                             "stays untouched."),
             ["ShadowResolution"] = ("Résolution des ombres", "Shadow resolution"),
             ["ShadowOriginal"] = ("2048 × 2048 (jeu d'origine)", "2048 × 2048 (original game)"),
-            ["ShadowResolutionHint"] = ("Ombres plus nettes. Au-delà de 4096, des défauts apparaissent sur les vêtements (constaté en 8192).",
-                                        "Sharper shadows. Above 4096, artifacts appear on clothing (seen at 8192)."),            ["FilmGrain"] = ("Grain de pellicule", "Film grain"),
+            ["ShadowResolutionHint"] = ("Ombres plus nettes. 8192 est le plus net ; 4096 si la carte graphique a peu de mémoire (512 Mo de plus en 8192).",
+                                        "Sharper shadows. 8192 is the sharpest; 4096 if the graphics card has little memory (512 MB more at 8192)."),
+            ["FilmGrain"] = ("Grain de pellicule", "Film grain"),
             ["GrainOff"] = ("Désactivé", "Off"),
             ["GrainHalf"] = ("Réduit de moitié", "Halved"),
             ["GrainOriginal"] = ("Jeu d'origine", "Original game"),
