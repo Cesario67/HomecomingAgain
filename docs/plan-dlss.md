@@ -112,10 +112,9 @@ Conséquences pour le plan :
 - Jalon 3 (vérifié en jeu le 13/10/2026 : images de contrôle correctes, ~59 images reçues par seconde) : `HomecomingAgain.Dlss.exe` (64 bits, `helper/`), lancé par le mod avec les trois
   handles hérités, importe les images en Vulkan, attend le compteur et enregistre une image de contrôle de la scène
   et de la profondeur dans `HomecomingAgain\captures`. Journal : `HomecomingAgain\logs\HomecomingAgain.Dlss.log`.
-- Limite : les images sont copiées à Present, donc avec l'interface (texte « Sauvegarder » visible) ; à copier avant
-  l'interface pour le DLSS.
-- Limite connue : le jeu réécrit les images partagées à l'image suivante sans attendre le lecteur (pas encore de
-  synchronisation en retour). À régler avant le DLSS (anneau d'images ou sémaphore en retour).
+- Corrigé et vérifié en jeu (13/10/2026) : copie à la fin de la scène 3D, avant les post-traitements et l'interface ;
+  anneau de 3 paires d'images et compteur « consommées » en retour (942 produites, 941 consommées, aucune image
+  sautée en régime établi ; 14 sautées au démarrage, pendant la relecture de contrôle).
 ## 5. Plans de repli
 
 - Si les traînées sont inacceptables et que les animations ne peuvent pas être suivies : garder DLAA sur les
