@@ -192,13 +192,19 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
                                      shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize;
     const bool touchesGrain = grain::Active() && start <= grain::kIntensityRegister &&
                               start + count > grain::kIntensityRegister;
-    if (!touchesShadowFilter && !touchesGrain) {
+    // Décalage de pente des ombres (c92), seulement pendant le dessin de l'atlas : ailleurs c92 sert à autre chose.
+    const bool touchesCasterBias = start <= 92 && start + count > 92 && shadows::AtlasBound() &&
+                                   shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize;
+    if (!touchesShadowFilter && !touchesGrain && !touchesCasterBias) {
         return g_setPixelShaderConstantF(device, start, data, count);
     }
     // Copie corrigée : filtre des ombres (c45..c54) et intensité du grain (c14, seulement sous son shader).
     float copy[kMaxConstantVectors * 4];
     std::memcpy(copy, data, count * 4 * sizeof(float));
     bool changed = false;
+    if (touchesCasterBias) {
+        changed |= shadows::ScaleCasterBias(start, copy, count, shadows::ActiveAtlasSize());
+    }
     if (touchesShadowFilter) {
         changed |= shadows::ScaleFilterConstants(start, copy, count, shadows::ActiveAtlasSize());
     }

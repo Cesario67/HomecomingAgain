@@ -102,6 +102,14 @@ void TestShadowResolution() {
           "décalage du filtre ramené à un texel, autres valeurs intactes");
     float outside[4] = {1, 1, 1.0f / 2048, 1.0f / 2048};
     Check(!shadows::ScaleFilterConstants(80, outside, 1, 4096), "registres hors du filtre ignorés");
+    // Envoi relevé le 13/10/2026 : c92 = [4.5 0 ...] avant le shader des ombres.
+    float bias[4] = {4.5f, 0.0f, 1.0f, 1.0f};
+    Check(shadows::ScaleCasterBias(92, bias, 1, 8192) && bias[0] == 18.0f && bias[1] == 0.0f,
+          "décalage de pente des ombres multiplié par l'agrandissement (8192 : x4)");
+    float biasOriginal[4] = {4.5f, 0.0f, 1.0f, 1.0f};
+    Check(!shadows::ScaleCasterBias(92, biasOriginal, 1, 2048) && !shadows::ScaleCasterBias(93, biasOriginal, 1, 8192) &&
+              biasOriginal[0] == 4.5f,
+          "décalage de pente intact en 2048 ou hors de c92");
 }
 
 void TestProjection() {

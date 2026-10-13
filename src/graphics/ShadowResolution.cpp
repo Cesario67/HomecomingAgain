@@ -69,6 +69,20 @@ bool ScaleFilterConstants(UINT startRegister, float* values, UINT vectorCount, U
     return changed;
 }
 
+bool ScaleCasterBias(UINT startRegister, float* values, UINT vectorCount, UINT atlasSize) noexcept {
+    constexpr UINT kBiasRegister = 92;
+    if (atlasSize == kOriginalAtlasSize || values == nullptr || startRegister > kBiasRegister ||
+        startRegister + vectorCount <= kBiasRegister) {
+        return false;
+    }
+    values[(kBiasRegister - startRegister) * 4] *= static_cast<float>(atlasSize) / static_cast<float>(kOriginalAtlasSize);
+    return true;
+}
+
+bool AtlasBound() noexcept {
+    return g_atlasBound.load();
+}
+
 UINT ActiveAtlasSize() noexcept {
     return AtlasSizeFor(GetConfig().shadowResolution);
 }
