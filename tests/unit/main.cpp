@@ -17,6 +17,7 @@
 #include "graphics/BorderlessWindow.h"
 #include "graphics/CameraMath.h"
 #include "graphics/CameraTracker.h"
+#include "graphics/DepthEncoding.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -215,6 +216,27 @@ void TestCameraMath() {
     Check(!Inverse(singular, inverse), "matrice non inversible refusée");
 }
 
+void TestDepthEncoding() {
+    using hca::graphics::depth::Encoding;
+    using hca::graphics::depth::ParseEncoding;
+    // Envoi relevé le 13/10/2026 : c98 seul, [0.9 0 0.1 0.9].
+    const float c98[4] = {0.9f, 0.0f, 0.1f, 0.9f};
+    Encoding encoding;
+    Check(ParseEncoding(98, c98, 1, encoding) && encoding.scale == 0.9f && encoding.bias == 0.0f,
+          "codage de la profondeur lu dans c98");
+    // c98 au milieu d'un envoi plus large.
+    float block[3 * 4] = {};
+    block[4] = 0.5f;
+    block[5] = 0.25f;
+    Check(ParseEncoding(97, block, 3, encoding) && encoding.scale == 0.5f && encoding.bias == 0.25f,
+          "codage de la profondeur dans un envoi de plusieurs registres");
+    Encoding untouched;
+    Check(!ParseEncoding(99, c98, 1, untouched) && !ParseEncoding(97, c98, 1, untouched) && untouched.scale == 0.9f,
+          "envois sans c98 ignorés");
+    const float zero[4] = {};
+    Check(!ParseEncoding(98, zero, 1, untouched), "facteur nul refusé");
+}
+
 }  // namespace
 
 int main() {
@@ -230,6 +252,7 @@ int main() {
     TestChannelFix();
     TestSharedFrames();
     TestCameraMath();
+    TestDepthEncoding();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

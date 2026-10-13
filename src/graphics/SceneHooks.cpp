@@ -8,6 +8,7 @@
 #include "core/Log.h"
 #include "dlss/SharedFrames.h"
 #include "graphics/CameraTracker.h"
+#include "graphics/DepthEncoding.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/InternalDraw.h"
 #include "graphics/MotionVectors.h"
@@ -170,6 +171,7 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
     if (t_internalDraw || data == nullptr || count > kMaxConstantVectors) {
         return g_setPixelShaderConstantF(device, start, data, count);
     }
+    depth::OnPixelShaderConstants(start, data, count);
     const bool touchesShadowFilter = start <= 54 && start + count > 45 &&
                                      shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize;
     const bool touchesGrain = grain::Active() && start <= grain::kIntensityRegister &&

@@ -71,7 +71,10 @@ Ordre d'une image (environ 10 000 appels, 800 dessins) :
 1. Trois cartes d'ombres 2048x2048 (R32F, profondeur D24S8 dédiée).
 2. **Pré-passe de profondeur** dans une texture 1920x1080 **R32F** (texture 0x79bc7e0 au relevé, effacée à 1.0),
    avec le tampon D24S8 1920x1080 principal. La profondeur est donc déjà lisible : INTZ inutile (à confirmer en
-   affichant cette texture).
+   affichant cette texture). **Codage vérifié le 13/10/2026** (shaders de la passe désassemblés) : la valeur écrite
+   n'est pas z/w mais (z/w) x c98.x + c98.y (`mCommonDepthCoefficients` = [0.9 0 0.1 0.9], viewport z 0..0.9), voir
+   `src/graphics/DepthEncoding.h`. Le SSAO lit encore la valeur brute comme z/w (distances environ 5 fois trop
+   courtes), réglé à l'œil ainsi : à revoir avant d'en changer le rendu.
 3. Scène principale dans une texture 1920x1080 A8R8G8B8 (0x7a4d8e0), même tampon de profondeur.
 4. Post-traitements : cibles A16B16G16R16F 1920x1080 sans profondeur, puis chaîne de flou lumineux (960x540
    jusqu'à 15x8), recopiée par StretchRect.

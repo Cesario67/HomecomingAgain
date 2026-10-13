@@ -98,6 +98,7 @@ add_library(HomecomingAgain SHARED
     src/graphics/BorderlessWindow.cpp
     src/graphics/CameraMath.cpp
     src/graphics/CameraTracker.cpp
+    src/graphics/DepthEncoding.cpp
     src/graphics/D3D9Hooks.cpp
     src/graphics/D3D9On12.cpp
     src/graphics/FilmGrain.cpp
@@ -149,7 +150,7 @@ add_custom_command(TARGET HomecomingAgain POST_BUILD
 # Tests unitaires des fonctions pures, sans jeu ni matériel (tests/run-tests.ps1).
 option(HCA_BUILD_TESTS "Compiler les tests" ON)
 if(HCA_BUILD_TESTS)
-    add_executable(HomecomingAgainUnitTests tests/unit/main.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp src/patches/FrameRateCap.cpp src/core/Config.cpp src/core/Hooking.cpp src/graphics/ShaderConstantTable.cpp src/graphics/ShadowResolution.cpp src/graphics/Projection.cpp src/graphics/FilmGrain.cpp src/compat/SkipMovies.cpp src/compat/MovieSkip.cpp src/audio/AudioProbe.cpp src/graphics/CameraMath.cpp src/graphics/CameraTracker.cpp)
+    add_executable(HomecomingAgainUnitTests tests/unit/main.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp src/patches/FrameRateCap.cpp src/core/Config.cpp src/core/Hooking.cpp src/graphics/ShaderConstantTable.cpp src/graphics/ShadowResolution.cpp src/graphics/Projection.cpp src/graphics/FilmGrain.cpp src/compat/SkipMovies.cpp src/compat/MovieSkip.cpp src/audio/AudioProbe.cpp src/graphics/CameraMath.cpp src/graphics/CameraTracker.cpp src/graphics/DepthEncoding.cpp)
     target_include_directories(HomecomingAgainUnitTests PRIVATE src)
     target_compile_features(HomecomingAgainUnitTests PRIVATE cxx_std_20)
     target_compile_definitions(HomecomingAgainUnitTests PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)

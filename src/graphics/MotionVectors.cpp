@@ -7,6 +7,7 @@
 #include "core/Log.h"
 #include "graphics/CameraTracker.h"
 #include "graphics/InternalDraw.h"
+#include "graphics/DepthEncoding.h"
 
 // Shaders compilés par fxc pendant la compilation (voir CMakeLists.txt).
 #include "motion_shaders/MotionPS.h"
@@ -85,7 +86,8 @@ IDirect3DSurface9* ReadBack(IDirect3DDevice9* device, IDirect3DTexture9* texture
 // shader en cinq points de l'écran et les compare au même calcul fait sur le processeur (en double) avec les mêmes
 // matrices et la même profondeur. Lent (copie de la carte vers la mémoire), d'où la fréquence réduite.
 void LogSampledMotion(IDirect3DDevice9* device, IDirect3DTexture9* depth, IDirect3DTexture9* motion,
-                      const Matrix4& previous, const Matrix4& inverseCurrent, UINT width, UINT height) noexcept {
+                      const Matrix4& previous, const Matrix4& inverseCurrent, const float* depthDecode, UINT width,
+                      UINT height) noexcept {
     static int counter = 0;
     if (++counter % 300 != 0) {
         return;
@@ -131,7 +133,8 @@ void LogSampledMotion(IDirect3DDevice9* device, IDirect3DTexture9* depth, IDirec
                                          x * 2;
                 const double u = (x + 0.5) / width;
                 const double v = (y + 0.5) / height;
-                std::array<double, 4> world = Transform(inverseCurrent, {u * 2.0 - 1.0, 1.0 - v * 2.0, z, 1.0});
+                const double decoded = std::fmin((z - depthDecode[1]) / depthDecode[0], depthDecode[2]);
+                std::array<double, 4> world = Transform(inverseCurrent, {u * 2.0 - 1.0, 1.0 - v * 2.0, decoded, 1.0});
                 const double w = world[3];
                 for (double& c : world) {
                     c /= w;
@@ -240,6 +243,12 @@ IDirect3DTexture9* MotionVectors::Render(IDirect3DDevice9* device, IDirect3DText
     savedState_->Capture();
 
     const float screen[4] = {static_cast<float>(desc.Width), static_cast<float>(desc.Height), 0.0f, 0.0f};
+    // Décodage de la profondeur (graphics/DepthEncoding.h) et z/w à l'infini : le a de la projection, rapport des
+    // longueurs des lignes 2 et 3 de la caméra (ligne 2 = a x ligne 3 + (0, 0, 0, b)).
+    const depth::Encoding encoding = depth::Current();
+    const float row2 = std::sqrt(current[8] * current[8] + current[9] * current[9] + current[10] * current[10]);
+    const float row3 = std::sqrt(current[12] * current[12] + current[13] * current[13] + current[14] * current[14]);
+    const float depthDecode[4] = {encoding.scale, encoding.bias, row3 > 0.0f ? row2 / row3 : 1.0f, 0.0f};
     device->SetDepthStencilSurface(nullptr);
     device->SetRenderTarget(0, targetSurface_);
     const D3DVIEWPORT9 viewport{0, 0, desc.Width, desc.Height, 0.0f, 1.0f};
@@ -260,6 +269,7 @@ IDirect3DTexture9* MotionVectors::Render(IDirect3DDevice9* device, IDirect3DText
     device->SetPixelShaderConstantF(0, inverseCurrent.data(), 4);
     device->SetPixelShaderConstantF(4, previous.data(), 4);
     device->SetPixelShaderConstantF(8, screen, 1);
+    device->SetPixelShaderConstantF(9, depthDecode, 1);
     device->SetTexture(0, depth);
     device->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
     device->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
@@ -279,7 +289,7 @@ IDirect3DTexture9* MotionVectors::Render(IDirect3DDevice9* device, IDirect3DText
     device->SetViewport(&savedViewport);
     SafeRelease(savedTarget);
     SafeRelease(savedDepth);
-    LogSampledMotion(device, depth, target_, previous, inverseCurrent, desc.Width, desc.Height);
+    LogSampledMotion(device, depth, target_, previous, inverseCurrent, depthDecode, desc.Width, desc.Height);
     return target_;
 }
 
