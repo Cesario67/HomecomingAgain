@@ -70,7 +70,7 @@ struct Config {
 
     // Annonce une carte 5.1 au moteur et fait un vrai mélange 5.1 vers stéréo (essai de stéréo spatialisée).
 
-    bool audioFakeSurround = false;
+    bool audioFakeSurround = true;
 
     // Pour chaque canal de Windows (AvG AvD C Basses ArG ArD), canal du moteur à utiliser (voir audio/AudioProbe.h).
 
