@@ -20,6 +20,7 @@
 #include "graphics/DepthEncoding.h"
 #include "graphics/Jitter.h"
 #include "graphics/SceneEnd.h"
+#include "input/XInputProbe.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -279,6 +280,17 @@ void TestSceneEnd() {
           "pas de fin de scène sans pré-passe de profondeur");
 }
 
+void TestXInputDescriptions() {
+    using hca::input::DescribeButtons;
+    using hca::input::StickAmount;
+    Check(DescribeButtons(0) == "aucun" && DescribeButtons(0x1000) == "A" &&
+              DescribeButtons(0x1000 | 0x0100 | 0x0010) == "A LB Start",
+          "noms des boutons de la manette");
+    Check(StickAmount(0, 0) == 0.0f && std::fabs(StickAmount(32767, 0) - 1.0f) < 1e-4f &&
+              StickAmount(32767, 32767) == 1.0f && std::fabs(StickAmount(0, -16384) - 0.5f) < 1e-3f,
+          "inclinaison des sticks");
+}
+
 void TestDepthEncoding() {
     using hca::graphics::depth::Encoding;
     using hca::graphics::depth::ParseEncoding;
@@ -350,6 +362,7 @@ int main() {
     TestCameraMath();
     TestCameraCut();
     TestSceneEnd();
+    TestXInputDescriptions();
     TestDepthEncoding();
     TestJitter();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);

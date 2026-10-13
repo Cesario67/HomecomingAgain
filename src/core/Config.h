@@ -93,6 +93,10 @@ struct Config {
 
     int movieSkipKey = 0x2E;
 
+    // [Input]
+    // Journal des lectures de manette par le moteur (XInput), voir input/XInputProbe.h.
+    bool xinputLog = true;
+
 
     // [Debug]
     int logKeepCount = 10;
