@@ -118,6 +118,13 @@ Conséquences pour le plan :
 - Corrigé et vérifié en jeu (13/10/2026) : copie à la fin de la scène 3D, avant les post-traitements et l'interface ;
   anneau de 3 paires d'images et compteur « consommées » en retour (942 produites, 941 consommées, aucune image
   sautée en régime établi ; 14 sautées au démarrage, pendant la relecture de contrôle).
+- Vecteurs de mouvement de la caméra (vérifié en jeu le 13/10/2026, rotation de la caméra sur place) : avec la
+  profondeur décodée, l'écart moyen avec l'image précédente recalée passe d'environ 4,5 sans vecteurs à 1,1-1,3 avec,
+  sur 6 contrôles ; le signe (position précédente - position actuelle, en pixels) est le bon.
+- **À faire : test en jeu réel** (mis de côté le 13/10/2026). Non vérifié : marche et course (vrai déplacement de la
+  caméra), autres lieux (extérieurs, grandes pièces), coupures de caméra (cinématiques, portes, changements de pièce,
+  à signaler au DLSS par un indicateur de réinitialisation). Méthode : 1 à 2 minutes de jeu normal, puis compter les
+  contrôles du journal `HomecomingAgain.Dlss.log` où les vecteurs font mieux que sans, et examiner les autres.
 ## 5. Plans de repli
 
 - Si les traînées sont inacceptables et que les animations ne peuvent pas être suivies : garder DLAA sur les
