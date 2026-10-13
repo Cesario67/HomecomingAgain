@@ -12,6 +12,7 @@
 
 #include "Arguments.h"
 #include "BmpWriter.h"
+#include "MotionCheck.h"
 #include "SharedFrameReader.h"
 
 namespace {
@@ -50,13 +51,39 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
     std::uint32_t received = 0;
     std::uint32_t total = 0;
     bool saved = false;
+    bool motionChecked = false;
     ULONGLONG nextReport = GetTickCount64() + 5000;
     while (parent == nullptr || WaitForSingleObject(parent, 0) == WAIT_TIMEOUT) {
         const std::uint64_t next = reader.WaitNext(value, 100);
         if (next != value) {
             received += static_cast<std::uint32_t>(next - value);
             total += static_cast<std::uint32_t>(next - value);
+            const bool consecutive = next == value + 1;
             value = next;
+            // Contrôle des vecteurs de mouvement, sur deux images consécutives (la précédente est encore dans son
+            // emplacement : les emplacements sont rendus au mod avec une image de retard, voir plus bas).
+            if (!motionChecked && total >= 180 && consecutive) {
+                std::vector<std::uint8_t> previousColor;
+                std::vector<std::uint8_t> color;
+                std::vector<float> depth;
+                std::vector<std::uint16_t> motion;
+                if (reader.ReadBack(static_cast<std::size_t>((value - 1) % hca::dlss::kSlots), previousColor, depth,
+                                    motion) &&
+                    reader.ReadBack(static_cast<std::size_t>(value % hca::dlss::kSlots), color, depth, motion)) {
+                    motionChecked = true;
+                    using hca::dlss::MeanWarpError;
+                    const std::uint32_t w = parsed->width;
+                    const std::uint32_t h = parsed->height;
+                    const float none = MeanWarpError(color.data(), previousColor.data(), motion.data(), w, h, false, 1, 1, 4);
+                    const float pp = MeanWarpError(color.data(), previousColor.data(), motion.data(), w, h, true, 1, 1, 4);
+                    const float np = MeanWarpError(color.data(), previousColor.data(), motion.data(), w, h, true, -1, 1, 4);
+                    const float pn = MeanWarpError(color.data(), previousColor.data(), motion.data(), w, h, true, 1, -1, 4);
+                    const float nn = MeanWarpError(color.data(), previousColor.data(), motion.data(), w, h, true, -1, -1, 4);
+                    Log(std::format("contrôle des vecteurs (écart moyen de luminosité avec l'image précédente) : sans "
+                                    "vecteurs {:.2f}, avec (+x +y) {:.2f}, (-x +y) {:.2f}, (+x -y) {:.2f}, (-x -y) {:.2f}",
+                                    none, pp, np, pn, nn));
+                }
+            }
             // Image de contrôle après 2 s d'images reçues (environ 120), lue dans l'emplacement de la dernière image.
             if (!saved && total >= 120) {
                 saved = true;
@@ -80,8 +107,11 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                     Log("relecture des images impossible");
                 }
             }
-            // Pas encore de traitement : l'image est lue, son emplacement est rendu au mod.
-            reader.MarkConsumed(value);
+            // Pas encore de traitement : l'emplacement de l'image précédente est rendu au mod (une image de retard, pour
+            // que le contrôle des vecteurs puisse relire deux images consécutives).
+            if (value > 1) {
+                reader.MarkConsumed(value - 1);
+            }
         }
         if (GetTickCount64() >= nextReport) {
             nextReport += 5000;

@@ -3,6 +3,9 @@
 
 #include "Arguments.h"
 #include "BmpWriter.h"
+#include "MotionCheck.h"
+
+#include <vector>
 
 namespace {
 
@@ -38,6 +41,32 @@ int main() {
     Check(HalfToFloat(0x3C00) == 1.0f && HalfToFloat(0xC000) == -2.0f && HalfToFloat(0x0000) == 0.0f &&
               HalfToFloat(0x3800) == 0.5f,
           "demi-flottants convertis");
-    std::printf(g_failures == 0 ? "Tous les tests passent.\n" : "%d échec(s).\n", g_failures);
+    // Image précédente = image courante décalée de 5 pixels : un pixel en (x, y) était en (x + 5, y).
+    {
+        const std::uint32_t w = 64;
+        const std::uint32_t h = 16;
+        std::vector<std::uint8_t> current(w * h * 4);
+        std::vector<std::uint8_t> previous(w * h * 4);
+        std::vector<std::uint16_t> motion(w * h * 2, 0);
+        for (std::uint32_t y = 0; y < h; ++y) {
+            for (std::uint32_t x = 0; x < w; ++x) {
+                const auto v = static_cast<std::uint8_t>((x * 37) % 251);
+                for (int c = 0; c < 3; ++c) {
+                    current[(y * w + x) * 4 + c] = v;
+                }
+                if (x + 5 < w) {
+                    for (int c = 0; c < 3; ++c) {
+                        previous[(y * w + x + 5) * 4 + c] = v;
+                    }
+                }
+                motion[(y * w + x) * 2] = 0x4500;  // 5,0 en demi-flottant
+            }
+        }
+        using hca::dlss::MeanWarpError;
+        const float none = MeanWarpError(current.data(), previous.data(), motion.data(), w, h, false, 1, 1, 1);
+        const float right = MeanWarpError(current.data(), previous.data(), motion.data(), w, h, true, 1, 1, 1);
+        const float wrong = MeanWarpError(current.data(), previous.data(), motion.data(), w, h, true, -1, 1, 1);
+        Check(right == 0.0f && none > 10.0f && wrong > 10.0f, "contrôle des vecteurs : bon signe à écart nul");
+    }    std::printf(g_failures == 0 ? "Tous les tests passent.\n" : "%d échec(s).\n", g_failures);
     return g_failures;
 }
