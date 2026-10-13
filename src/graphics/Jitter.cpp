@@ -51,8 +51,13 @@ bool ApplyToMatrix(float* registers, float ndcX, float ndcY) noexcept {
     return true;
 }
 
-void OnSetRenderTarget(DWORD index, IDirect3DSurface9* surface, IDirect3DSurface9* depthPassSurface) noexcept {
+void OnSetRenderTarget(DWORD index, IDirect3DSurface9* surface, IDirect3DSurface9* depthPassSurface,
+                       bool allowed) noexcept {
     const float amplitude = GetConfig().dlssJitter;
+    if (!allowed) {
+        g_current = {};
+        return;
+    }
     if (index != 0 || surface == nullptr || surface != depthPassSurface || amplitude <= 0.0f || g_inScene) {
         return;
     }

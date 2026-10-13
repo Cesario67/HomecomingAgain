@@ -69,6 +69,23 @@ public static class Translations
             ["SmaaHint"] = ("Lisse les contours en escalier. Appliqué à l'image finale : les textes de l'interface sont " +
                             "légèrement adoucis aussi.",
                             "Smooths jagged edges. Applied to the final image: interface text is slightly softened too."),
+            ["Dlss"] = ("DLSS (DLAA, expérimental)", "DLSS (DLAA, experimental)"),
+            ["DlssHint"] = ("Anticrénelage par l'IA de NVIDIA, plus stable et plus net que le SMAA, qu'il remplace quand il est " +
+                            "actif. Carte NVIDIA RTX uniquement ; installe aussi DXVK (Direct3D 9 sur Vulkan). Sans carte " +
+                            "compatible, le jeu garde son image normale.",
+                            "NVIDIA AI anti-aliasing, more stable and sharper than SMAA, which it replaces while active. " +
+                            "NVIDIA RTX cards only; also installs DXVK (Direct3D 9 on Vulkan). Without a compatible card, " +
+                            "the game keeps its normal image."),
+            ["DlssCredit"] = ("NVIDIA DLSS : licence NVIDIA RTX SDKs. DXVK : licence zlib. Ce projet n'est ni soutenu ni " +
+                              "approuvé par NVIDIA.",
+                              "NVIDIA DLSS: NVIDIA RTX SDKs License. DXVK: zlib license. This project is not sponsored or " +
+                              "endorsed by NVIDIA."),
+            ["DlssPackageMissing"] = ("Fichiers du DLSS absents de ce launcher.", "DLSS files are missing from this launcher."),
+            ["DlssInstalled"] = ("DLSS et DXVK installés.", "DLSS and DXVK installed."),
+            ["DlssRemoved"] = ("DXVK retiré : le jeu revient à Direct3D 9.", "DXVK removed: the game is back on Direct3D 9."),
+            ["DlssForeignKept"] = ("Une d3d9.dll d'un autre mod a été mise de côté (d3d9.dll.avant-hca).",
+                                   "A d3d9.dll from another mod was set aside (d3d9.dll.avant-hca)."),
+            ["DlssForeignRestored"] = ("La d3d9.dll de l'autre mod a été remise.", "The other mod's d3d9.dll was restored."),
             ["Anisotropy"] = ("Filtrage anisotrope", "Anisotropic filtering"),
             ["AnisoOff"] = ("Désactivé (jeu d'origine)", "Off (original game)"),
             ["AnisotropyHint"] = ("Textures nettes au sol et vues de biais. Impact négligeable sur une carte graphique récente.",

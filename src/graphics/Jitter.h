@@ -32,7 +32,9 @@ Offset OffsetForFrame(std::uint64_t frame, float amplitude) noexcept;
 // perspective (laissée telle quelle).
 bool ApplyToMatrix(float* registers, float ndcX, float ndcY) noexcept;
 
-void OnSetRenderTarget(DWORD index, IDirect3DSurface9* surface, IDirect3DSurface9* depthPassSurface) noexcept;
+// `allowed` : faux quand le DLSS ne renvoie pas ses images au jeu (rien pour compenser le décalage).
+void OnSetRenderTarget(DWORD index, IDirect3DSurface9* surface, IDirect3DSurface9* depthPassSurface,
+                       bool allowed) noexcept;
 void OnSceneEnd() noexcept;
 void OnPresent() noexcept;
 

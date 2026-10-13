@@ -148,6 +148,17 @@ add_custom_command(TARGET HomecomingAgain POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/third_party/smaa/LICENSE.txt" "${HCA_PACKAGE_DIR}/LICENSE-SMAA.txt"
 )
 
+# DXVK 3.1.1 (Direct3D 9 sur Vulkan, licence zlib) : nécessaire au DLSS, installé par le launcher seulement quand
+# l'option DLSS est activée. Archive officielle, empreinte vérifiée (identique à celle publiée par GitHub).
+FetchContent_Declare(dxvk_release
+    URL https://github.com/doitsujin/dxvk/releases/download/v3.1.1/dxvk-3.1.1.tar.gz
+    URL_HASH SHA256=40565B4A724AADC4433FA4E010B4B23916D9B1F1BAEEE64E17186DB94F54E608)
+FetchContent_MakeAvailable(dxvk_release)
+add_custom_command(TARGET HomecomingAgain POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dxvk_release_SOURCE_DIR}/x32/d3d9.dll" "${HCA_PACKAGE_DIR}/d3d9.dll"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_SOURCE_DIR}/third_party/dxvk/LICENSE.txt" "${HCA_PACKAGE_DIR}/LICENSE-DXVK.txt"
+)
+
 # Tests unitaires des fonctions pures, sans jeu ni matériel (tests/run-tests.ps1).
 option(HCA_BUILD_TESTS "Compiler les tests" ON)
 if(HCA_BUILD_TESTS)

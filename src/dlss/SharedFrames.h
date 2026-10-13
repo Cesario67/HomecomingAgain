@@ -40,4 +40,8 @@ bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
 // alors inutile.
 bool ConsumeFrameReturned() noexcept;
 
+// Le retour de l'image est-il en service (processus DLSS qui a déjà rendu des images, chien de garde pas déclenché) ?
+// Le décalage de caméra n'est appliqué qu'à cette condition : sans DLSS pour le compenser, l'image tremblerait.
+bool ReturnActive() noexcept;
+
 }  // namespace hca::dlss

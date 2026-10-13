@@ -112,10 +112,14 @@ public static class ModInstaller
     /// Retire le mod : notre version.dll est supprimée (une version.dll d'un autre mod mise de côté est remise) et
     /// SilentHill.exe d'origine est restauré. Les réglages, journaux et diagnostics sont conservés.
     /// </summary>
-    public static IReadOnlyList<string> Uninstall(GamePaths paths)
+    public static IReadOnlyList<string> Uninstall(GamePaths paths, string? packageDirectory = null)
     {
         List<string> report = new();
         EnsureGameNotRunning(paths);
+        if (packageDirectory is not null)
+        {
+            report.AddRange(DlssInstaller.RemoveAll(packageDirectory, paths));
+        }
         if (File.Exists(paths.ModDll) && ModVersionOf(paths.ModDll) is not null)
         {
             File.Delete(paths.ModDll);

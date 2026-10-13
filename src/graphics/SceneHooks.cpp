@@ -128,7 +128,9 @@ HRESULT STDMETHODCALLTYPE HookSetRenderTarget(IDirect3DDevice9* device, DWORD in
         shadows::OnSetRenderTarget(index, surface);
         camera::OnSetRenderTarget(index, surface, GetSsao().DepthSurface());
         if (GetConfig().dlssShareFrames) {
-            jitter::OnSetRenderTarget(index, surface, GetSsao().DepthSurface());
+            // Avec Apply=1, décalage seulement si le DLSS renvoie bien ses images (sinon l'image tremblerait).
+            const bool allowed = !GetConfig().dlssApply || dlss::ReturnActive();
+            jitter::OnSetRenderTarget(index, surface, GetSsao().DepthSurface(), allowed);
         }
     }
     return g_setRenderTarget(device, index, surface);

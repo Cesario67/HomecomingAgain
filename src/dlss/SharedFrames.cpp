@@ -112,6 +112,7 @@ struct State {
 
 State g_state;
 std::atomic<bool> g_frameReturned{false};  // image du DLSS demandée pour l'image en cours
+std::atomic<bool> g_returnDelivering{false};  // le processus DLSS a déjà passé « traitées » à 1 au moins
 
 template <typename Fn>
 bool LoadDevice(PFN_vkGetDeviceProcAddr getDeviceProc, VkDevice device, const char* name, Fn& out) {
@@ -687,6 +688,7 @@ bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
     if (s.returnEnabled) {
         std::uint64_t processed = 0;
         s.vk.getSemaphoreCounterValue(s.device, s.processed.semaphore, &processed);
+        g_returnDelivering = processed >= 1;
         if (processed >= 1 && processed + 2 >= value) {
             VkCommandBuffer back = s.back[slot];
             s.vk.resetCommandBuffer(back, 0);
@@ -726,6 +728,10 @@ bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
     s.cpuMs += static_cast<double>(end.QuadPart - start.QuadPart) * 1000.0 / static_cast<double>(frequency.QuadPart);
     Report(s);
     return true;
+}
+
+bool ReturnActive() noexcept {
+    return g_state.returnEnabled && g_state.ready && g_returnDelivering;
 }
 
 bool ConsumeFrameReturned() noexcept {
