@@ -68,10 +68,6 @@ struct Config {
 
     bool audioChannelFix = true;
 
-    // Annonce une carte 5.1 au moteur et fait un vrai mélange 5.1 vers stéréo (essai de stéréo spatialisée).
-
-    bool audioFakeSurround = true;
-
     // Pour chaque canal de Windows (AvG AvD C Basses ArG ArD), canal du moteur à utiliser (voir audio/AudioProbe.h).
 
     int audioChannelOrder[6] = {2, 4, 1, 3, 5, 0};

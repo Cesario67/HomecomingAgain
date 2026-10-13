@@ -316,32 +316,6 @@ std::string GuidText(REFGUID guid) {
                        guid.Data4[5], guid.Data4[6], guid.Data4[7]);
 }
 
-// IXAudio2::GetDeviceDetails (index 4) : (this, UINT32 index, XAUDIO2_DEVICE_DETAILS*). XAUDIO2_DEVICE_DETAILS :
-// WCHAR DeviceID[256], WCHAR DisplayName[256], Role (4 octets), puis WAVEFORMATEXTENSIBLE OutputFormat (octet 1028).
-// [Audio] FakeSurround : annonce une carte 5.1 au moteur, qui place alors ses sons pour 5.1 (hypothèse : son chemin
-// stéréo est faussé) ; la vraie sortie reste stéréo et le mod fait le mélange 5.1 vers stéréo.
-constexpr size_t kGetDeviceDetailsIndex = 4;
-using GetDeviceDetailsFn = HRESULT(STDMETHODCALLTYPE*)(void*, UINT32, BYTE*);
-GetDeviceDetailsFn g_getDeviceDetails = nullptr;
-
-HRESULT STDMETHODCALLTYPE HookGetDeviceDetails(void* xaudio, UINT32 index, BYTE* details) {
-    const HRESULT result = g_getDeviceDetails(xaudio, index, details);
-    if (SUCCEEDED(result) && details != nullptr) {
-        auto* format = reinterpret_cast<WAVEFORMATEXTENSIBLE*>(details + 1028);
-        const WORD original = format->Format.nChannels;
-        if (GetConfig().audioFakeSurround && original == 2) {
-            format->Format.nChannels = 6;
-            format->Format.nBlockAlign = static_cast<WORD>(6 * format->Format.wBitsPerSample / 8);
-            format->Format.nAvgBytesPerSec = format->Format.nSamplesPerSec * format->Format.nBlockAlign;
-            if (format->Format.wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
-                format->dwChannelMask = 0x3F;  // 5.1 : AvG AvD C Basses ArG ArD
-            }
-        }
-        log::Info("Audio : GetDeviceDetails({}) : {} canaux{}", index, original,
-                  format->Format.nChannels != original ? " (5.1 annoncé au moteur)" : "");
-    }
-    return result;
-}
 HRESULT STDMETHODCALLTYPE HookCreateMasteringVoice(void* xaudio, void** voice, UINT32 channels, UINT32 rate,
                                                    UINT32 flags, UINT32 device, const void* effects) {
     // [Audio] Channels : sortie forcée en 5.1 ou 7.1. Avec un casque (2 canaux), le moteur envoie ses sons mono à droite
@@ -403,7 +377,6 @@ HRESULT WINAPI HookCoCreateInstance(REFCLSID clsid, LPUNKNOWN outer, DWORD conte
             hooking::PatchVtable(*object, kCreateMasteringVoiceIndex, &HookCreateMasteringVoice,
                                  &g_createMasteringVoice);
             hooking::PatchVtable(*object, kCreateSourceVoiceIndex, &HookCreateSourceVoice, &g_createSourceVoice);
-            hooking::PatchVtable(*object, kGetDeviceDetailsIndex, &HookGetDeviceDetails, &g_getDeviceDetails);
             hooking::PatchVtable(*object, kCreateSubmixVoiceIndex, &HookCreateSubmixVoice, &g_createSubmixVoice);
         }
     } else {
@@ -476,7 +449,8 @@ void DownmixSurroundToStereo(float* samples, std::uint32_t frames, bool standard
         float left = 0.0f;
         float right = 0.0f;
         if (standard) {
-            // Mélange 5.1 vers stéréo habituel (ordre de Windows : AvG AvD C Basses ArG ArD).
+            // Mélange 5.1 vers stéréo habituel (ordre de Windows : AvG AvD C Basses ArG ArD). C'est la conversion de XAudio2 2.1,
+    // pas le placement du moteur, qui envoyait les sons d'un seul côté (vérifié à l'écoute le 13/10/2026).
             left = f[0] + kShared * f[2] + kShared * f[4] + kLfe * f[3];
             right = f[1] + kShared * f[2] + kShared * f[5] + kLfe * f[3];
         } else {

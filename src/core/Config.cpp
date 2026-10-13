@@ -92,8 +92,6 @@ bool LoadConfig(const std::wstring& iniPath) {
 
     }
 
-    config.audioFakeSurround = ReadBool(iniPath, L"Audio", L"FakeSurround", defaults.audioFakeSurround);
-
     config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
 
 
