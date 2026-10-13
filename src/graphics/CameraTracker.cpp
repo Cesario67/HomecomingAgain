@@ -44,17 +44,6 @@ constexpr int kReportFrames = 600;
 int g_framesSeen = 0;
 int g_framesSinceCommit = 0;  // images présentées depuis la dernière caméra retenue (CommitFrame)
 int g_cuts = 0;               // changements de plan, pour le journal
-// Compteurs du journal quand aucune caméra n'est trouvée (diagnostic, 13/10/2026).
-int g_depthPassFrames = 0;
-int g_qualifyingDraws = 0;
-int g_rejectedDraws = 0;
-int g_camerasFound = 0;
-int g_drawCalls = 0;
-int g_qualifyingBinds = 0;
-int g_missingConstants = 0;
-int g_rejectDecided = 0;
-int g_rejectBeforeDepth = 0;
-int g_rejectShader = 0;
 
 bool HasCameraConstants(const DWORD* bytecode) {
     bool worldViewProj = false;
@@ -108,7 +97,6 @@ void OnSetVertexShader(IDirect3DVertexShader9* shader) noexcept {
     const std::size_t count = g_shaderCount.load();
     for (std::size_t i = 0; shader != nullptr && i < count; ++i) {
         if (g_shaders[i].load() == shader) {
-            ++g_qualifyingBinds;
             g_currentQualifies = true;
             return;
         }
@@ -136,35 +124,25 @@ void OnSetRenderTarget(DWORD index, IDirect3DSurface9* surface, IDirect3DSurface
         g_inDepthPass = surface != nullptr && surface == depthPassSurface;
     }
     if (index == 0 && surface != nullptr && surface == depthPassSurface) {
-        if (!g_afterDepthPass) {
-            ++g_depthPassFrames;
-        }
         g_afterDepthPass = true;
     }
 }
 
 void OnDraw() noexcept {
-    ++g_drawCalls;
     // Pendant la pré-passe, le moteur envoie mWorld (c4..c6) avant chaque dessin même si son shader ne l'utilise pas
     // (relevé F11 du 13/10/2026) : tous ses dessins donnent la caméra. Après elle, seulement les shaders qui reçoivent
     // mWorld (certaines pièces n'en ont aucun, constaté le 13/10/2026 : caméra perdue).
     if (g_decided || !g_afterDepthPass || (!g_currentQualifies && !g_inDepthPass)) {
-        g_rejectDecided += g_decided ? 1 : 0;
-        g_rejectBeforeDepth += (!g_decided && !g_afterDepthPass) ? 1 : 0;
-        g_rejectShader += (!g_decided && g_afterDepthPass) ? 1 : 0;
         return;
     }
     for (bool have : g_haveConstants) {
         if (!have) {
-            ++g_missingConstants;
             return;
         }
     }
-    ++g_qualifyingDraws;
     Matrix4 viewProjection{};
     if (!ViewProjectionFromDraw(&g_constants[0], &g_constants[16], viewProjection) ||
         !LooksLikePerspectiveCamera(viewProjection)) {
-        ++g_rejectedDraws;
         return;  // interface 2D, effet plein écran ou mWorld non inversible
     }
     ++g_drawsSeen;
@@ -196,7 +174,6 @@ void OnSceneEnd() noexcept {
     }
     g_current = best->matrix;
     g_haveCurrent = true;
-    ++g_camerasFound;
 }
 
 void OnPresent() noexcept {
@@ -206,22 +183,6 @@ void OnPresent() noexcept {
             log::Info("Caméra : {} changement(s) de plan signalé(s) au DLSS", g_cuts);
             g_cuts = 0;
         }
-        if (g_camerasFound == 0) {
-            log::Info("Caméra : aucune trouvée en {} images (shaders reconnus {}, pré-passes {}, dessins examinés {}, rejetés {}, appels de dessin {}, shaders reconnus activés {}, constantes manquantes {} ; refus : caméra déjà décidée {}, avant la pré-passe {}, shader {})",
-                      g_framesSeen, g_shaderCount.load(), g_depthPassFrames, g_qualifyingDraws, g_rejectedDraws,
-                      g_drawCalls, g_qualifyingBinds, g_missingConstants, g_rejectDecided, g_rejectBeforeDepth,
-                      g_rejectShader);
-            g_rejectDecided = 0;
-            g_rejectBeforeDepth = 0;
-            g_rejectShader = 0;
-            g_drawCalls = 0;
-            g_qualifyingBinds = 0;
-            g_missingConstants = 0;
-        }
-        g_depthPassFrames = 0;
-        g_qualifyingDraws = 0;
-        g_rejectedDraws = 0;
-        g_camerasFound = 0;
         g_framesSeen = 0;
     }
     g_decided = false;
