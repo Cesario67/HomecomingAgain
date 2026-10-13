@@ -111,6 +111,7 @@ struct State {
 };
 
 State g_state;
+std::atomic<bool> g_frameReturned{false};  // image du DLSS demandée pour l'image en cours
 
 template <typename Fn>
 bool LoadDevice(PFN_vkGetDeviceProcAddr getDeviceProc, VkDevice device, const char* name, Fn& out) {
@@ -702,6 +703,7 @@ bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
             submitCount = 2;
             s.waitingFor.store(value);
             ++s.returned;
+            g_frameReturned = true;
         } else {
             ++s.notReturned;
         }
@@ -723,6 +725,11 @@ bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
     s.cpuMs += static_cast<double>(end.QuadPart - start.QuadPart) * 1000.0 / static_cast<double>(frequency.QuadPart);
     Report(s);
     return true;
+}
+
+bool ConsumeFrameReturned() noexcept {
+    const bool returned = g_frameReturned.exchange(false);
+    return returned;
 }
 
 }  // namespace hca::dlss

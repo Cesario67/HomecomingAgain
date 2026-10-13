@@ -35,4 +35,8 @@ constexpr bool SlotIsFree(std::uint64_t value, std::uint64_t consumed, std::uint
 bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
                 IDirect3DBaseTexture9* motion) noexcept;
 
+// True si l'image en cours a reçu l'image du DLSS (remis à false par l'appel, une fois par Present) : le SMAA est
+// alors inutile.
+bool ConsumeFrameReturned() noexcept;
+
 }  // namespace hca::dlss

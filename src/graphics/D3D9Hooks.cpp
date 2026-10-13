@@ -68,7 +68,8 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
     if (GetConfig().frameCapture) {
         capture::OnPresent(device);
     }
-    if (GetConfig().smaa) {
+    // Image déjà anticrénelée par le DLSS : pas de SMAA par-dessus (double anticrénelage, flou).
+    if (GetConfig().smaa && !dlss::ConsumeFrameReturned()) {
         InternalDrawScope internal;
         g_smaa.Apply(device);
     }
