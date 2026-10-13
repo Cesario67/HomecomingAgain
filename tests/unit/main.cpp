@@ -158,14 +158,17 @@ void TestChannelFix() {
     hca::audio::RemapSurroundFrames(frames, 1, map);
     Check(frames[0] == 20 && frames[1] == 40 && frames[2] == 10 && frames[5] == 0, "canaux réordonnés");
     float mono[6] = {0, 1, 0, 0, 0, 0};
-    hca::audio::DownmixSurroundToStereo(mono, 1);
+    hca::audio::DownmixSurroundToStereo(mono, 1, false);
     Check(mono[0] == mono[1] && mono[0] > 0.7f, "bruitage du canal 1 centré en stéréo");
     float two[12] = {0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0};
-    hca::audio::DownmixSurroundToStereo(two, 2);
+    hca::audio::DownmixSurroundToStereo(two, 2, false);
     Check(two[0] == two[1] && two[2] == two[3] && two[0] > 0.7f && two[2] > 0.7f, "images converties de façon compacte, centrées");
     float side[6] = {0, 1, 0, 0, 0, 0};
-    hca::audio::DownmixSurroundToStereo(side, 1);
+    hca::audio::DownmixSurroundToStereo(side, 1, false);
     Check(side[0] == side[1], "son de l'avant droit centré");
+    float std51[6] = {1, 0, 0, 0, 0, 1};
+    hca::audio::DownmixSurroundToStereo(std51, 1, true);
+    Check(std51[0] == 1.0f && std51[1] > 0.7f && std51[1] < 0.71f, "mélange 5.1 habituel : avant gauche à gauche, arrière droit à droite");
 }
 
 }  // namespace
