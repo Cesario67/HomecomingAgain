@@ -31,6 +31,12 @@ int main() {
     Check(parsed && parsed->color.handles[0] == 0xC48 && parsed->color.handles[2] == 0xC50 && parsed->consumed == 0xC30 && parsed->motion.format == 83 && parsed->depth.format == 100 && parsed->width == 1920 &&
               parsed->vendorId == 0x10DE,
           "arguments lus (décimal et hexadécimal)");
+    std::vector<std::wstring> withInfo = full;
+    withInfo.push_back(L"--info");
+    withInfo.push_back(L"0xD10");
+    const auto parsedInfo = ParseArguments(withInfo);
+    Check(parsed && parsed->info == 0 && parsedInfo && parsedInfo->info == 0xD10,
+          "bloc des données d'image facultatif");
     std::vector<std::wstring> missing = full;
     missing.erase(missing.begin() + 6, missing.begin() + 8);  // sans --color
     Check(!ParseArguments(missing), "paramètre manquant refusé");

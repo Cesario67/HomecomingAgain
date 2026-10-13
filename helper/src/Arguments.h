@@ -29,6 +29,7 @@ struct Arguments {
     SharedImageArgs motion;  // vecteurs de mouvement (R16G16_SFLOAT, en pixels)
     std::uint64_t semaphore = 0;  // compteur « produites » (signalé par le mod)
     std::uint64_t consumed = 0;   // compteur « consommées » (signalé par ce processus)
+    std::uint64_t info = 0;       // bloc des données de chaque image (src/dlss/FrameInfo.h), facultatif
     std::wstring logPath;
     std::wstring outputDir;
 };

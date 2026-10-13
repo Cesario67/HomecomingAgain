@@ -2,10 +2,9 @@
 
 #include <windows.h>
 
-#define VK_NO_PROTOTYPES
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_win32.h>
 
+#include <algorithm>
 #include <cstring>
 #include <format>
 
@@ -31,6 +30,8 @@ struct SharedFrameReader::Impl {
     VkSemaphore timeline = VK_NULL_HANDLE;  // « produites »
     VkSemaphore consumed = VK_NULL_HANDLE;  // « consommées »
     VkCommandPool pool = VK_NULL_HANDLE;
+    std::vector<std::string> instanceExtensions;  // demandées par le DLSS
+    std::vector<std::string> deviceExtensions;
 
     template <typename Fn>
     Fn Instance(const char* name) {
@@ -62,8 +63,14 @@ bool SharedFrameReader::Impl::CreateInstance() {
     VkApplicationInfo app{VK_STRUCTURE_TYPE_APPLICATION_INFO};
     app.pApplicationName = "HomecomingAgain.Dlss";
     app.apiVersion = VK_API_VERSION_1_2;
+    std::vector<const char*> extensions;
+    for (const std::string& name : instanceExtensions) {
+        extensions.push_back(name.c_str());
+    }
     VkInstanceCreateInfo info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     info.pApplicationInfo = &app;
+    info.enabledExtensionCount = static_cast<std::uint32_t>(extensions.size());
+    info.ppEnabledExtensionNames = extensions.data();
     if (create == nullptr || create(&info, nullptr, &instance) != VK_SUCCESS) {
         log("création de l'instance Vulkan impossible");
         return false;
@@ -110,18 +117,30 @@ bool SharedFrameReader::Impl::CreateDevice() {
     queueInfo.queueFamilyIndex = queueFamily;
     queueInfo.queueCount = 1;
     queueInfo.pQueuePriorities = &priority;
-    const char* extensions[] = {VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
-                                VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME};
+    // Extensions du partage avec le mod, plus celles du DLSS, sans doublon.
+    std::vector<std::string> names = {VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
+                                      VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME};
+    for (const std::string& name : deviceExtensions) {
+        if (std::find(names.begin(), names.end(), name) == names.end()) {
+            names.push_back(name);
+        }
+    }
+    std::vector<const char*> extensions;
+    for (const std::string& name : names) {
+        extensions.push_back(name.c_str());
+    }
     VkPhysicalDeviceVulkan12Features features12{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
     features12.timelineSemaphore = VK_TRUE;
     VkDeviceCreateInfo info{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     info.pNext = &features12;
     info.queueCreateInfoCount = 1;
     info.pQueueCreateInfos = &queueInfo;
-    info.enabledExtensionCount = 2;
-    info.ppEnabledExtensionNames = extensions;
-    if (createDevice(physicalDevice, &info, nullptr, &device) != VK_SUCCESS) {
-        log("création du périphérique Vulkan impossible");
+    info.enabledExtensionCount = static_cast<std::uint32_t>(extensions.size());
+    info.ppEnabledExtensionNames = extensions.data();
+    const VkResult created = createDevice(physicalDevice, &info, nullptr, &device);
+    if (created != VK_SUCCESS) {
+        log(std::format("création du périphérique Vulkan impossible ({}, {} extensions)", static_cast<int>(created),
+                        extensions.size()));
         return false;
     }
     Device<PFN_vkGetDeviceQueue>("vkGetDeviceQueue")(device, queueFamily, 0, &queue);
@@ -230,6 +249,23 @@ SharedFrameReader::~SharedFrameReader() {
     if (s.instance != VK_NULL_HANDLE) {
         s.Instance<PFN_vkDestroyInstance>("vkDestroyInstance")(s.instance, nullptr);
     }
+}
+
+void SharedFrameReader::AddExtensions(const std::vector<std::string>& instanceExtensions,
+                                      const std::vector<std::string>& deviceExtensions) {
+    impl_->instanceExtensions.insert(impl_->instanceExtensions.end(), instanceExtensions.begin(),
+                                     instanceExtensions.end());
+    impl_->deviceExtensions.insert(impl_->deviceExtensions.end(), deviceExtensions.begin(), deviceExtensions.end());
+}
+
+VulkanContext SharedFrameReader::Context() const {
+    const Impl& s = *impl_;
+    return {s.instance, s.physicalDevice, s.device, s.queue, s.queueFamily, s.pool, s.getInstanceProc, s.getDeviceProc};
+}
+
+SlotImages SharedFrameReader::Images(std::size_t slot) const {
+    const Impl& s = *impl_;
+    return {s.color[slot % kSlots], s.depth[slot % kSlots], s.motion[slot % kSlots]};
 }
 
 bool SharedFrameReader::Open() {

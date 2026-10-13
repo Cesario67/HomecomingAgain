@@ -16,6 +16,8 @@
 #include "core/Log.h"
 #include "core/Paths.h"
 #include "dlss/DxvkInterop.h"
+#include "dlss/FrameInfo.h"
+#include "graphics/Jitter.h"
 
 namespace hca::dlss {
 
@@ -79,6 +81,9 @@ struct State {
     ExportedTimeline produced;  // signalé par le mod quand l'image v est copiée
     ExportedTimeline consumed;  // signalé par le processus DLSS quand il a fini avec l'image v
     std::uint64_t producedValue = 0;
+    // Décalage de caméra et réinitialisation de chaque image (dlss/FrameInfo.h), partagés avec le processus DLSS.
+    HANDLE infoMapping = nullptr;
+    FrameInfoBlock* info = nullptr;
     VkCommandPool pool = VK_NULL_HANDLE;
     VkCommandBuffer commands[kSharedSlots]{};
     VkFence fences[kSharedSlots]{};
@@ -377,6 +382,18 @@ void LaunchHelper(State& s) {
         log::Warn("DLSS : HomecomingAgain.Dlss.exe absent du dossier du jeu, images partagées sans lecteur");
         return;
     }
+    // Bloc des données de chaque image (dlss/FrameInfo.h) : mémoire partagée anonyme, transmise par héritage.
+    s.infoMapping = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(FrameInfoBlock), nullptr);
+    if (s.infoMapping != nullptr) {
+        s.info = static_cast<FrameInfoBlock*>(MapViewOfFile(s.infoMapping, FILE_MAP_WRITE, 0, 0, sizeof(FrameInfoBlock)));
+    }
+    if (s.info != nullptr) {
+        s.info->version = kFrameInfoVersion;
+        s.info->slots = kFrameInfoSlots;
+    } else {
+        log::Warn("DLSS : bloc des données d'image impossible (erreur {}), décalage de caméra non transmis",
+                  GetLastError());
+    }
     VkPhysicalDeviceProperties properties{};
     s.vk.getProperties(s.physicalDevice, &properties);
     std::vector<HANDLE> handles;
@@ -393,6 +410,9 @@ void LaunchHelper(State& s) {
     }
     handles.push_back(s.produced.handle);
     handles.push_back(s.consumed.handle);
+    if (s.info != nullptr) {
+        handles.push_back(s.infoMapping);
+    }
     for (HANDLE handle : handles) {
         SetHandleInformation(handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
     }
@@ -406,6 +426,9 @@ void LaunchHelper(State& s) {
         reinterpret_cast<std::uintptr_t>(s.produced.handle),
         reinterpret_cast<std::uintptr_t>(s.consumed.handle), properties.vendorID, properties.deviceID,
         GetPaths().logsDir + L"\\HomecomingAgain.Dlss.log", GetPaths().modDir + L"\\captures");
+    if (s.info != nullptr) {
+        command += std::format(L" --info 0x{:X}", reinterpret_cast<std::uintptr_t>(s.infoMapping));
+    }
 
     SIZE_T attributeSize = 0;
     InitializeProcThreadAttributeList(nullptr, 1, 0, &attributeSize);
@@ -507,6 +530,16 @@ bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
     submit.pCommandBuffers = &commands;
     submit.signalSemaphoreCount = 1;
     submit.pSignalSemaphores = &s.produced.semaphore;
+    if (s.info != nullptr) {
+        // Entrée écrite avant la soumission, le numéro en dernier (voir dlss/FrameInfo.h).
+        FrameInfo& info = s.info->frames[slot];
+        const graphics::jitter::Offset jitter = graphics::jitter::Current();
+        info.jitterX = GetConfig().dlssJitter > 0.0f ? jitter.x : 0.0f;
+        info.jitterY = GetConfig().dlssJitter > 0.0f ? jitter.y : 0.0f;
+        info.reset = value == 1 ? 1u : 0u;
+        MemoryBarrier();
+        info.value = value;
+    }
     s.vk.resetFences(s.device, 1, &s.fences[slot]);
     // Pendant le verrou de la file, aucun appel Direct3D 9 depuis ce thread (documentation DXVK).
     interop->LockSubmissionQueue();

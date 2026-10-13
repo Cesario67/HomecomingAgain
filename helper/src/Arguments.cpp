@@ -82,6 +82,8 @@ std::optional<Arguments> ParseArguments(const std::vector<std::wstring>& args) {
         } else if (key == L"--device" && ParseNumber(text, n)) {
             result.deviceId = static_cast<std::uint32_t>(n);
             seen[10] = true;
+        } else if (key == L"--info" && ParseNumber(text, n)) {
+            result.info = n;  // facultatif : sans lui, pas de décalage de caméra transmis
         } else if (key == L"--log") {
             result.logPath = text;
         } else if (key == L"--out") {

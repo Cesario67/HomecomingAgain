@@ -81,9 +81,19 @@ powershell -ExecutionPolicy Bypass -File tools\build.ps1
 
 GPL-3.0-or-later. No game files are included or distributed; this project contains only its own code.
 
+Additional permission under GNU GPL version 3 section 7: if you modify this Program, or any covered work, by
+linking or combining it with the NVIDIA DLSS SDK (or a modified version of that library), containing parts covered
+by the terms of the NVIDIA RTX SDKs License, the licensors of this Program grant you additional permission to convey
+the resulting work. Corresponding Source for a non-source form of such a combination shall not include the source
+code for the parts of the NVIDIA DLSS SDK used as well as that of the covered work. The NVIDIA DLSS SDK itself is
+not covered by the GPL and stays under the NVIDIA RTX SDKs License.
+
 ## Third-party
 
 - Uses SMAA. Copyright (C) 2011 by Jorge Jimenez, Jose I. Echevarria, Belen Masia, Fernando Navarro and Diego
   Gutierrez. See `third_party/smaa/LICENSE.txt`.
 - DXVK interop interfaces (excerpt of `d3d9_interfaces.h`), zlib license. Copyright (c) 2017 Philip Rebohle,
   (c) 2019 Joshua Ashton, (c) 2019 Robin Kertels. See `third_party/dxvk/LICENSE.txt`.
+- NVIDIA DLSS SDK (`nvngx_dlss.dll` and the NGX library linked into `HomecomingAgain.Dlss.exe`), NVIDIA RTX SDKs
+  License, see `LICENSE-NVIDIA-DLSS.txt` in the package. Not stored in this repository: downloaded at build time.
+  NVIDIA and DLSS are trademarks of NVIDIA Corporation; this project is not sponsored or endorsed by NVIDIA.

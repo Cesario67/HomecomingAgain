@@ -35,7 +35,8 @@ if ($LASTEXITCODE -ne 0) {
     throw "Échec des tests du programme DLSS ($LASTEXITCODE échec(s))."
 }
 New-Item -ItemType Directory -Force (Join-Path $root "build\$Preset\package") | Out-Null
-Copy-Item (Join-Path $helperBuild 'HomecomingAgain.Dlss.exe') (Join-Path $root "build\$Preset\package") -Force
+Copy-Item (Join-Path $helperBuild 'HomecomingAgain.Dlss.exe'), (Join-Path $helperBuild 'nvngx_dlss.dll'),
+    (Join-Path $helperBuild 'LICENSE-NVIDIA-DLSS.txt') (Join-Path $root "build\$Preset\package") -Force
 
 # Launcher (C# Avalonia) : un seul .exe autonome qui embarque la DLL, le .ini et les licences compilés ci-dessus.
 $dotnet = (Get-Command dotnet -ErrorAction SilentlyContinue).Source

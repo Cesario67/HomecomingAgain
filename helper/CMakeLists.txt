@@ -17,15 +17,24 @@ FetchContent_Declare(vulkan_headers
     URL_HASH SHA256=4A078BE12BEF21CFEBC09D878B77A63CFF9D68F899254A0B00D0E37EF73E7F7E)
 FetchContent_MakeAvailable(vulkan_headers)
 
-add_executable(HomecomingAgainDlss WIN32 src/main.cpp src/Arguments.cpp src/SharedFrameReader.cpp src/BmpWriter.cpp src/MotionCheck.cpp)
+# SDK DLSS de NVIDIA, téléchargé avec empreintes (cmake/DlssSdk.cmake).
+include(cmake/DlssSdk.cmake)
+
+add_executable(HomecomingAgainDlss WIN32 src/main.cpp src/Arguments.cpp src/SharedFrameReader.cpp src/BmpWriter.cpp src/MotionCheck.cpp
+    src/DlssUpscaler.cpp)
 set_target_properties(HomecomingAgainDlss PROPERTIES OUTPUT_NAME "HomecomingAgain.Dlss")
-target_include_directories(HomecomingAgainDlss PRIVATE src "${vulkan_headers_SOURCE_DIR}/include")
+target_include_directories(HomecomingAgainDlss PRIVATE src ../src "${vulkan_headers_SOURCE_DIR}/include" "${DLSS_SDK_DIR}/include")
+target_link_libraries(HomecomingAgainDlss PRIVATE "${DLSS_SDK_DIR}/lib/Windows_x86_64/x64/nvsdk_ngx_s.lib" advapi32 version)
+# Le moteur du DLSS et sa licence, à côté du programme (copiés ensuite dans le paquet par tools/build.ps1).
+add_custom_command(TARGET HomecomingAgainDlss POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLSS_SDK_DIR}/lib/Windows_x86_64/rel/nvngx_dlss.dll" "$<TARGET_FILE_DIR:HomecomingAgainDlss>/nvngx_dlss.dll"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DLSS_SDK_DIR}/LICENSE.txt" "$<TARGET_FILE_DIR:HomecomingAgainDlss>/LICENSE-NVIDIA-DLSS.txt")
 target_compile_features(HomecomingAgainDlss PRIVATE cxx_std_20)
 target_compile_definitions(HomecomingAgainDlss PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
 target_compile_options(HomecomingAgainDlss PRIVATE /W4 /WX /permissive- /utf-8 /EHsc)
 
 add_executable(HomecomingAgainDlssTests tests/main.cpp src/Arguments.cpp src/BmpWriter.cpp src/MotionCheck.cpp)
-target_include_directories(HomecomingAgainDlssTests PRIVATE src)
+target_include_directories(HomecomingAgainDlssTests PRIVATE src ../src)
 target_compile_features(HomecomingAgainDlssTests PRIVATE cxx_std_20)
 target_compile_definitions(HomecomingAgainDlssTests PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)
 target_compile_options(HomecomingAgainDlssTests PRIVATE /W4 /WX /permissive- /utf-8 /EHsc)
