@@ -8,7 +8,12 @@
 #include <d3d9_vk_interop.h>
 #include <vulkan/vulkan_win32.h>
 
+#include <format>
+#include <string>
+#include <vector>
+
 #include "core/Config.h"
+#include "core/Paths.h"
 #include "core/Log.h"
 #include "dlss/DxvkInterop.h"
 
@@ -22,6 +27,7 @@ constexpr ULONGLONG kReportIntervalMs = 10000;
 // Fonctions Vulkan chargées depuis le périphérique de DXVK (vulkan-1.dll est déjà chargé par DXVK).
 struct VulkanFunctions {
     PFN_vkGetPhysicalDeviceMemoryProperties getMemoryProperties = nullptr;
+    PFN_vkGetPhysicalDeviceProperties getProperties = nullptr;
     PFN_vkCreateImage createImage = nullptr;
     PFN_vkGetImageMemoryRequirements getImageMemoryRequirements = nullptr;
     PFN_vkAllocateMemory allocateMemory = nullptr;
@@ -48,6 +54,7 @@ struct SharedImage {
     HANDLE handle = nullptr;  // handle NT exporté, gardé ouvert pour le processus DLSS
     VkExtent3D extent{};
     VkFormat format = VK_FORMAT_UNDEFINED;
+    VkDeviceSize size = 0;    // taille de l'allocation, nécessaire à l'import dans le processus DLSS
     bool initialized = false;  // disposition passée de UNDEFINED à GENERAL
 };
 
@@ -100,7 +107,9 @@ bool LoadFunctions(State& s) {
         reinterpret_cast<PFN_vkGetDeviceProcAddr>(getInstanceProc(s.instance, "vkGetDeviceProcAddr"));
     s.vk.getMemoryProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceMemoryProperties>(
         getInstanceProc(s.instance, "vkGetPhysicalDeviceMemoryProperties"));
-    if (getDeviceProc == nullptr || s.vk.getMemoryProperties == nullptr) {
+    s.vk.getProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(
+        getInstanceProc(s.instance, "vkGetPhysicalDeviceProperties"));
+    if (getDeviceProc == nullptr || s.vk.getMemoryProperties == nullptr || s.vk.getProperties == nullptr) {
         log::Warn("DLSS : fonctions Vulkan de base introuvables");
         return false;
     }
@@ -205,6 +214,7 @@ bool CreateSharedImage(State& s, const VkImageCreateInfo& source, SharedImage& o
     }
     out.extent = info.extent;
     out.format = info.format;
+    out.size = requirements.size;
     log::Info("DLSS : image partagée {} {}x{}, format Vulkan {}, {} Ko, handle 0x{:X}", name, out.extent.width,
               out.extent.height, static_cast<int>(out.format), requirements.size / 1024,
               reinterpret_cast<std::uintptr_t>(out.handle));
@@ -336,6 +346,55 @@ void Report(State& s) {
     s.cpuMs = 0.0;
 }
 
+// Lance HomecomingAgain.Dlss.exe (64 bits, à côté de SilentHill.exe) en lui transmettant les trois handles par
+// héritage : seuls ces handles sont hérités (liste explicite), leurs valeurs numériques sont les mêmes dans le processus
+// enfant et lui sont passées en ligne de commande avec la taille, les formats et la carte graphique.
+void LaunchHelper(State& s) {
+    const std::wstring exe = GetPaths().gameDir + L"\\HomecomingAgain.Dlss.exe";
+    if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        log::Warn("DLSS : HomecomingAgain.Dlss.exe absent du dossier du jeu, images partagées sans lecteur");
+        return;
+    }
+    VkPhysicalDeviceProperties properties{};
+    s.vk.getProperties(s.physicalDevice, &properties);
+    HANDLE handles[3] = {s.color.handle, s.depth.handle, s.timelineHandle};
+    for (HANDLE handle : handles) {
+        SetHandleInformation(handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
+    }
+    std::wstring command = std::format(
+        L"\"{}\" --parent {} --width {} --height {} --color 0x{:X} --color-format {} --color-size {} --depth 0x{:X} "
+        L"--depth-format {} --depth-size {} --semaphore 0x{:X} --vendor 0x{:X} --device 0x{:X} --log \"{}\" --out \"{}\"",
+        exe, GetCurrentProcessId(), s.color.extent.width, s.color.extent.height,
+        reinterpret_cast<std::uintptr_t>(s.color.handle), static_cast<int>(s.color.format), s.color.size,
+        reinterpret_cast<std::uintptr_t>(s.depth.handle), static_cast<int>(s.depth.format), s.depth.size,
+        reinterpret_cast<std::uintptr_t>(s.timelineHandle), properties.vendorID, properties.deviceID,
+        GetPaths().logsDir + L"\\HomecomingAgain.Dlss.log", GetPaths().modDir + L"\\captures");
+
+    SIZE_T attributeSize = 0;
+    InitializeProcThreadAttributeList(nullptr, 1, 0, &attributeSize);
+    std::vector<BYTE> attributeBuffer(attributeSize);
+    auto* attributes = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(attributeBuffer.data());
+    STARTUPINFOEXW startup{};
+    startup.StartupInfo.cb = sizeof(startup);
+    PROCESS_INFORMATION process{};
+    const bool ok = InitializeProcThreadAttributeList(attributes, 1, 0, &attributeSize) &&
+                    UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles,
+                                              sizeof(handles), nullptr, nullptr) &&
+                    (startup.lpAttributeList = attributes,
+                     CreateProcessW(exe.c_str(), command.data(), nullptr, nullptr, TRUE,
+                                    EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW, nullptr,
+                                    GetPaths().gameDir.c_str(), &startup.StartupInfo, &process));
+    if (attributes != nullptr && attributeSize != 0) {
+        DeleteProcThreadAttributeList(attributes);
+    }
+    if (!ok) {
+        log::Warn("DLSS : lancement de HomecomingAgain.Dlss.exe impossible (erreur {})", GetLastError());
+        return;
+    }
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+    log::Info("DLSS : HomecomingAgain.Dlss.exe lancé (processus {})", process.dwProcessId);
+}
 }  // namespace
 
 void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth) noexcept {
@@ -347,6 +406,9 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth)
         s.attempted = true;
         s.ready = Initialize(s, sceneColor, depth);
         log::Info("DLSS : partage des images {}", s.ready ? "prêt" : "indisponible");
+        if (s.ready) {
+            LaunchHelper(s);
+        }
     }
     if (!s.ready) {
         return;

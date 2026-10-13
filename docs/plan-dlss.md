@@ -102,6 +102,18 @@ Conséquences pour le plan :
   machine, y compris en COPY, multithread, Present depuis un autre thread et avec fenêtre forcée.
 - Conclusion : incompatibilité entre ce moteur et D3D9On12, cause non trouvée. Cadence aussi divisée par deux
   (31 i/s au menu au lieu de 60).
+## 4 quater. Voie DXVK (13/10/2026)
+
+- Jalon 1 (vérifié) : sous DXVK (`d3d9.dll` de DXVK dans `Bin`), le mod obtient le périphérique Vulkan et les images
+  de la scène et de la profondeur par l'interface d'interopérabilité de DXVK.
+- Jalon 2 (vérifié en jeu) : `[DLSS] ShareFrames=1`, la scène (B8G8R8A8) et la profondeur (R32F) sont copiées chaque
+  image dans des images Vulkan exportées (handles NT) avec un sémaphore timeline exporté. 592 images sur 592 en 10 s,
+  0,16 ms de processeur par image, 59 i/s inchangés.
+- Jalon 3 (codé, pas encore testé) : `HomecomingAgain.Dlss.exe` (64 bits, `helper/`), lancé par le mod avec les trois
+  handles hérités, importe les images en Vulkan, attend le compteur et enregistre une image de contrôle de la scène
+  et de la profondeur dans `HomecomingAgain\captures`. Journal : `HomecomingAgain\logs\HomecomingAgain.Dlss.log`.
+- Limite connue : le jeu réécrit les images partagées à l'image suivante sans attendre le lecteur (pas encore de
+  synchronisation en retour). À régler avant le DLSS (anneau d'images ou sémaphore en retour).
 ## 5. Plans de repli
 
 - Si les traînées sont inacceptables et que les animations ne peuvent pas être suivies : garder DLAA sur les
