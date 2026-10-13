@@ -11,6 +11,7 @@
 #include "audio/AudioProbe.h"
 #include "compat/MovieSkip.h"
 #include "compat/SkipMovies.h"
+#include "dlss/SharedFrames.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
 #include "graphics/FilmGrain.h"
@@ -171,6 +172,12 @@ void TestChannelFix() {
     Check(std51[0] == 1.0f && std51[1] > 0.7f && std51[1] < 0.71f, "mélange 5.1 habituel : avant gauche à gauche, arrière droit à droite");
 }
 
+void TestSharedFrames() {
+    std::printf("Partage des images (DLSS)\n");
+    Check(hca::dlss::SlotForFrame(0, 3) == 0 && hca::dlss::SlotForFrame(4, 3) == 1 && hca::dlss::SlotForFrame(5, 0) == 0,
+          "emplacements tournants");
+}
+
 }  // namespace
 
 int main() {
@@ -184,6 +191,7 @@ int main() {
     TestSkipMovies();
     TestMovieSkip();
     TestChannelFix();
+    TestSharedFrames();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

@@ -73,6 +73,16 @@ struct Config {
     int audioChannelOrder[6] = {2, 4, 1, 3, 5, 0};
 
 
+    // [DLSS]
+
+
+    // Partage des images de la scène et de la profondeur avec le futur processus DLSS (sous DXVK, expérimental).
+
+
+    bool dlssShareFrames = false;
+
+
+
     // [Movies]
 
     // Touche pour passer les cinématiques en vidéo (code de touche virtuelle Windows, 0x2E = Suppr, 0 = aucune).

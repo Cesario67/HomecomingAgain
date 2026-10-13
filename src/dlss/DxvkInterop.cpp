@@ -23,9 +23,9 @@ void LogImage(const char* name, IDirect3DBaseTexture9* texture) {
         return;
     }
     VkImage image = 0;
-    VkImageLayout layout = 0;
+    VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
     const HRESULT result = interop->GetVulkanImageInfo(&image, &layout, nullptr);
-    log::Info("DXVK : texture {} -> image Vulkan 0x{:X}, disposition {} (0x{:08X})", name, image, layout,
+    log::Info("DXVK : texture {} -> image Vulkan 0x{:X}, disposition {} (0x{:08X})", name, image, static_cast<int>(layout),
               static_cast<unsigned long>(result));
     interop->Release();
 }
@@ -57,6 +57,10 @@ bool OnDeviceCreated(IDirect3DDevice9* device) noexcept {
 
 bool Available() noexcept {
     return g_interop != nullptr;
+}
+
+ID3D9VkInteropDevice* Interop() noexcept {
+    return g_interop;
 }
 
 void Probe(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth) noexcept {

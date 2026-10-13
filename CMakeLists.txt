@@ -14,6 +14,14 @@ endif()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 
+# --- En-têtes Vulkan (Khronos, Apache-2.0) : déclarations seulement, pour l'interopérabilité DXVK (dlss/) ------------
+# Téléchargés par FetchContent, version figée et empreinte SHA-256 vérifiée ; jamais stockés dans le dépôt.
+include(FetchContent)
+FetchContent_Declare(vulkan_headers
+    URL https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/vulkan-sdk-1.4.363.0.tar.gz
+    URL_HASH SHA256=4A078BE12BEF21CFEBC09D878B77A63CFF9D68F899254A0B00D0E37EF73E7F7E)
+FetchContent_MakeAvailable(vulkan_headers)
+set(HCA_VULKAN_INCLUDE "${vulkan_headers_SOURCE_DIR}/include")
 # --- Shaders SMAA (Jimenez et al., BSD, third_party/smaa) compilés par fxc ----------------------------------------
 # Aucune dépendance à D3DX à l'exécution : chaque point d'entrée devient un en-tête « const BYTE g_<nom>[] ».
 find_program(HCA_FXC fxc HINTS "$ENV{WindowsSdkVerBinPath}x86" "$ENV{WindowsSdkVerBinPath}x64" REQUIRED)
@@ -67,6 +75,7 @@ add_library(HomecomingAgain SHARED
     src/crash/CrashHandler.cpp
     src/crash/HangWatchdog.cpp
     src/dlss/DxvkInterop.cpp
+    src/dlss/SharedFrames.cpp
     src/engine/EngineSettings.cpp
     src/framepacing/FrameMonitor.cpp
     src/framepacing/WaitProfiler.cpp
@@ -93,7 +102,7 @@ configure_file(src/version.rc.in "${CMAKE_CURRENT_BINARY_DIR}/version.rc" @ONLY)
 # Le jeu charge cette DLL à la place de la vraie version.dll (voir src/proxy/VersionProxy.cpp).
 set_target_properties(HomecomingAgain PROPERTIES OUTPUT_NAME "version")
 
-target_include_directories(HomecomingAgain PRIVATE src third_party/smaa third_party/dxvk "${HCA_SHADER_DIR}")
+target_include_directories(HomecomingAgain PRIVATE src third_party/smaa third_party/dxvk "${HCA_SHADER_DIR}" "${HCA_VULKAN_INCLUDE}")
 add_dependencies(HomecomingAgain smaa_shaders)
 target_compile_features(HomecomingAgain PRIVATE cxx_std_20)
 target_compile_definitions(HomecomingAgain PRIVATE
