@@ -32,8 +32,9 @@ constexpr bool SlotIsFree(std::uint64_t value, std::uint64_t consumed, std::uint
 
 // À la fin de la scène 3D, avec les textures de la scène et de la profondeur du moteur et celle des vecteurs de
 // mouvement (non possédées). Renvoie true si l'image a été transmise (false si elle a été sautée).
-bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
-                IDirect3DBaseTexture9* motion) noexcept;
+// `cameraCut` : changement de plan, le DLSS oublie son historique (graphics/CameraTracker.h, IsCut).
+bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth, IDirect3DBaseTexture9* motion,
+                bool cameraCut) noexcept;
 
 // True si l'image en cours a reçu l'image du DLSS (remis à false par l'appel, une fois par Present) : le SMAA est
 // alors inutile.

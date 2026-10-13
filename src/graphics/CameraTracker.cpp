@@ -50,6 +50,8 @@ int g_framesSeveralCandidates = 0;
 std::size_t g_mostCandidates = 0;
 int g_framesChanged = 0;
 int g_candidateLogsLeft = 5;
+int g_framesSinceCommit = 0;  // images présentées depuis la dernière caméra retenue (CommitFrame)
+int g_cuts = 0;               // changements de plan, pour le journal
 
 bool HasCameraConstants(const DWORD* bytecode) {
     bool worldViewProj = false;
@@ -195,10 +197,15 @@ void OnSceneEnd() noexcept {
 }
 
 void OnPresent() noexcept {
+    ++g_framesSinceCommit;
     if (++g_framesSeen >= kReportFrames) {
         log::Info("Caméra : {} images, dont {} avec caméra, {} avec plusieurs candidates (au plus {}), {} où la caméra a "
                   "changé depuis l'image précédente",
                   g_framesSeen, g_framesWithCamera, g_framesSeveralCandidates, g_mostCandidates, g_framesChanged);
+        if (g_cuts > 0) {
+            log::Info("Caméra : {} changement(s) de plan signalé(s) au DLSS", g_cuts);
+            g_cuts = 0;
+        }
         g_framesSeen = 0;
         g_framesWithCamera = 0;
         g_framesSeveralCandidates = 0;
@@ -214,6 +221,7 @@ void OnPresent() noexcept {
 void CommitFrame() noexcept {
     OnSceneEnd();
     if (g_haveCurrent && g_candidateCount > 0) {
+        g_framesSinceCommit = 0;
         g_previous = g_current;
         g_havePrevious = true;
     }
@@ -227,6 +235,17 @@ bool Current(Matrix4& current, Matrix4& previous) noexcept {
     current = g_current;
     previous = g_previous;
     return true;
+}
+
+bool IsCut() noexcept {
+    Matrix4 current{};
+    Matrix4 previous{};
+    // Pas de caméra précédente, ou plus de kMaxGapFrames images sans scène 3D transmise (menu, chargement, vidéo).
+    constexpr int kMaxGapFrames = 5;
+    const bool cut = !Current(current, previous) || g_framesSinceCommit > kMaxGapFrames ||
+                     IsCameraCut(current, previous, kCutDegrees, kCutDistance);
+    g_cuts += cut ? 1 : 0;
+    return cut;
 }
 
 }  // namespace hca::graphics::camera

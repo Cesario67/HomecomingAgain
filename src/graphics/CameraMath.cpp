@@ -89,4 +89,44 @@ bool ViewProjectionFromDraw(const float* worldViewProj, const float* world3x4, M
     return true;
 }
 
+namespace {
+
+// Position de la caméra : le point dont l'image a x = y = w = 0, soit inverse(caméra) x (0, 0, 1, 0) ramené en
+// coordonnées homogènes.
+bool CameraPosition(const Matrix4& m, double (&position)[3]) noexcept {
+    Matrix4 inverse{};
+    if (!Inverse(m, inverse) || std::fabs(inverse[14]) < 1e-12f) {
+        return false;
+    }
+    for (int i = 0; i < 3; ++i) {
+        position[i] = static_cast<double>(inverse[i * 4 + 2]) / inverse[14];
+    }
+    return true;
+}
+
+}  // namespace
+
+bool IsCameraCut(const Matrix4& current, const Matrix4& previous, float maxDegrees, float maxDistance) noexcept {
+    double a[3]{};
+    double b[3]{};
+    if (!CameraPosition(current, a) || !CameraPosition(previous, b)) {
+        return true;
+    }
+    const double distance =
+        std::sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
+    // Direction du regard : ligne 3 (w = profondeur), normalisée.
+    const double lengthA = std::sqrt(static_cast<double>(current[12]) * current[12] + current[13] * current[13] +
+                                     current[14] * current[14]);
+    const double lengthB = std::sqrt(static_cast<double>(previous[12]) * previous[12] + previous[13] * previous[13] +
+                                     previous[14] * previous[14]);
+    if (lengthA < 1e-9 || lengthB < 1e-9) {
+        return true;
+    }
+    const double cosine = (static_cast<double>(current[12]) * previous[12] + current[13] * previous[13] +
+                           current[14] * previous[14]) /
+                          (lengthA * lengthB);
+    const double degrees = std::acos(std::fmin(1.0, std::fmax(-1.0, cosine))) * 57.29577951308232;
+    return degrees > maxDegrees || distance > maxDistance;
+}
+
 }  // namespace hca::graphics

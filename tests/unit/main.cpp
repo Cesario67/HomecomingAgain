@@ -217,6 +217,29 @@ void TestCameraMath() {
     Check(!Inverse(singular, inverse), "matrice non inversible refusée");
 }
 
+// Caméra regardant le long de +z depuis (x, 0, 0), tournée de `degrees` autour de l'axe vertical : vue puis projection
+// du jeu (xs 1.6407, ys 2.9167, a 1.00019, b -3.0006).
+hca::graphics::Matrix4 TestCamera(float x, float degrees) {
+    const float r = degrees * 3.14159265f / 180.0f;
+    const float c = std::cos(r);
+    const float s = std::sin(r);
+    // Vue : lignes = axes droite, haut, regard ; translation = -axe . position.
+    const hca::graphics::Matrix4 view = {c, 0, -s, -c * x, 0, 1, 0, 0, s, 0, c, -s * x, 0, 0, 0, 1};
+    const hca::graphics::Matrix4 projection = {1.6407f, 0, 0, 0, 0, 2.9167f, 0, 0, 0, 0, 1.00019f, -3.0006f, 0, 0, 1, 0};
+    return hca::graphics::Multiply(projection, view);
+}
+
+void TestCameraCut() {
+    using hca::graphics::IsCameraCut;
+    const auto base = TestCamera(100.0f, 0.0f);
+    Check(!IsCameraCut(base, base, 15.0f, 20.0f), "même caméra : pas de changement de plan");
+    Check(!IsCameraCut(TestCamera(100.8f, 6.0f), base, 15.0f, 20.0f), "rotation de 6 degrés et petit déplacement : continu");
+    Check(IsCameraCut(TestCamera(100.0f, 30.0f), base, 15.0f, 20.0f), "rotation de 30 degrés : changement de plan");
+    Check(IsCameraCut(TestCamera(150.0f, 0.0f), base, 15.0f, 20.0f), "déplacement de 50 unités : changement de plan");
+    const hca::graphics::Matrix4 singular{};
+    Check(IsCameraCut(singular, base, 15.0f, 20.0f), "caméra non inversible : changement de plan");
+}
+
 void TestDepthEncoding() {
     using hca::graphics::depth::Encoding;
     using hca::graphics::depth::ParseEncoding;
@@ -286,6 +309,7 @@ int main() {
     TestChannelFix();
     TestSharedFrames();
     TestCameraMath();
+    TestCameraCut();
     TestDepthEncoding();
     TestJitter();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);

@@ -17,4 +17,8 @@ bool Inverse(const Matrix4& m, Matrix4& result) noexcept;
 // `world3x4` : les 3 lignes de mWorld. false si mWorld n'est pas inversible.
 bool ViewProjectionFromDraw(const float* worldViewProj, const float* world3x4, Matrix4& viewProjection) noexcept;
 
+// Changement de plan entre deux caméras (monde vers écran) : direction du regard tournée de plus de `maxDegrees` ou
+// position déplacée de plus de `maxDistance` (unités du monde). Une matrice non inversible compte comme un changement.
+bool IsCameraCut(const Matrix4& current, const Matrix4& previous, float maxDegrees, float maxDistance) noexcept;
+
 }  // namespace hca::graphics

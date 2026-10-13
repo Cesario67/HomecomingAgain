@@ -38,4 +38,12 @@ bool Current(Matrix4& current, Matrix4& previous) noexcept;
 // dernière image transmise. Constaté le 13/10/2026 : 12 à 21 images sautées au début du jeu.
 void CommitFrame() noexcept;
 
+// Changement de plan depuis la caméra précédente (cinématique, porte, chargement) : le DLSS doit alors oublier son
+// historique. Seuils : rotation de plus de kCutDegrees ou déplacement de plus de kCutDistance en une image (relevés du
+// 13/10/2026 : au plus 6 à 7 degrés par image à la souris, moins d'une unité par image en marchant), ou plus de 5
+// images sans scène transmise.
+constexpr float kCutDegrees = 15.0f;
+constexpr float kCutDistance = 20.0f;
+bool IsCut() noexcept;
+
 }  // namespace hca::graphics::camera

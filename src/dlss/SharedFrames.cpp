@@ -598,7 +598,8 @@ void LaunchHelper(State& s) {
 
 }  // namespace
 
-bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth, IDirect3DBaseTexture9* motion) noexcept {
+bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth, IDirect3DBaseTexture9* motion,
+                bool cameraCut) noexcept {
     State& s = g_state;
     // Les vecteurs de mouvement manquent à la première image (pas encore de caméra précédente) : image ignorée.
     if (!GetConfig().dlssShareFrames || sceneColor == nullptr || depth == nullptr || motion == nullptr) {
@@ -672,7 +673,7 @@ bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
         const graphics::jitter::Offset jitter = graphics::jitter::Current();
         info.jitterX = GetConfig().dlssJitter > 0.0f ? jitter.x : 0.0f;
         info.jitterY = GetConfig().dlssJitter > 0.0f ? jitter.y : 0.0f;
-        info.reset = value == 1 ? 1u : 0u;
+        info.reset = (value == 1 || cameraCut) ? 1u : 0u;
         MemoryBarrier();
         info.value = value;
     }
