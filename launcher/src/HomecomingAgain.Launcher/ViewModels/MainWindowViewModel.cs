@@ -8,12 +8,15 @@ namespace HomecomingAgain.Launcher.ViewModels;
 public sealed partial class MainWindowViewModel : LocalizedViewModel
 {
     private readonly IReadOnlyList<string> _steamCommand;
+    private readonly string _packageDirectory;
 
     /// <param name="launcherDirectory">Dossier du launcher : le jeu y est cherché en premier.</param>
     /// <param name="packageDirectory">Dossier des fichiers du mod à installer (voir <see cref="EmbeddedPackage"/>).</param>
     public MainWindowViewModel(string launcherDirectory, IReadOnlyList<string> steamCommand, string? packageDirectory = null)
     {
         _steamCommand = steamCommand;
+        _packageDirectory = packageDirectory ?? launcherDirectory;
+        Graphics.DlssAvailable = DlssInstaller.IsAvailable(_packageDirectory);
         SelectedLanguage = Languages.First(choice => choice.Value == Loc.Current);
         Loc.Instance.LanguageChanged += OnLanguageChanged;
         Status = new StatusViewModel(this, packageDirectory ?? launcherDirectory);
@@ -151,17 +154,19 @@ public sealed partial class MainWindowViewModel : LocalizedViewModel
     /// </summary>
     private string WriteSettings(PatchSettings settings)
     {
+        // Fichiers de l'option DLSS (DXVK, programme DLSS) avant ses réglages : sans eux, Apply=1 ne servirait à rien.
+        IReadOnlyList<string> dlss = DlssInstaller.Apply(settings.Dlss, _packageDirectory, Paths!);
         IniDocument mod = IniDocument.Load(Paths!.ModIni);
         settings.WriteMod(mod);
         mod.Save(Paths.ModIni);
         if (!File.Exists(Paths.GameSettings))
         {
-            return Loc.Get("SettingsSavedModOnly");
+            return string.Join(" ", dlss.Prepend(Loc.Get("SettingsSavedModOnly")));
         }
         KeyValueDocument game = KeyValueDocument.Load(Paths.GameSettings);
         settings.WriteGame(game);
         ModInstaller.SaveGameSettings(Paths, game);
-        return Loc.Get("SettingsSaved");
+        return string.Join(" ", dlss.Prepend(Loc.Get("SettingsSaved")));
     }
 
     private PatchSettings CurrentSettings() => Performance.ApplyTo(Graphics.ApplyTo(new PatchSettings()));

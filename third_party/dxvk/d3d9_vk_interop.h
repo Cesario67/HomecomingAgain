@@ -1,26 +1,19 @@
 // Interfaces d'interopérabilité Direct3D 9 / Vulkan de DXVK (v3.1.1, fichier src/d3d9/d3d9_interfaces.h), réduites
-// à ce que HomecomingAgain utilise. Les types Vulkan sont déclarés de façon opaque pour ne pas dépendre des en-têtes
-// Vulkan ; la disposition des vtables (ordre et signature des méthodes) est celle d'origine.
+// à ce que HomecomingAgain utilise. La disposition des vtables (ordre et signature des méthodes) est celle d'origine.
 //
 // Copyright (c) 2017 Philip Rebohle, (c) 2019 Joshua Ashton, (c) 2019 Robin Kertels. Licence zlib : voir LICENSE.txt
-// dans ce dossier. Modifié : extrait et types Vulkan opaques.
+// dans ce dossier. Modifié : extrait.
 
 #pragma once
 
 #include <d3d9.h>
 
-#include <cstdint>
+#ifndef VK_NO_PROTOTYPES
+#define VK_NO_PROTOTYPES
+#endif
+#include <vulkan/vulkan.h>
 
-// Handles Vulkan : « dispatchables » (pointeurs) et non dispatchables (entiers 64 bits en 32 bits).
-typedef struct VkInstance_T* VkInstance;
-typedef struct VkPhysicalDevice_T* VkPhysicalDevice;
-typedef struct VkDevice_T* VkDevice;
-typedef struct VkQueue_T* VkQueue;
-typedef std::uint64_t VkImage;
-typedef std::int32_t VkImageLayout;      // énumération Vulkan
-typedef std::uint32_t VkImageUsageFlags;
-struct VkImageCreateInfo;                // non utilisé ici (on passe nullptr)
-struct VkImageSubresourceRange;
+#include <cstdint>
 
 struct D3D9VkExtImageDesc;
 

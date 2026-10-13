@@ -48,6 +48,8 @@
             <TextBlock Classes="section" Text="{Binding L[SecImage]}" />
             <CheckBox Content="{Binding L[Smaa]}" IsChecked="{Binding Smaa}" />
             <TextBlock Classes="hint" Text="{Binding L[SmaaHint]}" />
+            <CheckBox Content="{Binding L[Dlss]}" IsChecked="{Binding Dlss}" IsEnabled="{Binding DlssAvailable}" />
+            <TextBlock Classes="hint" Text="{Binding L[DlssHint]}" />
             <Grid ColumnDefinitions="220,*">
               <TextBlock Text="{Binding L[Anisotropy]}" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
@@ -80,6 +82,7 @@
             <CheckBox Content="{Binding L[FullResolutionTextures]}" IsChecked="{Binding FullResolutionTextures}" />
             <TextBlock Classes="hint" Text="{Binding L[GameQualityHint]}" />
             <TextBlock Classes="hint" Text="{Binding L[SmaaCredit]}" />
+            <TextBlock Classes="hint" Text="{Binding L[DlssCredit]}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>

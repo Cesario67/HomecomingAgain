@@ -37,14 +37,19 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Filtrage anisotrope x16** : textures nettes au sol et vues de biais.
 - **Occlusion ambiante (SSAO)** : léger assombrissement des coins et du contact entre les objets, calculé à partir
   de la profondeur du moteur et appliqué avant l'interface.
-- **Ombres plus fines** : carte d'ombres en 4096x4096 au lieu de 2048x2048.
+- **Ombres plus fines** : carte d'ombres en 8192x8192 au lieu de 2048x2048, avec un décalage de pente adapté.
 - **Grain de pellicule réglable** : désactivé, réduit de moitié ou comme à l'origine.
+- **DLSS (DLAA, expérimental)** : anticrénelage par l'IA de NVIDIA, plus stable et plus net que le SMAA, à la
+  résolution d'origine. Cartes NVIDIA RTX uniquement ; l'option du launcher installe aussi DXVK (Direct3D 9 sur
+  Vulkan). Le jeu étant 32 bits et le DLSS 64 bits, un petit programme 64 bits (`HomecomingAgain.Dlss.exe`) reçoit les
+  images du jeu, applique le DLSS et les lui rend avant l'interface. Désactivé par défaut.
+- **Shaders du jeu en haute qualité** : le SSAO et le DLSS fonctionnent aussi dans ce mode (scène en 16 bits).
 
 ### Confort
 
 - **Passer les cinématiques** : la touche Suppr passe les cinématiques en vidéo.
-- **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en français et en
-  anglais.
+- **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par
+  défaut) et en français.
 
 ## Installation
 
@@ -61,16 +66,18 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Window]` | `Borderless=1` | Plein écran sans bordure |
 | `[Graphics]` | `SMAA`, `Anisotropy` | Anticrénelage, filtrage des textures |
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Occlusion ambiante et son intensité |
-| `[Graphics]` | `ShadowResolution=4096` | Taille de la carte d'ombres (2048 d'origine) |
+| `[Graphics]` | `ShadowResolution=8192` | Taille de la carte d'ombres (2048 d'origine, 4096 ou 8192) |
 | `[Graphics]` | `FilmGrain=100` | Grain de pellicule en % (0 = aucun) |
 | `[Audio]` | `ChannelFix=1` | Son corrigé (0 = son d'origine) |
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
+| `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA) : les trois à 1 pour l'activer, avec DXVK (fait par le launcher) |
 
 ## Limites connues
 
 - Le plein écran exclusif plante toujours à l'Alt-Tab (jeu d'origine) : utiliser le mode sans bordure.
 - Manettes : pas encore traitées.
-- DLSS : en préparation (expérimental, inactif).
+- DLSS : expérimental. Seul le mouvement de la caméra est transmis : de légères traînées sont possibles sur les
+  personnages en mouvement rapide.
 
 ## Compilation
 
@@ -84,9 +91,16 @@ powershell -ExecutionPolicy Bypass -File tools\build.ps1
 
 GPL-3.0-or-later. Aucun fichier du jeu n'est inclus ni distribué : le dépôt ne contient que son propre code.
 
+Permission supplémentaire au titre de l'article 7 de la GNU GPL version 3 (le texte anglais du README fait foi) : il
+est permis de lier ce programme au SDK DLSS de NVIDIA et de distribuer le résultat. Les parties du SDK restent sous
+la licence NVIDIA RTX SDKs et ne sont pas couvertes par la GPL ; leur code source n'a pas à être fourni.
+
 ## Code tiers
 
 - Uses SMAA. Copyright (C) 2011 by Jorge Jimenez, Jose I. Echevarria, Belen Masia, Fernando Navarro and Diego
   Gutierrez. Voir `third_party/smaa/LICENSE.txt`.
 - Interfaces d'interopérabilité de DXVK (extrait de `d3d9_interfaces.h`), licence zlib. Copyright (c) 2017 Philip
   Rebohle, (c) 2019 Joshua Ashton, (c) 2019 Robin Kertels. Voir `third_party/dxvk/LICENSE.txt`.
+- SDK DLSS de NVIDIA (`nvngx_dlss.dll` et la bibliothèque NGX liée à `HomecomingAgain.Dlss.exe`), licence NVIDIA RTX
+  SDKs, voir `LICENSE-NVIDIA-DLSS.txt` dans le paquet. Absent du dépôt : téléchargé à la compilation. NVIDIA et DLSS
+  sont des marques de NVIDIA Corporation ; ce projet n'est ni soutenu ni approuvé par NVIDIA.

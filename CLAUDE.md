@@ -89,7 +89,10 @@ Prochaine étape et plan : `docs/a-faire.md`.
   s'oppose à toute réutilisation : ne jamais copier ni redistribuer leurs binaires ou leur code, ne pas les
   télécharger ni les désassembler pour en tirer des adresses. Nos adresses viennent de notre seule analyse de
   l'exécutable d'origine, et nos tests se font sur un jeu d'origine (sans leur patch, qui bloque les wrappers).
-- Ne jamais intégrer de code ou de shader sans licence libre vérifiée.
+- Ne jamais intégrer de code ou de shader sans licence libre vérifiée. Seule exception, décidée par l'auteur le
+  13/10/2026 : le SDK DLSS de NVIDIA (licence NVIDIA RTX SDKs), utilisé uniquement par le programme DLSS (`helper/`),
+  sous la permission supplémentaire GPL article 7 décrite dans le README. Jamais stocké dans le dépôt : téléchargé
+  à la compilation avec empreintes SHA-256 (`helper/cmake/DlssSdk.cmake`).
 
 ## Sécurité des données du joueur et du jeu
 

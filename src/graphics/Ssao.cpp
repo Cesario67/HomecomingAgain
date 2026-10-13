@@ -122,30 +122,46 @@ void Ssao::OnVertexShaderConstants(UINT startRegister, const float* values, UINT
 void Ssao::OnPresent() noexcept {
     depthWritten_ = false;
     applied_ = false;
+    sceneEnd_.OnPresent();
 }
 
 void Ssao::OnSetRenderTarget(IDirect3DDevice9* device, DWORD index, IDirect3DSurface9* surface) noexcept {
-    if (!GetConfig().ssao || index != 0 || surface == nullptr || depthSurface_ == nullptr) {
+    if (index != 0 || depthSurface_ == nullptr) {
         return;
     }
-    if (surface == depthSurface_) {
+    bool fullScreen = false;
+    if (surface != nullptr && surface != depthSurface_) {
+        D3DSURFACE_DESC desc{};
+        D3DSURFACE_DESC depthDesc{};
+        fullScreen = SUCCEEDED(surface->GetDesc(&desc)) && SUCCEEDED(depthSurface_->GetDesc(&depthDesc)) &&
+                     desc.Width == depthDesc.Width && desc.Height == depthDesc.Height;
+    }
+    if (surface != nullptr && surface == depthSurface_) {
         depthWritten_ = true;
-        return;
     }
-    if (!depthWritten_ || applied_ || failed_) {
-        return;
-    }
-    D3DSURFACE_DESC desc{};
-    if (FAILED(surface->GetDesc(&desc)) || desc.Format != D3DFMT_A16B16G16R16F) {
-        return;
-    }
-    D3DSURFACE_DESC depthDesc{};
-    if (FAILED(depthSurface_->GetDesc(&depthDesc)) || desc.Width != depthDesc.Width ||
-        desc.Height != depthDesc.Height) {
+    // Fin de la scène repérée par la suite des cibles, pas par leur format (scène en A8R8G8B8 ou en A16B16G16R16F
+    // selon la qualité des shaders du jeu, voir graphics/SceneEnd.h).
+    if (!sceneEnd_.OnSetRenderTarget(surface, surface != nullptr && surface == depthSurface_, fullScreen) ||
+        applied_) {
         return;
     }
     applied_ = true;
-    Apply(device);
+    // Fin de la scène 3D, avant les post-traitements et l'interface : point utilisé aussi par le partage des images
+    // pour le DLSS (voir SceneReady), que le SSAO soit activé ou non.
+    IDirect3DSurface9* current = nullptr;
+    if (SUCCEEDED(device->GetRenderTarget(0, &current)) && current != nullptr) {
+        IDirect3DTexture9* container = nullptr;
+        if (SUCCEEDED(current->GetContainer(__uuidof(IDirect3DTexture9), reinterpret_cast<void**>(&container))) &&
+            container != nullptr) {
+            sceneTexture_ = container;
+            container->Release();
+        }
+        current->Release();
+    }
+    sceneReady_ = true;
+    if (GetConfig().ssao && !failed_) {
+        Apply(device);
+    }
 }
 
 bool Ssao::EnsureResources(IDirect3DDevice9* device, UINT width, UINT height) noexcept {
@@ -193,7 +209,9 @@ bool Ssao::Apply(IDirect3DDevice9* device) noexcept {
     D3DSURFACE_DESC depthDesc{};
     depthSurface_->GetDesc(&depthDesc);
     // La cible active doit être l'image de la scène : même taille que la profondeur, couleur 8 bits.
-    if (desc.Width != depthDesc.Width || desc.Height != depthDesc.Height || desc.Format != D3DFMT_A8R8G8B8) {
+    // Couleur 8 bits, ou 16 bits flottants quand les shaders du jeu sont en haute qualité (graphics/SceneEnd.h).
+    if (desc.Width != depthDesc.Width || desc.Height != depthDesc.Height ||
+        (desc.Format != D3DFMT_A8R8G8B8 && desc.Format != D3DFMT_A16B16G16R16F)) {
         sceneTarget->Release();
         return false;
     }

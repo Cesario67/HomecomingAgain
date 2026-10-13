@@ -6,8 +6,13 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "dlss/SharedFrames.h"
+#include "graphics/CameraTracker.h"
+#include "graphics/DepthEncoding.h"
+#include "graphics/Jitter.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/InternalDraw.h"
+#include "graphics/MotionVectors.h"
 #include "graphics/ShadowResolution.h"
 #include "graphics/Ssao.h"
 
@@ -20,6 +25,9 @@ constexpr size_t kCreateTextureIndex = 23;
 constexpr size_t kCreateDepthStencilSurfaceIndex = 29;
 constexpr size_t kSetRenderTargetIndex = 37;
 constexpr size_t kSetViewportIndex = 47;
+constexpr size_t kDrawIndexedPrimitiveIndex = 82;
+constexpr size_t kCreateVertexShaderIndex = 91;
+constexpr size_t kSetVertexShaderIndex = 92;
 constexpr size_t kSetVertexShaderConstantFIndex = 94;
 constexpr size_t kCreatePixelShaderIndex = 106;
 constexpr size_t kSetPixelShaderIndex = 107;
@@ -36,6 +44,10 @@ using SetRenderTargetFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, DWORD, 
 using SetViewportFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const D3DVIEWPORT9*);
 using CreatePixelShaderFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const DWORD*, IDirect3DPixelShader9**);
 using SetPixelShaderFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, IDirect3DPixelShader9*);
+using CreateVertexShaderFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const DWORD*, IDirect3DVertexShader9**);
+using SetVertexShaderFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, IDirect3DVertexShader9*);
+using DrawIndexedPrimitiveFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, D3DPRIMITIVETYPE, INT, UINT, UINT, UINT,
+                                                           UINT);
 using SetShaderConstantFFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, UINT, const float*, UINT);
 
 CreateTextureFn g_createTexture = nullptr;
@@ -43,6 +55,9 @@ CreateSurfaceFn g_createDepthStencilSurface = nullptr;
 SetRenderTargetFn g_setRenderTarget = nullptr;
 SetViewportFn g_setViewport = nullptr;
 SetShaderConstantFFn g_setVertexShaderConstantF = nullptr;
+CreateVertexShaderFn g_createVertexShader = nullptr;
+SetVertexShaderFn g_setVertexShader = nullptr;
+DrawIndexedPrimitiveFn g_drawIndexedPrimitive = nullptr;
 SetShaderConstantFFn g_setPixelShaderConstantF = nullptr;
 CreatePixelShaderFn g_createPixelShader = nullptr;
 SetPixelShaderFn g_setPixelShader = nullptr;
@@ -95,9 +110,54 @@ HRESULT STDMETHODCALLTYPE HookSetRenderTarget(IDirect3DDevice9* device, DWORD in
     if (!t_internalDraw) {
         // Avant le changement de cible : le SSAO s'applique à la cible encore active (l'image de la scène).
         GetSsao().OnSetRenderTarget(device, index, surface);
+        const bool sceneEnded = GetSsao().ConsumeSceneReady();
+        if (sceneEnded) {
+            jitter::OnSceneEnd();
+        }
+        if (sceneEnded && GetConfig().dlssShareFrames) {
+            // Fin de la scène 3D : vecteurs de mouvement, puis partage des trois images avec le processus DLSS.
+            IDirect3DTexture9* motion = GetMotionVectors().Render(device, GetSsao().DepthTexture());
+            const bool cut = camera::IsCut();
+            const bool shared = dlss::ShareFrame(GetSsao().SceneTexture(), GetSsao().DepthTexture(), motion, cut);
+            // Image sautée : la caméra précédente reste celle de la dernière image transmise (vecteurs cohérents pour
+            // le DLSS). Sans vecteurs (première image), la caméra est retenue pour amorcer.
+            if (shared || motion == nullptr) {
+                camera::CommitFrame();
+            }
+        }
         shadows::OnSetRenderTarget(index, surface);
+        camera::OnSetRenderTarget(index, surface, GetSsao().DepthSurface());
+        if (GetConfig().dlssShareFrames) {
+            // Avec Apply=1, décalage seulement si le DLSS renvoie bien ses images (sinon l'image tremblerait).
+            const bool allowed = !GetConfig().dlssApply || dlss::ReturnActive();
+            jitter::OnSetRenderTarget(index, surface, GetSsao().DepthSurface(), allowed);
+        }
     }
     return g_setRenderTarget(device, index, surface);
+}
+
+HRESULT STDMETHODCALLTYPE HookCreateVertexShader(IDirect3DDevice9* device, const DWORD* function,
+                                                 IDirect3DVertexShader9** shader) {
+    const HRESULT result = g_createVertexShader(device, function, shader);
+    if (!t_internalDraw && SUCCEEDED(result) && shader != nullptr) {
+        camera::OnVertexShaderCreated(function, *shader);
+    }
+    return result;
+}
+
+HRESULT STDMETHODCALLTYPE HookSetVertexShader(IDirect3DDevice9* device, IDirect3DVertexShader9* shader) {
+    if (!t_internalDraw) {
+        camera::OnSetVertexShader(shader);
+    }
+    return g_setVertexShader(device, shader);
+}
+
+HRESULT STDMETHODCALLTYPE HookDrawIndexedPrimitive(IDirect3DDevice9* device, D3DPRIMITIVETYPE type, INT baseVertex,
+                                                   UINT minIndex, UINT vertices, UINT startIndex, UINT count) {
+    if (!t_internalDraw) {
+        camera::OnDraw();
+    }
+    return g_drawIndexedPrimitive(device, type, baseVertex, minIndex, vertices, startIndex, count);
 }
 
 HRESULT STDMETHODCALLTYPE HookSetViewport(IDirect3DDevice9* device, const D3DVIEWPORT9* viewport) {
@@ -112,6 +172,12 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
                                                        UINT count) {
     if (!t_internalDraw) {
         GetSsao().OnVertexShaderConstants(start, data, count);
+        // La caméra est lue avant le décalage (jitter) : les vecteurs de mouvement n'en tiennent pas compte.
+        camera::OnVertexShaderConstants(start, data, count);
+        float copy[kMaxConstantVectors * 4];
+        if (count <= kMaxConstantVectors && jitter::Adjust(start, data, count, copy)) {
+            return g_setVertexShaderConstantF(device, start, copy, count);
+        }
     }
     return g_setVertexShaderConstantF(device, start, data, count);
 }
@@ -121,17 +187,24 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
     if (t_internalDraw || data == nullptr || count > kMaxConstantVectors) {
         return g_setPixelShaderConstantF(device, start, data, count);
     }
+    depth::OnPixelShaderConstants(start, data, count);
     const bool touchesShadowFilter = start <= 54 && start + count > 45 &&
                                      shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize;
     const bool touchesGrain = grain::Active() && start <= grain::kIntensityRegister &&
                               start + count > grain::kIntensityRegister;
-    if (!touchesShadowFilter && !touchesGrain) {
+    // Décalage de pente des ombres (c92), seulement pendant le dessin de l'atlas : ailleurs c92 sert à autre chose.
+    const bool touchesCasterBias = start <= 92 && start + count > 92 && shadows::AtlasBound() &&
+                                   shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize;
+    if (!touchesShadowFilter && !touchesGrain && !touchesCasterBias) {
         return g_setPixelShaderConstantF(device, start, data, count);
     }
     // Copie corrigée : filtre des ombres (c45..c54) et intensité du grain (c14, seulement sous son shader).
     float copy[kMaxConstantVectors * 4];
     std::memcpy(copy, data, count * 4 * sizeof(float));
     bool changed = false;
+    if (touchesCasterBias) {
+        changed |= shadows::ScaleCasterBias(start, copy, count, shadows::ActiveAtlasSize());
+    }
     if (touchesShadowFilter) {
         changed |= shadows::ScaleFilterConstants(start, copy, count, shadows::ActiveAtlasSize());
     }
@@ -171,7 +244,7 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShader(IDirect3DDevice9* device, IDirect3D
 void Install(IDirect3DDevice9* device) {
     const Config& config = GetConfig();
     const bool shadowsActive = shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize;
-    if (!shadowsActive && !config.ssao && !grain::Active()) {
+    if (!shadowsActive && !config.ssao && !grain::Active() && !config.dlssShareFrames) {
         return;
     }
     bool ok = true;
@@ -186,6 +259,12 @@ void Install(IDirect3DDevice9* device) {
                                &g_setPixelShaderConstantF);
     ok &= hooking::PatchVtable(device, kCreatePixelShaderIndex, &HookCreatePixelShader, &g_createPixelShader);
     ok &= hooking::PatchVtable(device, kSetPixelShaderIndex, &HookSetPixelShader, &g_setPixelShader);
+    if (config.dlssShareFrames) {
+        ok &= hooking::PatchVtable(device, kCreateVertexShaderIndex, &HookCreateVertexShader, &g_createVertexShader);
+        ok &= hooking::PatchVtable(device, kSetVertexShaderIndex, &HookSetVertexShader, &g_setVertexShader);
+        ok &= hooking::PatchVtable(device, kDrawIndexedPrimitiveIndex, &HookDrawIndexedPrimitive,
+                                   &g_drawIndexedPrimitive);
+    }
     if (!ok) {
         log::Error("Ombres et SSAO : interception incomplète du périphérique");
         return;

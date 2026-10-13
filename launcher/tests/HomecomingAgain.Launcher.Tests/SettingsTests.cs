@@ -41,7 +41,7 @@ public sealed class SettingsTests
         Assert.Equal(16, settings.Anisotropy);
         Assert.Equal(60, settings.TargetFps);
         Assert.True(settings.Ssao);
-        Assert.Equal(4096, settings.ShadowResolution);
+        Assert.Equal(8192, settings.ShadowResolution);
         Assert.True(settings.WindowThreadLock && settings.D3DMultithreaded && settings.HangDetection);
     }
 

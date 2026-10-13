@@ -33,6 +33,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [
         Choice<int>.Localized(2048, "ShadowOriginal"),
         new(4096, "4096 × 4096"),
+        new(8192, "8192 × 8192"),
     ];
 
     public IReadOnlyList<Choice<int>> FilmGrainLevels { get; } =
@@ -53,6 +54,14 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
 
     [ObservableProperty]
     public partial bool Smaa { get; set; } = true;
+
+    /// <summary>DLSS en mode DLAA (NVIDIA RTX, DXVK installé avec l'option).</summary>
+    [ObservableProperty]
+    public partial bool Dlss { get; set; }
+
+    /// <summary>Le launcher contient-il les fichiers de l'option DLSS ? Sinon la case est désactivée.</summary>
+    [ObservableProperty]
+    public partial bool DlssAvailable { get; set; }
 
     [ObservableProperty]
     public partial Choice<int> SelectedAnisotropy { get; set; }
@@ -104,6 +113,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedDisplayMode = DisplayModes.First(choice => choice.Value == settings.DisplayMode);
         SelectedResolution = Resolutions.First(choice => choice.Value == (settings.Width, settings.Height));
         Smaa = settings.Smaa;
+        Dlss = settings.Dlss;
         SelectedAnisotropy = AnisotropyLevels.LastOrDefault(choice => choice.Value <= settings.Anisotropy) ?? AnisotropyLevels[0];
         Ssao = settings.Ssao;
         SelectedSsaoStrength = SsaoStrengths.LastOrDefault(choice => choice.Value <= settings.SsaoStrength) ?? SsaoStrengths[0];
@@ -119,6 +129,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         Width = SelectedResolution.Value.Width,
         Height = SelectedResolution.Value.Height,
         Smaa = Smaa,
+        Dlss = Dlss && DlssAvailable,
         Anisotropy = SelectedAnisotropy.Value,
         Ssao = Ssao,
         SsaoStrength = SelectedSsaoStrength.Value,
