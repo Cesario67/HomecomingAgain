@@ -18,7 +18,8 @@ bool ParseChannelOrder(const char* text, int order[6]) noexcept;
 void RemapSurroundFrames(float* samples, std::uint32_t frames, const int order[6]) noexcept;
 // Sortie stéréo : convertit chaque image de 6 canaux du moteur en 2, écrites de façon compacte au début du tableau
 // (2 flottants par image). Placement des sons du moteur faussé : tous les canaux sont centrés (gauche = droite).
-void DownmixSurroundToStereo(float* samples, std::uint32_t frames) noexcept;
+// standard : mélange 5.1 vers stéréo habituel (avec [Audio] FakeSurround) ; sinon tous les canaux centrés.
+void DownmixSurroundToStereo(float* samples, std::uint32_t frames, bool standard) noexcept;
 
 void InstallAudioProbe(HMODULE engineModule);
 

@@ -28,8 +28,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Sons dans une seule oreille** : sur un casque ou des enceintes stéréo, la plupart des sons (bruitages, voix,
   musique) sortaient d'un seul côté. C'est un défaut connu du portage PC. Le jeu mixe tout dans une seule sortie 5.1
   dont le placement des sons est faussé, et sa version de XAudio2 la convertit mal en stéréo. Le mod fait lui-même
-  la conversion et centre le son : plus rien d'un seul côté, sans remplacer les fichiers audio ni installer de
-  pilote. Limite : pas d'effet gauche/droite pour l'instant.
+  le mélange vers la stéréo correctement : chaque son retrouve sa place à gauche ou à droite, sans remplacer les
+  fichiers audio ni installer de pilote.
 
 ### Graphismes
 
@@ -63,13 +63,12 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Occlusion ambiante et son intensité |
 | `[Graphics]` | `ShadowResolution=4096` | Taille de la carte d'ombres (2048 d'origine) |
 | `[Graphics]` | `FilmGrain=100` | Grain de pellicule en % (0 = aucun) |
-| `[Audio]` | `ChannelFix=1` | Son centré (0 = son d'origine) |
+| `[Audio]` | `ChannelFix=1` | Son corrigé (0 = son d'origine) |
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
 
 ## Limites connues
 
 - Le plein écran exclusif plante toujours à l'Alt-Tab (jeu d'origine) : utiliser le mode sans bordure.
-- Le son est centré : pas encore de spatialisation gauche/droite.
 - Manettes : pas encore traitées.
 - DLSS : en préparation (expérimental, inactif).
 

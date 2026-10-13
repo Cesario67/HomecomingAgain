@@ -26,8 +26,8 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **Sound in one ear only**: on headphones or stereo speakers, most sounds (effects, voices, music) came out of one
   side. This is a known flaw of the PC port. The game mixes everything into a single 5.1 output whose sound
   placement is wrong, and its XAudio2 version converts it badly to stereo. The mod does the conversion itself and
-  centres the sound: nothing comes from one side only, without replacing audio files or installing a driver.
-  Limitation: no left/right positioning yet.
+  properly mixes it down to stereo: every sound is back in its left/right position, without replacing audio files
+  or installing a driver.
 
 ### Graphics
 
@@ -60,13 +60,12 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Ambient occlusion and its strength |
 | `[Graphics]` | `ShadowResolution=4096` | Shadow map size (2048 originally) |
 | `[Graphics]` | `FilmGrain=100` | Film grain in % (0 = none) |
-| `[Audio]` | `ChannelFix=1` | Centred sound (0 = original sound) |
+| `[Audio]` | `ChannelFix=1` | Fixed sound (0 = original sound) |
 | `[Movies]` | `SkipKey=46` | Key to skip cutscenes (46 = Delete, 0 = none) |
 
 ## Known limitations
 
 - Exclusive fullscreen still crashes on Alt-Tab (original game): use borderless mode.
-- Sound is centred: no left/right positioning yet.
 - Controllers: not handled yet.
 - DLSS: in preparation (experimental, inactive).
 
