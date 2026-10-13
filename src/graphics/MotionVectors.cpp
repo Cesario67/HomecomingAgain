@@ -1,5 +1,8 @@
 #include "graphics/MotionVectors.h"
 
+#include <array>
+#include <cmath>
+
 #include "core/Log.h"
 #include "graphics/CameraTracker.h"
 #include "graphics/InternalDraw.h"
@@ -34,6 +37,39 @@ void DrawQuad(IDirect3DDevice9* device, UINT width, UINT height) {
                               {-1.0f - px, -1.0f + py, 0.5f, 0.0f, 1.0f},
                               {1.0f - px, -1.0f + py, 0.5f, 1.0f, 1.0f}};
     device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, quad, sizeof(quad[0]));
+}
+
+std::array<double, 4> Transform(const Matrix4& m, const std::array<double, 4>& v) noexcept {
+    std::array<double, 4> r{};
+    for (int row = 0; row < 4; ++row) {
+        r[row] = m[row * 4] * v[0] + m[row * 4 + 1] * v[1] + m[row * 4 + 2] * v[2] + m[row * 4 + 3] * v[3];
+    }
+    return r;
+}
+
+// Diagnostic des vecteurs faux (13/10/2026) : mouvement du centre de l'écran calculé sur le processeur avec les mêmes
+// matrices que le shader, et angle entre les directions du regard des deux caméras. Toutes les 300 images.
+void LogCenterMotion(const Matrix4& current, const Matrix4& previous, const Matrix4& inverseCurrent, UINT width,
+                     UINT height) noexcept {
+    static int counter = 0;
+    if (++counter % 300 != 0) {
+        return;
+    }
+    std::array<double, 4> world = Transform(inverseCurrent, {0.0, 0.0, 0.99, 1.0});
+    for (double& c : world) {
+        c /= world[3];
+    }
+    const std::array<double, 4> before = Transform(previous, world);
+    const double dx = (before[0] / before[3]) * 0.5 * width;
+    const double dy = -(before[1] / before[3]) * 0.5 * height;
+    const double a = std::sqrt(current[12] * current[12] + current[13] * current[13] + current[14] * current[14]);
+    const double b = std::sqrt(previous[12] * previous[12] + previous[13] * previous[13] + previous[14] * previous[14]);
+    const double cosine = (current[12] * previous[12] + current[13] * previous[13] + current[14] * previous[14]) / (a * b);
+    const double degrees = std::acos(std::fmin(1.0, std::fmax(-1.0, cosine))) * 57.29577951308232;
+    log::Info("Vecteurs (processeur) : centre ({:.2f}, {:.2f}) px, rotation du regard {:.3f} degré(s), regard ({:.3f} "
+              "{:.3f} {:.3f}) avant ({:.3f} {:.3f} {:.3f}), w {:.1f} / {:.1f}",
+              dx, dy, degrees, current[12], current[13], current[14], previous[12], previous[13], previous[14],
+              current[15], previous[15]);
 }
 
 }  // namespace
@@ -111,6 +147,7 @@ IDirect3DTexture9* MotionVectors::Render(IDirect3DDevice9* device, IDirect3DText
         logged_ = true;
         log::Info("Vecteurs de mouvement de la caméra calculés : {}x{}, G16R16F", desc.Width, desc.Height);
     }
+    LogCenterMotion(current, previous, inverseCurrent, desc.Width, desc.Height);
 
     IDirect3DSurface9* savedTarget = nullptr;
     IDirect3DSurface9* savedDepth = nullptr;
