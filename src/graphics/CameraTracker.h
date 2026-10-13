@@ -11,7 +11,7 @@ namespace hca::graphics::camera {
 //
 // Le moteur n'envoie pas cette matrice seule : chaque dessin reçoit mWorldViewProj (c0..c3) et, pour certains vertex
 // shaders, mWorld (c4..c6) ; la caméra vaut mWorldViewProj x inverse(mWorld) (graphics/CameraMath.h). Elle est prise au
-// premier dessin d'un tel shader pendant la pré-passe de profondeur (cible = texture de profondeur du moteur), pour être
+// premier dessin d'un tel shader après le début de la pré-passe de profondeur (dont le shader n'a pas mWorld), pour être
 // sûr d'avoir la caméra principale et pas celle d'une lumière (cartes d'ombres dessinées avant).
 
 void OnVertexShaderCreated(const DWORD* bytecode, IDirect3DVertexShader9* shader) noexcept;

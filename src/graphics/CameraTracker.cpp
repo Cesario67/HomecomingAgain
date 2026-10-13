@@ -20,7 +20,7 @@ std::atomic<std::size_t> g_shaderCount{0};
 
 // Le reste n'est touché que par le thread de rendu de la scène.
 bool g_currentQualifies = false;
-bool g_depthPass = false;
+bool g_afterDepthPass = false;  // la pré-passe de profondeur a commencé dans cette image
 float g_constants[7 * 4]{};  // c0..c6
 bool g_haveConstants[7]{};
 bool g_capturedThisFrame = false;
@@ -86,13 +86,16 @@ void OnVertexShaderConstants(UINT startRegister, const float* values, UINT vecto
 }
 
 void OnSetRenderTarget(DWORD index, IDirect3DSurface9* surface, IDirect3DSurface9* depthPassSurface) noexcept {
-    if (index == 0) {
-        g_depthPass = surface != nullptr && surface == depthPassSurface;
+    // La pré-passe de profondeur n'utilise que mWorldViewProj (relevé du 10/10/2026, shader vs_0EA4BA20) : la caméra est
+    // prise au premier dessin suivant qui a aussi mWorld (scène principale). Les cartes d'ombres, dessinées avant la
+    // pré-passe, sont ainsi exclues.
+    if (index == 0 && surface != nullptr && surface == depthPassSurface) {
+        g_afterDepthPass = true;
     }
 }
 
 void OnDraw() noexcept {
-    if (g_capturedThisFrame || !g_depthPass || !g_currentQualifies) {
+    if (g_capturedThisFrame || !g_afterDepthPass || !g_currentQualifies) {
         return;
     }
     for (bool have : g_haveConstants) {
@@ -120,7 +123,7 @@ void OnPresent() noexcept {
         g_havePrevious = true;
     }
     g_capturedThisFrame = false;
-    g_depthPass = false;
+    g_afterDepthPass = false;
 }
 
 bool Current(Matrix4& current, Matrix4& previous) noexcept {
