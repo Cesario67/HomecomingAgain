@@ -12,7 +12,7 @@
 #include "compat/MovieSkip.h"
 #include "input/ButtonIcons.h"
 #include "input/DirectInputHooks.h"
-#include "input/XInputProbe.h"
+#include "input/XInputHooks.h"
 #include "compat/SkipMovies.h"
 #include "compat/WindowThreadLock.h"
 #include "core/Config.h"
@@ -78,7 +78,7 @@ void Startup() {
         hca::compat::InstallSkipMovies(engine);
         hca::compat::InstallMovieSkip(engine);
         hca::audio::InstallAudioProbe(engine);
-        hca::input::InstallXInputProbe(engine);
+        hca::input::InstallXInputHooks(engine);
         hca::input::InstallDirectInputHooks(engine);
         hca::input::InstallButtonIcons(engine);
         if (hca::GetConfig().frameStats) {

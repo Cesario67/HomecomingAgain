@@ -8,7 +8,7 @@
 namespace hca::input {
 
 // Le menu principal du jeu ignore la croix et le stick de la manette (constaté le 13/10/2026 : les entrées arrivent
-// bien au moteur par XInput, voir input/XInputProbe.h, mais le menu ne réagit qu'au clavier). Contournement : quand
+// bien au moteur par XInput, voir input/XInputHooks.h, mais le menu ne réagit qu'au clavier). Contournement : quand
 // aucune scène 3D n'est dessinée (menus, chargements), l'état de la manette est traduit en touches du clavier, ajoutées
 // à celles que le moteur lit par DirectInput (input/DirectInputHooks.h). En jeu, rien n'est ajouté : les flèches y
 // ont d'autres fonctions (binds_pc_mjs.cfg).

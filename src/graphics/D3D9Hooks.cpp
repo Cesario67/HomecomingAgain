@@ -22,7 +22,6 @@
 #include "graphics/Jitter.h"
 #include "input/ButtonIcons.h"
 #include "input/MenuBridge.h"
-#include "input/TextureNameProbe.h"
 #include "graphics/D3D9On12.h"
 #include "graphics/FrameCapture.h"
 #include "graphics/InternalDraw.h"
@@ -84,7 +83,6 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
     jitter::OnPresent();
     input::OnPresent();
     input::RefreshButtonIcons();
-    input::WatchInputMode();
     if (GetConfig().backBufferDump) {
         InternalDrawScope internal;
         dump::OnPresent(device);

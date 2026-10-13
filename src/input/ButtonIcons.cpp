@@ -1,7 +1,5 @@
 #include "input/ButtonIcons.h"
 
-#include <intrin.h>
-
 #include <atomic>
 #include <cstdint>
 #include <cstring>
@@ -12,7 +10,6 @@
 #include "core/Hooking.h"
 #include "core/Log.h"
 #include "input/MenuBridge.h"
-#include "input/TextureNameProbe.h"
 
 namespace hca::input {
 
@@ -77,7 +74,6 @@ bool ReadEngineString(const void* nameObject, char (&buffer)[96]) noexcept {
 // Même convention que l'original (thiscall, un argument retiré par l'appelé) : en fastcall, ecx = élément,
 // edx inutilisé, argument sur la pile.
 void __fastcall SetTextureHook(void* item, void* /*edx*/, void* nameObject) {
-    const auto caller = reinterpret_cast<std::uintptr_t>(_ReturnAddress());
     const auto original = reinterpret_cast<SetTextureFunction>(kSetTexture);
     char name[96]{};
     const bool named = ReadEngineString(nameObject, name);
@@ -89,9 +85,6 @@ void __fastcall SetTextureHook(void* item, void* /*edx*/, void* nameObject) {
         reinterpret_cast<StringConstructFunction>(kStringConstruct)(&replacementObject, replacement);
         original(item, &replacementObject);
         reinterpret_cast<StringDestroyFunction>(kStringDestroy)(&replacementObject);
-    }
-    if (named) {
-        OnTextureApplied(item, name, replacement, caller);
     }
 }
 
@@ -132,7 +125,6 @@ void* __fastcall InlineLoadKey(void* key, void* /*edx*/, const void* nameObject,
     if (replacement == nullptr) {
         return original(key, nameObject, flag);
     }
-    OnTextureApplied(nullptr, name, replacement, reinterpret_cast<std::uintptr_t>(_ReturnAddress()));
     const char* const replacementObject = replacement;
     return original(key, &replacementObject, flag);
 }

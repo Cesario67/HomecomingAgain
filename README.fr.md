@@ -45,6 +45,15 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   images du jeu, applique le DLSS et les lui rend avant l'interface. Désactivé par défaut.
 - **Shaders du jeu en haute qualité** : le SSAO et le DLSS fonctionnent aussi dans ce mode (scène en 16 bits).
 
+### Manette
+
+- **Icônes de boutons Xbox ou PlayStation** : les menus, l'inventaire, l'écran des commandes et les invites en jeu
+  (Ouvrir, Sauvegarder...) affichent A, B, X, Y (ou croix, rond, carré, triangle) au lieu des chiffres 1 à 4 de la
+  version PC. Les icônes viennent des données du jeu lui-même. Par défaut, icônes Xbox quand une manette est
+  branchée, icônes PC sinon.
+- **Menu principal à la manette** : la croix et le stick gauche déplacent la sélection, A et Start valident, B
+  revient en arrière.
+
 ### Confort
 
 - **Passer les cinématiques** : la touche Suppr passe les cinématiques en vidéo.
@@ -70,12 +79,15 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Graphics]` | `FilmGrain=100` | Grain de pellicule en % (0 = aucun) |
 | `[Audio]` | `ChannelFix=1` | Son corrigé (0 = son d'origine) |
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
+| `[Input]` | `ButtonIcons=0` | Icônes de boutons : 0 = auto (Xbox si une manette est branchée), 1 = PC (d'origine), 2 = Xbox, 3 = PlayStation |
+| `[Input]` | `MenuPad=1` | Manette dans les menus (croix, stick gauche, A, B, Start) |
 | `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA) : les trois à 1 pour l'activer, avec DXVK (fait par le launcher) |
 
 ## Limites connues
 
 - Le plein écran exclusif plante toujours à l'Alt-Tab (jeu d'origine) : utiliser le mode sans bordure.
-- Manettes : pas encore traitées.
+- Manettes : seules les manettes XInput (Xbox et compatibles) sont lues par le jeu. Zones mortes, sensibilité de la
+  caméra et vibrations restent celles d'origine.
 - DLSS : expérimental. Seul le mouvement de la caméra est transmis : de légères traînées sont possibles sur les
   personnages en mouvement rapide.
 

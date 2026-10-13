@@ -43,17 +43,21 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         Choice<int>.Localized(100, "GrainOriginal"),
     ];
 
-    /// <summary>Icônes de boutons à l'écran ([Input] ButtonIcons : 0 auto, 1 clavier, 2 Xbox 360, 3 PS3).</summary>
+    /// <summary>Icônes de boutons à l'écran ([Input] ButtonIcons : 0 auto, 1 PC, 2 Xbox 360, 3 PS3).</summary>
     public IReadOnlyList<Choice<int>> ButtonIconSets { get; } =
     [
         Choice<int>.Localized(0, "IconsAuto"),
-        Choice<int>.Localized(1, "IconsKeyboard"),
-        new(2, "Xbox 360"),
-        new(3, "PlayStation 3"),
+        Choice<int>.Localized(1, "IconsPc"),
+        new(2, "Xbox (A, B, X, Y)"),
+        Choice<int>.Localized(3, "IconsPlayStation"),
     ];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ButtonIconPreview))]
     public partial Choice<int> SelectedButtonIcons { get; set; }
+
+    /// <summary>Aperçu des icônes A, B, X, Y du choix courant.</summary>
+    public IReadOnlyList<ButtonGlyph> ButtonIconPreview => ButtonGlyph.For(SelectedButtonIcons.Value);
 
     public IReadOnlyList<Choice<(int Width, int Height)>> Resolutions { get; private set; } = BuildResolutions(1920, 1080);
 

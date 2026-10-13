@@ -94,14 +94,10 @@ struct Config {
     int movieSkipKey = 0x2E;
 
     // [Input]
-    // Journal des lectures de manette par le moteur (XInput), voir input/XInputProbe.h.
-    bool xinputLog = true;
     // Dans les menus, croix, stick gauche, A et B traduits en touches du clavier (input/MenuBridge.h).
     bool menuPad = true;
     // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
     int buttonIcons = 0;
-    // Journal des noms de textures d'icônes de boutons demandés par le jeu (diagnostic, input/TextureNameProbe.h).
-    bool iconLog = false;
 
 
     // [Debug]

@@ -21,9 +21,7 @@
 #include "graphics/Jitter.h"
 #include "graphics/SceneEnd.h"
 #include "input/ButtonIcons.h"
-#include "input/TextureNameProbe.h"
 #include "input/MenuBridge.h"
-#include "input/XInputProbe.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -283,16 +281,6 @@ void TestSceneEnd() {
           "pas de fin de scène sans pré-passe de profondeur");
 }
 
-void TestXInputDescriptions() {
-    using hca::input::DescribeButtons;
-    using hca::input::StickAmount;
-    Check(DescribeButtons(0) == "aucun" && DescribeButtons(0x1000) == "A" &&
-              DescribeButtons(0x1000 | 0x0100 | 0x0010) == "A LB Start",
-          "noms des boutons de la manette");
-    Check(StickAmount(0, 0) == 0.0f && std::fabs(StickAmount(32767, 0) - 1.0f) < 1e-4f &&
-              StickAmount(32767, 32767) == 1.0f && std::fabs(StickAmount(0, -16384) - 0.5f) < 1e-3f,
-          "inclinaison des sticks");
-}
 
 void TestMenuPadKeys() {
     using namespace hca::input;
@@ -324,9 +312,6 @@ void TestButtonIcons() {
     Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
               std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(1, 6)) == "shv_x360xflash" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
           "noms des icônes A, B, X, Y selon le type");
-    Check(hca::input::IsButtonIconName("shv_buttonpccontrol1_64") && hca::input::IsButtonIconName("pc_1flash") &&
-              !hca::input::IsButtonIconName("shv_hud_arrow1") && !hca::input::IsButtonIconName(nullptr),
-          "noms d'icônes de boutons reconnus");
     using hca::input::ReplacementIconName;
     const auto same = [](const char* a, const char* b) { return a != nullptr && std::string(a) == b; };
     Check(same(ReplacementIconName("shv_buttonpccontrol1", 1), "shv_buttonxbox360_a_32") &&
@@ -410,7 +395,6 @@ int main() {
     TestCameraMath();
     TestCameraCut();
     TestSceneEnd();
-    TestXInputDescriptions();
     TestMenuPadKeys();
     TestButtonIcons();
     TestDepthEncoding();

@@ -87,12 +87,14 @@ public static class Translations
                                    "A d3d9.dll from another mod was set aside (d3d9.dll.avant-hca)."),
             ["DlssForeignRestored"] = ("La d3d9.dll de l'autre mod a été remise.", "The other mod's d3d9.dll was restored."),
             ["ButtonIcons"] = ("Icônes des boutons", "Button icons"),
-            ["IconsAuto"] = ("Auto (manette si branchée)", "Auto (controller if plugged in)"),
-            ["IconsKeyboard"] = ("Clavier (jeu d'origine)", "Keyboard (original game)"),
-            ["ButtonIconsHint"] = ("Icônes affichées dans l'interface et les messages d'aide. Auto : icônes Xbox 360 quand une " +
-                                   "manette est branchée, icônes du clavier sinon.",
-                                   "Icons shown in the interface and help messages. Auto: Xbox 360 icons while a controller " +
-                                   "is plugged in, keyboard icons otherwise."),
+            ["SecController"] = ("Manette", "Controller"),
+            ["IconsAuto"] = ("Auto (Xbox si une manette est branchée, sinon PC)", "Auto (Xbox if a controller is plugged in, otherwise PC)"),
+            ["IconsPc"] = ("PC (1, 2, 3, 4 : jeu d'origine)", "PC (1, 2, 3, 4: original game)"),
+            ["IconsPlayStation"] = ("PlayStation (croix, rond, carré, triangle)", "PlayStation (cross, circle, square, triangle)"),
+            ["ButtonIconsHint"] = ("Icônes des boutons A, B, X, Y dans les menus, l'inventaire, l'écran des commandes et les " +
+                                   "invites en jeu (Ouvrir, Sauvegarder...). Le jeu d'origine affiche les chiffres 1 à 4.",
+                                   "A, B, X, Y button icons in menus, the inventory, the controls screen and in-game prompts " +
+                                   "(Open, Save...). The original game shows the digits 1 to 4."),
             ["Anisotropy"] = ("Filtrage anisotrope", "Anisotropic filtering"),
             ["AnisoOff"] = ("Désactivé (jeu d'origine)", "Off (original game)"),
             ["AnisotropyHint"] = ("Textures nettes au sol et vues de biais. Impact négligeable sur une carte graphique récente.",
