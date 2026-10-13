@@ -16,6 +16,7 @@
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
 #include "graphics/CameraMath.h"
+#include "graphics/CameraTracker.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -203,6 +204,13 @@ void TestCameraMath() {
     Check(std::fabs(identity[0] - 1) < 1e-4f && std::fabs(identity[5] - 1) < 1e-4f && std::fabs(identity[1]) < 1e-4f &&
               std::fabs(identity[15] - 1) < 1e-4f,
           "inverse de la caméra");
+    Check(hca::graphics::camera::LooksLikePerspectiveCamera(viewProj), "caméra en perspective reconnue");
+    const Matrix4 ortho = {0.001f, 0, 0, -0.999f, 0, -0.002f, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1};
+    Check(!hca::graphics::camera::LooksLikePerspectiveCamera(ortho), "projection d'interface 2D rejetée");
+    Matrix4 nudged = viewProj;
+    nudged[3] += 0.5f;
+    Check(hca::graphics::camera::SameCamera(viewProj, viewProj) && !hca::graphics::camera::SameCamera(viewProj, nudged),
+          "comparaison de caméras");
     const Matrix4 singular{};
     Check(!Inverse(singular, inverse), "matrice non inversible refusée");
 }

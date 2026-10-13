@@ -11,8 +11,10 @@ namespace hca::graphics::camera {
 //
 // Le moteur n'envoie pas cette matrice seule : chaque dessin reçoit mWorldViewProj (c0..c3) et, pour certains vertex
 // shaders, mWorld (c4..c6) ; la caméra vaut mWorldViewProj x inverse(mWorld) (graphics/CameraMath.h). Elle est prise au
-// premier dessin d'un tel shader après le début de la pré-passe de profondeur (dont le shader n'a pas mWorld), pour être
-// sûr d'avoir la caméra principale et pas celle d'une lumière (cartes d'ombres dessinées avant).
+// dans les dessins d'un tel shader après le début de la pré-passe de profondeur (dont le shader n'a pas mWorld), pour
+// exclure les cartes d'ombres dessinées avant. Les matrices qui ne sont pas des caméras en perspective (interface 2D,
+// effets plein écran) sont rejetées, et la caméra retenue est celle sur laquelle le plus de dessins s'accordent.
+// Constaté le 13/10/2026 : le premier dessin qualifié était une projection orthographique d'interface.
 
 void OnVertexShaderCreated(const DWORD* bytecode, IDirect3DVertexShader9* shader) noexcept;
 void OnSetVertexShader(IDirect3DVertexShader9* shader) noexcept;
@@ -20,6 +22,13 @@ void OnVertexShaderConstants(UINT startRegister, const float* values, UINT vecto
 void OnSetRenderTarget(DWORD index, IDirect3DSurface9* surface, IDirect3DSurface9* depthPassSurface) noexcept;
 void OnDraw() noexcept;
 void OnPresent() noexcept;
+
+// Fonctions pures (testées par tests/unit).
+bool LooksLikePerspectiveCamera(const Matrix4& m) noexcept;
+bool SameCamera(const Matrix4& a, const Matrix4& b) noexcept;
+
+// Fin de la scène 3D : choisit la caméra de l'image (appelé par Current).
+void OnSceneEnd() noexcept;
 
 // Caméra de l'image en cours et de la précédente ; false tant que les deux ne sont pas connues.
 bool Current(Matrix4& current, Matrix4& previous) noexcept;
