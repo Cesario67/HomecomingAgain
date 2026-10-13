@@ -96,6 +96,8 @@ struct Config {
     // [Input]
     // Journal des lectures de manette par le moteur (XInput), voir input/XInputProbe.h.
     bool xinputLog = true;
+    // Dans les menus, croix, stick gauche, A et B traduits en touches du clavier (input/MenuBridge.h).
+    bool menuPad = true;
 
 
     // [Debug]

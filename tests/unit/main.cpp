@@ -20,6 +20,7 @@
 #include "graphics/DepthEncoding.h"
 #include "graphics/Jitter.h"
 #include "graphics/SceneEnd.h"
+#include "input/MenuBridge.h"
 #include "input/XInputProbe.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
@@ -291,6 +292,27 @@ void TestXInputDescriptions() {
           "inclinaison des sticks");
 }
 
+void TestMenuPadKeys() {
+    using namespace hca::input;
+    KeySet held{};
+    // Croix bas + A : flèche bas et Entrée ; B : Échap.
+    KeySet keys = KeysForPad(0x0002 | 0x1000, 0, 0, held);
+    Check(keys[kKeyDown] && keys[kKeyReturn] && !keys[kKeyUp] && !keys[kKeyEscape], "croix et A traduits en touches");
+    keys = KeysForPad(0x2000, 0, 0, held);
+    Check(keys[kKeyEscape] && !keys[kKeyReturn], "B traduit en Échap");
+    // Stick : enfoncé au-delà de la moitié, relâché seulement sous un tiers (pas de rebond autour du seuil).
+    keys = KeysForPad(0, 0, 20000, held);
+    const bool pressed = keys[kKeyUp];
+    keys = KeysForPad(0, 0, 14000, held);
+    const bool stillHeld = keys[kKeyUp];
+    keys = KeysForPad(0, 0, 9000, held);
+    Check(pressed && stillHeld && !keys[kKeyUp], "stick vers le haut avec hystérésis");
+    KeySet fresh{};
+    keys = KeysForPad(0, -20000, 0, fresh);
+    Check(keys[kKeyLeft] && !keys[kKeyRight] && !KeysForPad(0, 14000, 0, fresh)[kKeyRight],
+          "stick à gauche, et à droite sous le seuil d'appui");
+}
+
 void TestDepthEncoding() {
     using hca::graphics::depth::Encoding;
     using hca::graphics::depth::ParseEncoding;
@@ -363,6 +385,7 @@ int main() {
     TestCameraCut();
     TestSceneEnd();
     TestXInputDescriptions();
+    TestMenuPadKeys();
     TestDepthEncoding();
     TestJitter();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);

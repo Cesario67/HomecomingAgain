@@ -10,6 +10,7 @@
 
 #include "audio/AudioProbe.h"
 #include "compat/MovieSkip.h"
+#include "input/DirectInputHooks.h"
 #include "input/XInputProbe.h"
 #include "compat/SkipMovies.h"
 #include "compat/WindowThreadLock.h"
@@ -77,6 +78,7 @@ void Startup() {
         hca::compat::InstallMovieSkip(engine);
         hca::audio::InstallAudioProbe(engine);
         hca::input::InstallXInputProbe(engine);
+        hca::input::InstallDirectInputHooks(engine);
         if (hca::GetConfig().frameStats) {
             hca::frames::waits::Install(engine);
         }

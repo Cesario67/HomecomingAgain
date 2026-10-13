@@ -8,6 +8,7 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "input/MenuBridge.h"
 
 namespace hca::input {
 
@@ -105,6 +106,17 @@ DWORD WINAPI HookGetState(DWORD user, XINPUT_STATE* state) {
     if (user >= XUSER_MAX_COUNT) {
         return result;
     }
+    // Première manette : son état sert à la traduction en touches dans les menus (input/MenuBridge.h).
+    if (user == 0) {
+        if (result == ERROR_SUCCESS && state != nullptr) {
+            OnPadState(state->Gamepad.wButtons, state->Gamepad.sThumbLX, state->Gamepad.sThumbLY);
+        } else {
+            OnPadDisconnected();
+        }
+    }
+    if (!GetConfig().xinputLog) {
+        return result;
+    }
     EnterCriticalSection(&g_lock);
     PadStats& pad = g_pads[user];
     const bool connected = result == ERROR_SUCCESS && state != nullptr;
@@ -194,7 +206,7 @@ float StickAmount(SHORT x, SHORT y) noexcept {
 }
 
 void InstallXInputProbe(HMODULE engine) {
-    if (!GetConfig().xinputLog || engine == nullptr) {
+    if ((!GetConfig().xinputLog && !GetConfig().menuPad) || engine == nullptr) {
         return;
     }
     InitializeCriticalSection(&g_lock);
