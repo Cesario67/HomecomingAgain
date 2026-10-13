@@ -109,9 +109,11 @@ Conséquences pour le plan :
 - Jalon 2 (vérifié en jeu) : `[DLSS] ShareFrames=1`, la scène (B8G8R8A8) et la profondeur (R32F) sont copiées chaque
   image dans des images Vulkan exportées (handles NT) avec un sémaphore timeline exporté. 592 images sur 592 en 10 s,
   0,16 ms de processeur par image, 59 i/s inchangés.
-- Jalon 3 (codé, pas encore testé) : `HomecomingAgain.Dlss.exe` (64 bits, `helper/`), lancé par le mod avec les trois
+- Jalon 3 (vérifié en jeu le 13/10/2026 : images de contrôle correctes, ~59 images reçues par seconde) : `HomecomingAgain.Dlss.exe` (64 bits, `helper/`), lancé par le mod avec les trois
   handles hérités, importe les images en Vulkan, attend le compteur et enregistre une image de contrôle de la scène
   et de la profondeur dans `HomecomingAgain\captures`. Journal : `HomecomingAgain\logs\HomecomingAgain.Dlss.log`.
+- Limite : les images sont copiées à Present, donc avec l'interface (texte « Sauvegarder » visible) ; à copier avant
+  l'interface pour le DLSS.
 - Limite connue : le jeu réécrit les images partagées à l'image suivante sans attendre le lecteur (pas encore de
   synchronisation en retour). À régler avant le DLSS (anneau d'images ou sémaphore en retour).
 ## 5. Plans de repli
