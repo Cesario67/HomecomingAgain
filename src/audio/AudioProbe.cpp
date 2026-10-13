@@ -202,7 +202,7 @@ HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer
             auto* samples = const_cast<float*>(reinterpret_cast<const float*>(b->audioData));
             const std::uint32_t frames = b->audioBytes / (6 * sizeof(float));
             if (g_surroundAsStereo) {
-                DownmixSurroundToStereo(samples, frames, GetConfig().audioFakeSurround);
+                DownmixSurroundToStereo(samples, frames, true);
                 std::memcpy(&converted, buffer, sizeof(converted));
                 converted.audioBytes = frames * 2 * sizeof(float);
                 buffer = &converted;
