@@ -10,6 +10,7 @@
 #include "graphics/CameraTracker.h"
 #include "graphics/DepthEncoding.h"
 #include "graphics/Jitter.h"
+#include "input/MenuBridge.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/InternalDraw.h"
 #include "graphics/MotionVectors.h"
@@ -112,6 +113,7 @@ HRESULT STDMETHODCALLTYPE HookSetRenderTarget(IDirect3DDevice9* device, DWORD in
         GetSsao().OnSetRenderTarget(device, index, surface);
         const bool sceneEnded = GetSsao().ConsumeSceneReady();
         if (sceneEnded) {
+            input::OnSceneDrawn();
             jitter::OnSceneEnd();
         }
         if (sceneEnded && GetConfig().dlssShareFrames) {

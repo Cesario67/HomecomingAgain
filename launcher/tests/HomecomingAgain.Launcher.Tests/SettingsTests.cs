@@ -1,4 +1,5 @@
 using HomecomingAgain.Launcher.Core;
+using HomecomingAgain.Launcher.ViewModels;
 using Xunit;
 
 namespace HomecomingAgain.Launcher.Tests;
@@ -102,5 +103,26 @@ public sealed class SettingsTests
         Assert.Equal((DisplayMode.Windowed, 1280, 720), (defaults.DisplayMode, defaults.Width, defaults.Height));
         Assert.True(defaults.Smaa);
         Assert.Equal(60, defaults.TargetFps);
+    }
+
+    [Fact]
+    public void ButtonIconsAreWrittenAndClamped()
+    {
+        IniDocument mod = IniDocument.Parse("");
+        Assert.Equal(0, PatchSettings.Read(mod, KeyValueDocument.Parse("")).ButtonIcons);  // auto par défaut
+        new PatchSettings { ButtonIcons = 3 }.WriteMod(mod);
+        Assert.Equal(3, PatchSettings.Read(mod, KeyValueDocument.Parse("")).ButtonIcons);
+        new PatchSettings { ButtonIcons = 9 }.WriteMod(mod);
+        Assert.Equal(3, mod.GetInt("Input", "ButtonIcons", -1));
+    }
+
+    [Theory]
+    [InlineData(0, "A B X Y")]
+    [InlineData(1, "1 2 3 4")]
+    [InlineData(2, "A B X Y")]
+    [InlineData(3, "✕ ○ □ △")]
+    public void ButtonIconPreviewFollowsTheSetting(int buttonIcons, string symbols)
+    {
+        Assert.Equal(symbols, string.Join(' ', ButtonGlyph.For(buttonIcons).Select(glyph => glyph.Symbol)));
     }
 }

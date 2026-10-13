@@ -43,6 +43,13 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
   them back before the interface. Off by default.
 - **High quality game shaders**: SSAO and DLSS also work in this mode (16-bit scene).
 
+### Controller
+
+- **Xbox or PlayStation button icons**: menus, the inventory, the controls screen and in-game prompts (Open,
+  Save...) show A, B, X, Y (or cross, circle, square, triangle) instead of the digits 1 to 4 of the PC version. The
+  icons come from the game's own data. By default, Xbox icons while a controller is plugged in, PC icons otherwise.
+- **Main menu with a controller**: D-pad and left stick move through the menus, A and Start confirm, B goes back.
+
 ### Comfort
 
 - **Skip cutscenes**: the Delete key skips video cutscenes.
@@ -67,12 +74,15 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Graphics]` | `FilmGrain=100` | Film grain in % (0 = none) |
 | `[Audio]` | `ChannelFix=1` | Fixed sound (0 = original sound) |
 | `[Movies]` | `SkipKey=46` | Key to skip cutscenes (46 = Delete, 0 = none) |
+| `[Input]` | `ButtonIcons=0` | Button icons: 0 = auto (Xbox if a controller is plugged in), 1 = PC (original), 2 = Xbox, 3 = PlayStation |
+| `[Input]` | `MenuPad=1` | Controller in menus (D-pad, left stick, A, B, Start) |
 | `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA): all three at 1 to enable it, with DXVK (done by the launcher) |
 
 ## Known limitations
 
 - Exclusive fullscreen still crashes on Alt-Tab (original game): use borderless mode.
-- Controllers: not handled yet.
+- Controllers: only XInput controllers (Xbox and compatible) are read by the game. Dead zones, camera sensitivity
+  and vibration are still the original ones.
 - DLSS: experimental. Only camera motion is passed on: slight trails are possible on fast-moving characters.
 
 ## Building

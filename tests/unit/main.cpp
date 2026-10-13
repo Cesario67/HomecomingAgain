@@ -20,6 +20,8 @@
 #include "graphics/DepthEncoding.h"
 #include "graphics/Jitter.h"
 #include "graphics/SceneEnd.h"
+#include "input/ButtonIcons.h"
+#include "input/MenuBridge.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -279,6 +281,49 @@ void TestSceneEnd() {
           "pas de fin de scène sans pré-passe de profondeur");
 }
 
+
+void TestMenuPadKeys() {
+    using namespace hca::input;
+    KeySet held{};
+    // Croix bas + A : flèche bas et Entrée ; B : Échap.
+    KeySet keys = KeysForPad(0x0002 | 0x1000, 0, 0, held);
+    Check(keys[kKeyDown] && keys[kKeyReturn] && !keys[kKeyUp] && !keys[kKeyEscape], "croix et A traduits en touches");
+    keys = KeysForPad(0x2000, 0, 0, held);
+    Check(keys[kKeyEscape] && !keys[kKeyReturn], "B traduit en Échap");
+    // Stick : enfoncé au-delà de la moitié, relâché seulement sous un tiers (pas de rebond autour du seuil).
+    keys = KeysForPad(0, 0, 20000, held);
+    const bool pressed = keys[kKeyUp];
+    keys = KeysForPad(0, 0, 14000, held);
+    const bool stillHeld = keys[kKeyUp];
+    keys = KeysForPad(0, 0, 9000, held);
+    Check(pressed && stillHeld && !keys[kKeyUp], "stick vers le haut avec hystérésis");
+    KeySet fresh{};
+    keys = KeysForPad(0, -20000, 0, fresh);
+    Check(keys[kKeyLeft] && !keys[kKeyRight] && !KeysForPad(0, 14000, 0, fresh)[kKeyRight],
+          "stick à gauche, et à droite sous le seuil d'appui");
+}
+
+void TestButtonIcons() {
+    using hca::input::IconTypeFor;
+    Check(IconTypeFor(0, true) == 1 && IconTypeFor(0, false) == 0, "icônes auto : Xbox 360 avec manette, PC sans");
+    Check(IconTypeFor(1, true) == 0 && IconTypeFor(2, false) == 1 && IconTypeFor(3, true) == 2 && IconTypeFor(9, true) == 0,
+          "icônes forcées : PC, Xbox 360, PS3, valeur inconnue = PC");
+    using hca::input::FaceIconName;
+    Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
+              std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(1, 6)) == "shv_x360xflash" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
+          "noms des icônes A, B, X, Y selon le type");
+    using hca::input::ReplacementIconName;
+    const auto same = [](const char* a, const char* b) { return a != nullptr && std::string(a) == b; };
+    Check(same(ReplacementIconName("shv_buttonpccontrol1", 1), "shv_buttonxbox360_a_32") &&
+              same(ReplacementIconName("shv_buttonpccontrol4_64", 2), "shv_buttonps3_triangle_32") &&
+              same(ReplacementIconName("pc_3flash", 1), "shv_x360xflash"),
+          "texture PC remplacée par l'icône Xbox 360 ou PS3");
+    Check(ReplacementIconName("shv_buttonpccontrol1", 0) == nullptr && ReplacementIconName("shv_buttonactionpc", 1) == nullptr &&
+              ReplacementIconName("shv_buttonpccontrol12", 1) == nullptr && ReplacementIconName("pc_1flash_64", 1) == nullptr &&
+              ReplacementIconName(nullptr, 1) == nullptr,
+          "autres textures et type PC laissés tels quels");
+}
+
 void TestDepthEncoding() {
     using hca::graphics::depth::Encoding;
     using hca::graphics::depth::ParseEncoding;
@@ -350,6 +395,8 @@ int main() {
     TestCameraMath();
     TestCameraCut();
     TestSceneEnd();
+    TestMenuPadKeys();
+    TestButtonIcons();
     TestDepthEncoding();
     TestJitter();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
