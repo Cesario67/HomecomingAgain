@@ -62,14 +62,20 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                 saved = true;
                 std::vector<std::uint8_t> color;
                 std::vector<float> depth;
-                if (reader.ReadBack(static_cast<std::size_t>(value % hca::dlss::kSlots), color, depth)) {
+                std::vector<std::uint16_t> motion;
+                if (reader.ReadBack(static_cast<std::size_t>(value % hca::dlss::kSlots), color, depth, motion)) {
                     const std::wstring dir = parsed->outputDir.empty() ? L"." : parsed->outputDir;
                     const bool a = hca::dlss::WriteColorBmp(dir + L"\\dlss_scene.bmp", color.data(), parsed->width,
                                                             parsed->height);
                     const bool b = hca::dlss::WriteDepthBmp(dir + L"\\dlss_profondeur.bmp", depth.data(),
                                                             parsed->width, parsed->height);
-                    Log(std::format("images de contrôle enregistrées : scène {}, profondeur {}", a ? "oui" : "non",
-                                    b ? "oui" : "non"));
+                    float average = 0.0f;
+                    float maximum = 0.0f;
+                    const bool m = hca::dlss::WriteMotionBmp(dir + L"\\dlss_mouvement.bmp", motion.data(), parsed->width,
+                                                             parsed->height, average, maximum);
+                    Log(std::format("images de contrôle enregistrées : scène {}, profondeur {}, mouvement {} (moyenne {:.2f} px, "
+                                    "maximum {:.2f} px)",
+                                    a ? "oui" : "non", b ? "oui" : "non", m ? "oui" : "non", average, maximum));
                 } else {
                     Log("relecture des images impossible");
                 }

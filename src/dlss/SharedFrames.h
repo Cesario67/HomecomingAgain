@@ -7,8 +7,9 @@
 namespace hca::dlss {
 
 // Partage des images avec le processus DLSS 64 bits (docs/plan-dlss.md). À la fin de la scène 3D, avant les
-// post-traitements et l'interface, la scène et la profondeur du jeu (images Vulkan de DXVK) sont copiées sur la carte
-// graphique dans un anneau de kSharedSlots paires d'images créées par le mod et exportées (handles Windows NT).
+// post-traitements et l'interface, la scène, la profondeur et les vecteurs de mouvement (images Vulkan de DXVK) sont
+// copiés sur la carte graphique dans un anneau de kSharedSlots triplets d'images créées par le mod et exportées (handles
+// Windows NT).
 //
 // Deux compteurs (sémaphores « timeline ») exportés eux aussi :
 // - « produites » : le mod le passe à v quand l'image v est copiée, dans l'emplacement SlotForFrame(v) ;
@@ -29,7 +30,9 @@ constexpr bool SlotIsFree(std::uint64_t value, std::uint64_t consumed, std::uint
     return value <= slots || consumed + slots >= value;
 }
 
-// À la fin de la scène 3D, avec les textures de la scène et de la profondeur du moteur (non possédées).
-void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth) noexcept;
+// À la fin de la scène 3D, avec les textures de la scène et de la profondeur du moteur et celle des vecteurs de
+// mouvement (non possédées).
+void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
+                IDirect3DBaseTexture9* motion) noexcept;
 
 }  // namespace hca::dlss

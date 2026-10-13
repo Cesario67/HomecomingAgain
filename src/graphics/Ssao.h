@@ -36,6 +36,7 @@ public:
     // Textures du moteur repérées (non possédées), pour l'interopérabilité DXVK (dlss/DxvkInterop.h). La texture de
     // la scène n'est connue qu'après une première application de l'effet.
     IDirect3DTexture9* DepthTexture() const noexcept { return depthTexture_; }
+    IDirect3DSurface9* DepthSurface() const noexcept { return depthSurface_; }
     IDirect3DTexture9* SceneTexture() const noexcept { return sceneTexture_; }
     // Vrai une fois, juste après le dernier OnSetRenderTarget si la scène 3D vient de se terminer (avant les
     // post-traitements et l'interface).

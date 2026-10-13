@@ -26,6 +26,7 @@ struct Arguments {
     std::uint32_t deviceId = 0;
     SharedImageArgs color;
     SharedImageArgs depth;
+    SharedImageArgs motion;  // vecteurs de mouvement (R16G16_SFLOAT, en pixels)
     std::uint64_t semaphore = 0;  // compteur « produites » (signalé par le mod)
     std::uint64_t consumed = 0;   // compteur « consommées » (signalé par ce processus)
     std::wstring logPath;
@@ -33,7 +34,7 @@ struct Arguments {
 };
 
 // Fonction pure (testée) : lit « --clé valeur » ; nombres en décimal ou en 0x hexadécimal, listes de handles séparées
-// par des virgules (--color, --depth). nullopt si un paramètre obligatoire manque ou est invalide.
+// par des virgules (--color, --depth, --motion). nullopt si un paramètre obligatoire manque ou est invalide.
 std::optional<Arguments> ParseArguments(const std::vector<std::wstring>& args);
 
 }  // namespace hca::dlss

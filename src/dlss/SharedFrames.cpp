@@ -75,6 +75,7 @@ struct State {
     // Anneau : l'image numéro v (valeur du compteur « produites ») va dans l'emplacement SlotForFrame(v, kSharedSlots).
     SharedImage color[kSharedSlots];
     SharedImage depth[kSharedSlots];
+    SharedImage motion[kSharedSlots];  // vecteurs de mouvement (G16R16F, graphics/MotionVectors.h)
     ExportedTimeline produced;  // signalé par le mod quand l'image v est copiée
     ExportedTimeline consumed;  // signalé par le processus DLSS quand il a fini avec l'image v
     std::uint64_t producedValue = 0;
@@ -275,7 +276,8 @@ bool CreateCommands(State& s) {
     return true;
 }
 
-bool Initialize(State& s, IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth) {
+bool Initialize(State& s, IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
+                IDirect3DBaseTexture9* motion) {
     ID3D9VkInteropDevice* interop = Interop();
     if (interop == nullptr) {
         return false;
@@ -286,12 +288,15 @@ bool Initialize(State& s, IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTextur
     VkImage image = VK_NULL_HANDLE;
     VkImageCreateInfo colorInfo{};
     VkImageCreateInfo depthInfo{};
-    if (!LoadFunctions(s) || !GameImage(sceneColor, image, colorInfo) || !GameImage(depth, image, depthInfo)) {
+    VkImageCreateInfo motionInfo{};
+    if (!LoadFunctions(s) || !GameImage(sceneColor, image, colorInfo) || !GameImage(depth, image, depthInfo) ||
+        !GameImage(motion, image, motionInfo)) {
         return false;
     }
     for (std::uint32_t i = 0; i < kSharedSlots; ++i) {
         if (!CreateSharedImage(s, colorInfo, s.color[i], std::format("scène {}", i)) ||
-            !CreateSharedImage(s, depthInfo, s.depth[i], std::format("profondeur {}", i))) {
+            !CreateSharedImage(s, depthInfo, s.depth[i], std::format("profondeur {}", i)) ||
+            !CreateSharedImage(s, motionInfo, s.motion[i], std::format("mouvement {}", i))) {
             return false;
         }
     }
@@ -313,31 +318,27 @@ VkImageMemoryBarrier Barrier(VkImage image, VkImageLayout from, VkImageLayout to
     return barrier;
 }
 
-void RecordCopy(State& s, VkCommandBuffer commands, VkImage gameColor, VkImage gameDepth, SharedImage& color,
-                SharedImage& depth) {
+void RecordCopy(State& s, VkCommandBuffer commands, const VkImage (&game)[3], SharedImage* (&shared)[3]) {
     // Images du jeu : laissées en GENERAL (disposition rapportée par DXVK) ; dépendance sur tout le travail déjà soumis.
-    const VkImageMemoryBarrier before[4] = {
-        Barrier(gameColor, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_WRITE_BIT,
-                VK_ACCESS_TRANSFER_READ_BIT),
-        Barrier(gameDepth, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_WRITE_BIT,
-                VK_ACCESS_TRANSFER_READ_BIT),
-        Barrier(color.image, color.initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT),
-        Barrier(depth.image, depth.initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT)};
+    VkImageMemoryBarrier before[6]{};
+    for (int i = 0; i < 3; ++i) {
+        before[i] = Barrier(game[i], VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_WRITE_BIT,
+                            VK_ACCESS_TRANSFER_READ_BIT);
+        before[3 + i] = Barrier(shared[i]->image,
+                                shared[i]->initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
+                                VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT);
+        shared[i]->initialized = true;
+    }
     s.vk.cmdPipelineBarrier(commands, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
-                            0, nullptr, 4, before);
-    color.initialized = true;
-    depth.initialized = true;
-
-    VkImageCopy region{};
-    region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
-    region.dstSubresource = region.srcSubresource;
-    region.extent = color.extent;
-    s.vk.cmdCopyImage(commands, gameColor, VK_IMAGE_LAYOUT_GENERAL, color.image, VK_IMAGE_LAYOUT_GENERAL, 1, &region);
-    region.extent = depth.extent;
-    s.vk.cmdCopyImage(commands, gameDepth, VK_IMAGE_LAYOUT_GENERAL, depth.image, VK_IMAGE_LAYOUT_GENERAL, 1, &region);
-
+                            0, nullptr, 6, before);
+    for (int i = 0; i < 3; ++i) {
+        VkImageCopy region{};
+        region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+        region.dstSubresource = region.srcSubresource;
+        region.extent = shared[i]->extent;
+        s.vk.cmdCopyImage(commands, game[i], VK_IMAGE_LAYOUT_GENERAL, shared[i]->image, VK_IMAGE_LAYOUT_GENERAL, 1,
+                          &region);
+    }
     // Après la copie : le travail suivant de DXVK (qui réécrira ces images) attend la fin de nos lectures.
     VkMemoryBarrier after{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
     after.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -345,7 +346,6 @@ void RecordCopy(State& s, VkCommandBuffer commands, VkImage gameColor, VkImage g
     s.vk.cmdPipelineBarrier(commands, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &after,
                             0, nullptr, 0, nullptr);
 }
-
 void Report(State& s) {
     const ULONGLONG now = GetTickCount64();
     if (s.nextReport == 0) {
@@ -382,11 +382,14 @@ void LaunchHelper(State& s) {
     std::vector<HANDLE> handles;
     std::wstring colors;
     std::wstring depths;
+    std::wstring motions;
     for (std::uint32_t i = 0; i < kSharedSlots; ++i) {
         handles.push_back(s.color[i].handle);
         handles.push_back(s.depth[i].handle);
+        handles.push_back(s.motion[i].handle);
         colors += std::format(L"{}0x{:X}", i == 0 ? L"" : L",", reinterpret_cast<std::uintptr_t>(s.color[i].handle));
         depths += std::format(L"{}0x{:X}", i == 0 ? L"" : L",", reinterpret_cast<std::uintptr_t>(s.depth[i].handle));
+        motions += std::format(L"{}0x{:X}", i == 0 ? L"" : L",", reinterpret_cast<std::uintptr_t>(s.motion[i].handle));
     }
     handles.push_back(s.produced.handle);
     handles.push_back(s.consumed.handle);
@@ -395,11 +398,12 @@ void LaunchHelper(State& s) {
     }
     std::wstring command = std::format(
         L"\"{}\" --parent {} --width {} --height {} --color {} --color-format {} --color-size {} --depth {} "
-        L"--depth-format {} --depth-size {} --semaphore 0x{:X} --consumed 0x{:X} --vendor 0x{:X} --device 0x{:X} "
+        L"--depth-format {} --depth-size {} --motion {} --motion-format {} --motion-size {} --semaphore 0x{:X} --consumed 0x{:X} --vendor 0x{:X} --device 0x{:X} "
         L"--log \"{}\" --out \"{}\"",
         exe, GetCurrentProcessId(), s.color[0].extent.width, s.color[0].extent.height, colors,
         static_cast<int>(s.color[0].format), s.color[0].size, depths, static_cast<int>(s.depth[0].format),
-        s.depth[0].size, reinterpret_cast<std::uintptr_t>(s.produced.handle),
+        s.depth[0].size, motions, static_cast<int>(s.motion[0].format), s.motion[0].size,
+        reinterpret_cast<std::uintptr_t>(s.produced.handle),
         reinterpret_cast<std::uintptr_t>(s.consumed.handle), properties.vendorID, properties.deviceID,
         GetPaths().logsDir + L"\\HomecomingAgain.Dlss.log", GetPaths().modDir + L"\\captures");
 
@@ -435,14 +439,15 @@ void LaunchHelper(State& s) {
 
 }  // namespace
 
-void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth) noexcept {
+void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth, IDirect3DBaseTexture9* motion) noexcept {
     State& s = g_state;
-    if (!GetConfig().dlssShareFrames || sceneColor == nullptr || depth == nullptr) {
+    // Les vecteurs de mouvement manquent à la première image (pas encore de caméra précédente) : image ignorée.
+    if (!GetConfig().dlssShareFrames || sceneColor == nullptr || depth == nullptr || motion == nullptr) {
         return;
     }
     if (!s.attempted) {
         s.attempted = true;
-        s.ready = Initialize(s, sceneColor, depth);
+        s.ready = Initialize(s, sceneColor, depth, motion);
         log::Info("DLSS : partage des images {}", s.ready ? "prêt" : "indisponible");
         if (s.ready) {
             LaunchHelper(s);
@@ -472,10 +477,10 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth)
         Report(s);
         return;
     }
-    VkImage gameColor = VK_NULL_HANDLE;
-    VkImage gameDepth = VK_NULL_HANDLE;
+    VkImage game[3]{};
     VkImageCreateInfo unused{};
-    if (!GameImage(sceneColor, gameColor, unused) || !GameImage(depth, gameDepth, unused)) {
+    if (!GameImage(sceneColor, game[0], unused) || !GameImage(depth, game[1], unused) ||
+        !GameImage(motion, game[2], unused)) {
         ++s.skippedCopy;
         Report(s);
         return;
@@ -489,7 +494,8 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth)
     VkCommandBufferBeginInfo begin{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     s.vk.beginCommandBuffer(commands, &begin);
-    RecordCopy(s, commands, gameColor, gameDepth, s.color[slot], s.depth[slot]);
+    SharedImage* shared[3] = {&s.color[slot], &s.depth[slot], &s.motion[slot]};
+    RecordCopy(s, commands, game, shared);
     s.vk.endCommandBuffer(commands);
 
     VkTimelineSemaphoreSubmitInfo timelineInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};

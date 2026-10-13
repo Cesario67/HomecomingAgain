@@ -37,7 +37,7 @@ bool ParseList(const std::wstring& text, std::uint64_t (&values)[kSlots]) {
 
 std::optional<Arguments> ParseArguments(const std::vector<std::wstring>& args) {
     Arguments result;
-    bool seen[12]{};
+    bool seen[15]{};
     for (std::size_t i = 0; i + 1 < args.size(); i += 2) {
         const std::wstring& key = args[i];
         const std::wstring& text = args[i + 1];
@@ -67,6 +67,12 @@ std::optional<Arguments> ParseArguments(const std::vector<std::wstring>& args) {
             result.depth.format = static_cast<std::uint32_t>(n);
         } else if (key == L"--depth-size" && number(8)) {
             result.depth.allocationSize = n;
+        } else if (key == L"--motion" && ParseList(text, result.motion.handles)) {
+            seen[12] = true;
+        } else if (key == L"--motion-format" && number(13)) {
+            result.motion.format = static_cast<std::uint32_t>(n);
+        } else if (key == L"--motion-size" && number(14)) {
+            result.motion.allocationSize = n;
         } else if (key == L"--semaphore" && number(9)) {
             result.semaphore = n;
         } else if (key == L"--consumed" && number(11)) {

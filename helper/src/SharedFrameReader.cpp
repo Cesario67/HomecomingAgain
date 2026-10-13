@@ -26,6 +26,8 @@ struct SharedFrameReader::Impl {
     VkImage depth[kSlots]{};
     VkDeviceMemory colorMemory[kSlots]{};
     VkDeviceMemory depthMemory[kSlots]{};
+    VkImage motion[kSlots]{};
+    VkDeviceMemory motionMemory[kSlots]{};
     VkSemaphore timeline = VK_NULL_HANDLE;  // « produites »
     VkSemaphore consumed = VK_NULL_HANDLE;  // « consommées »
     VkCommandPool pool = VK_NULL_HANDLE;
@@ -220,6 +222,8 @@ SharedFrameReader::~SharedFrameReader() {
             s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.depth[i], nullptr);
             s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.colorMemory[i], nullptr);
             s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.depthMemory[i], nullptr);
+            s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.motion[i], nullptr);
+            s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.motionMemory[i], nullptr);
         }
         s.Device<PFN_vkDestroyDevice>("vkDestroyDevice")(s.device, nullptr);
     }
@@ -236,7 +240,9 @@ bool SharedFrameReader::Open() {
     for (std::size_t i = 0; i < kSlots; ++i) {
         if (!s.ImportImage(s.args.color, s.args.color.handles[i], s.color[i], s.colorMemory[i], std::format("scène {}", i)) ||
             !s.ImportImage(s.args.depth, s.args.depth.handles[i], s.depth[i], s.depthMemory[i],
-                           std::format("profondeur {}", i))) {
+                           std::format("profondeur {}", i)) ||
+            !s.ImportImage(s.args.motion, s.args.motion.handles[i], s.motion[i], s.motionMemory[i],
+                           std::format("mouvement {}", i))) {
             return false;
         }
     }
@@ -269,13 +275,14 @@ void SharedFrameReader::MarkConsumed(std::uint64_t value) {
     s.Device<PFN_vkSignalSemaphore>("vkSignalSemaphore")(s.device, &signal);
 }
 
-bool SharedFrameReader::ReadBack(std::size_t slot, std::vector<std::uint8_t>& color, std::vector<float>& depth) {
+bool SharedFrameReader::ReadBack(std::size_t slot, std::vector<std::uint8_t>& color, std::vector<float>& depth,
+                                 std::vector<std::uint16_t>& motion) {
     Impl& s = *impl_;
     const VkDeviceSize pixels = static_cast<VkDeviceSize>(s.args.width) * s.args.height;
-    const VkDeviceSize size = pixels * 4;  // 4 octets par pixel pour les deux formats (BGRA8 et R32F)
-    VkBuffer buffers[2]{};
-    VkDeviceMemory memories[2]{};
-    for (int i = 0; i < 2; ++i) {
+    const VkDeviceSize size = pixels * 4;  // 4 octets par pixel pour les trois formats (BGRA8, R32F, R16G16F)
+    VkBuffer buffers[3]{};
+    VkDeviceMemory memories[3]{};
+    for (int i = 0; i < 3; ++i) {
         VkBufferCreateInfo info{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
         info.size = size;
         info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -307,6 +314,7 @@ bool SharedFrameReader::ReadBack(std::size_t slot, std::vector<std::uint8_t>& co
     const auto copy = s.Device<PFN_vkCmdCopyImageToBuffer>("vkCmdCopyImageToBuffer");
     copy(commands, s.color[slot % kSlots], VK_IMAGE_LAYOUT_GENERAL, buffers[0], 1, &region);
     copy(commands, s.depth[slot % kSlots], VK_IMAGE_LAYOUT_GENERAL, buffers[1], 1, &region);
+    copy(commands, s.motion[slot % kSlots], VK_IMAGE_LAYOUT_GENERAL, buffers[2], 1, &region);
     s.Device<PFN_vkEndCommandBuffer>("vkEndCommandBuffer")(commands);
     VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit.commandBufferCount = 1;
@@ -323,9 +331,13 @@ bool SharedFrameReader::ReadBack(std::size_t slot, std::vector<std::uint8_t>& co
         s.Device<PFN_vkMapMemory>("vkMapMemory")(s.device, memories[1], 0, size, 0, &mapped);
         std::memcpy(depth.data(), mapped, static_cast<std::size_t>(size));
         s.Device<PFN_vkUnmapMemory>("vkUnmapMemory")(s.device, memories[1]);
+        motion.resize(static_cast<std::size_t>(pixels) * 2);
+        s.Device<PFN_vkMapMemory>("vkMapMemory")(s.device, memories[2], 0, size, 0, &mapped);
+        std::memcpy(motion.data(), mapped, static_cast<std::size_t>(size));
+        s.Device<PFN_vkUnmapMemory>("vkUnmapMemory")(s.device, memories[2]);
     }
     s.Device<PFN_vkFreeCommandBuffers>("vkFreeCommandBuffers")(s.device, s.pool, 1, &commands);
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < 3; ++i) {
         s.Device<PFN_vkDestroyBuffer>("vkDestroyBuffer")(s.device, buffers[i], nullptr);
         s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, memories[i], nullptr);
     }

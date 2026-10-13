@@ -3,6 +3,7 @@
 
 #include <windows.h>
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <iterator>
@@ -14,6 +15,7 @@
 #include "dlss/SharedFrames.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
+#include "graphics/CameraMath.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -181,6 +183,30 @@ void TestSharedFrames() {
           "emplacement libre seulement si l'image précédente est consommée");
 }
 
+void TestCameraMath() {
+    using namespace hca::graphics;
+    std::printf("Matrices de la caméra\n");
+    // Projection du relevé (prologue) et vue quelconque (rotation + translation).
+    const Matrix4 proj = {1.6407f, 0, 0, 0, 0, 2.9167f, 0, 0, 0, 0, 1.0002f, -3.0006f, 0, 0, 1, 0};
+    const Matrix4 view = {0.8f, 0, -0.6f, 10, 0, 1, 0, -2, 0.6f, 0, 0.8f, 30, 0, 0, 0, 1};
+    const Matrix4 world = {0, -1, 0, 5, 1, 0, 0, 7, 0, 0, 1, -3, 0, 0, 0, 1};
+    const Matrix4 viewProj = Multiply(proj, view);
+    const Matrix4 wvp = Multiply(viewProj, world);
+    Matrix4 found{};
+    bool close = ViewProjectionFromDraw(wvp.data(), world.data(), found);
+    for (int i = 0; close && i < 16; ++i) {
+        close = std::fabs(found[i] - viewProj[i]) < 1e-3f;
+    }
+    Check(close, "caméra retrouvée à partir de mWorldViewProj et mWorld");
+    Matrix4 inverse{};
+    const Matrix4 identity = Multiply(viewProj, (Inverse(viewProj, inverse), inverse));
+    Check(std::fabs(identity[0] - 1) < 1e-4f && std::fabs(identity[5] - 1) < 1e-4f && std::fabs(identity[1]) < 1e-4f &&
+              std::fabs(identity[15] - 1) < 1e-4f,
+          "inverse de la caméra");
+    const Matrix4 singular{};
+    Check(!Inverse(singular, inverse), "matrice non inversible refusée");
+}
+
 }  // namespace
 
 int main() {
@@ -195,6 +221,7 @@ int main() {
     TestMovieSkip();
     TestChannelFix();
     TestSharedFrames();
+    TestCameraMath();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

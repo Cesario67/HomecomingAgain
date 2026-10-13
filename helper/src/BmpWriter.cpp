@@ -3,6 +3,7 @@
 #include <windows.h>
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <vector>
 
@@ -67,6 +68,43 @@ bool WriteDepthBmp(const std::wstring& path, const float* depth, std::uint32_t w
         const auto v = static_cast<std::uint8_t>(255.0f * (1.0f - t));
         rgb[i * 3 + 0] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = v;
     }
+    return WriteRows(path, width, height, rgb);
+}
+
+float HalfToFloat(std::uint16_t half) noexcept {
+    const std::uint32_t sign = (half >> 15) & 1u;
+    const std::uint32_t exponent = (half >> 10) & 0x1Fu;
+    const std::uint32_t mantissa = half & 0x3FFu;
+    float value = 0.0f;
+    if (exponent == 0) {
+        value = std::ldexp(static_cast<float>(mantissa), -24);  // dénormalisé
+    } else if (exponent == 31) {
+        value = mantissa == 0 ? INFINITY : NAN;
+    } else {
+        value = std::ldexp(static_cast<float>(mantissa | 0x400u), static_cast<int>(exponent) - 25);
+    }
+    return sign != 0 ? -value : value;
+}
+
+bool WriteMotionBmp(const std::wstring& path, const std::uint16_t* halves, std::uint32_t width, std::uint32_t height,
+                    float& averageLength, float& maxLength) {
+    const std::size_t count = static_cast<std::size_t>(width) * height;
+    std::vector<std::uint8_t> rgb(count * 3);
+    double sum = 0.0;
+    maxLength = 0.0f;
+    for (std::size_t i = 0; i < count; ++i) {
+        const float x = HalfToFloat(halves[i * 2]);
+        const float y = HalfToFloat(halves[i * 2 + 1]);
+        const float length = std::sqrt(x * x + y * y);
+        if (std::isfinite(length)) {
+            sum += length;
+            maxLength = std::max(maxLength, length);
+        }
+        rgb[i * 3 + 0] = 128;  // B
+        rgb[i * 3 + 1] = static_cast<std::uint8_t>(std::clamp(128.0f + y * 8.0f, 0.0f, 255.0f));  // G
+        rgb[i * 3 + 2] = static_cast<std::uint8_t>(std::clamp(128.0f + x * 8.0f, 0.0f, 255.0f));  // R
+    }
+    averageLength = count > 0 ? static_cast<float>(sum / static_cast<double>(count)) : 0.0f;
     return WriteRows(path, width, height, rgb);
 }
 
