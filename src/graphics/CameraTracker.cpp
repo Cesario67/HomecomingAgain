@@ -1,6 +1,5 @@
 #include "graphics/CameraTracker.h"
 
-#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdint>
@@ -39,17 +38,9 @@ bool g_haveCurrent = false;
 bool g_havePrevious = false;
 Matrix4 g_current{};
 Matrix4 g_previous{};
-// Statistiques du journal (toutes les kReportFrames images) : caméra qui alterne entre plusieurs candidates ou qui change
-// d'une image du jeu à la suivante (diagnostic des vecteurs de mouvement faux, 13/10/2026).
+// Journal : nombre de changements de plan signalés, toutes les kReportFrames images.
 constexpr int kReportFrames = 600;
-Matrix4 g_lastFrame{};
-bool g_haveLastFrame = false;
 int g_framesSeen = 0;
-int g_framesWithCamera = 0;
-int g_framesSeveralCandidates = 0;
-std::size_t g_mostCandidates = 0;
-int g_framesChanged = 0;
-int g_candidateLogsLeft = 5;
 int g_framesSinceCommit = 0;  // images présentées depuis la dernière caméra retenue (CommitFrame)
 int g_cuts = 0;               // changements de plan, pour le journal
 
@@ -176,41 +167,16 @@ void OnSceneEnd() noexcept {
     }
     g_current = best->matrix;
     g_haveCurrent = true;
-    ++g_framesWithCamera;
-    if (g_haveLastFrame && !SameCamera(g_lastFrame, g_current)) {
-        ++g_framesChanged;
-    }
-    g_lastFrame = g_current;
-    g_haveLastFrame = true;
-    if (g_candidateCount > 1) {
-        ++g_framesSeveralCandidates;
-        g_mostCandidates = std::max(g_mostCandidates, g_candidateCount);
-        if (g_candidateLogsLeft > 0) {
-            --g_candidateLogsLeft;
-            for (std::size_t i = 0; i < g_candidateCount; ++i) {
-                const Matrix4& m = g_candidates[i].matrix;
-                log::Info("Caméra : candidate {} sur {}, {} dessins, regard ({:.3f} {:.3f} {:.3f}), w = {:.2f}", i + 1,
-                          g_candidateCount, g_candidates[i].votes, m[12], m[13], m[14], m[15]);
-            }
-        }
-    }
 }
 
 void OnPresent() noexcept {
     ++g_framesSinceCommit;
     if (++g_framesSeen >= kReportFrames) {
-        log::Info("Caméra : {} images, dont {} avec caméra, {} avec plusieurs candidates (au plus {}), {} où la caméra a "
-                  "changé depuis l'image précédente",
-                  g_framesSeen, g_framesWithCamera, g_framesSeveralCandidates, g_mostCandidates, g_framesChanged);
         if (g_cuts > 0) {
             log::Info("Caméra : {} changement(s) de plan signalé(s) au DLSS", g_cuts);
             g_cuts = 0;
         }
         g_framesSeen = 0;
-        g_framesWithCamera = 0;
-        g_framesSeveralCandidates = 0;
-        g_mostCandidates = 0;
-        g_framesChanged = 0;
     }
     g_decided = false;
     g_afterDepthPass = false;

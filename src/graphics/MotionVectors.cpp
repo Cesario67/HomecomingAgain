@@ -1,8 +1,6 @@
 #include "graphics/MotionVectors.h"
 
-#include <array>
 #include <cmath>
-#include <cstdint>
 
 #include "core/Log.h"
 #include "graphics/CameraTracker.h"
@@ -39,122 +37,6 @@ void DrawQuad(IDirect3DDevice9* device, UINT width, UINT height) {
                               {-1.0f - px, -1.0f + py, 0.5f, 0.0f, 1.0f},
                               {1.0f - px, -1.0f + py, 0.5f, 1.0f, 1.0f}};
     device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, quad, sizeof(quad[0]));
-}
-
-std::array<double, 4> Transform(const Matrix4& m, const std::array<double, 4>& v) noexcept {
-    std::array<double, 4> r{};
-    for (int row = 0; row < 4; ++row) {
-        r[row] = m[row * 4] * v[0] + m[row * 4 + 1] * v[1] + m[row * 4 + 2] * v[2] + m[row * 4 + 3] * v[3];
-    }
-    return r;
-}
-
-float HalfToFloat(std::uint16_t h) noexcept {
-    const std::uint32_t sign = (h >> 15) & 1u;
-    const std::uint32_t exponent = (h >> 10) & 0x1Fu;
-    const std::uint32_t mantissa = h & 0x3FFu;
-    float value = 0.0f;
-    if (exponent == 0) {
-        value = std::ldexp(static_cast<float>(mantissa), -24);
-    } else if (exponent == 31) {
-        value = mantissa == 0 ? INFINITY : NAN;
-    } else {
-        value = std::ldexp(static_cast<float>(mantissa | 0x400u), static_cast<int>(exponent) - 25);
-    }
-    return sign != 0 ? -value : value;
-}
-
-// Copie d'une texture de rendu (niveau 0) en mémoire système ; nullptr en cas d'échec.
-IDirect3DSurface9* ReadBack(IDirect3DDevice9* device, IDirect3DTexture9* texture) noexcept {
-    IDirect3DSurface9* source = nullptr;
-    if (FAILED(texture->GetSurfaceLevel(0, &source))) {
-        return nullptr;
-    }
-    D3DSURFACE_DESC desc{};
-    source->GetDesc(&desc);
-    IDirect3DSurface9* copy = nullptr;
-    if (FAILED(device->CreateOffscreenPlainSurface(desc.Width, desc.Height, desc.Format, D3DPOOL_SYSTEMMEM, &copy,
-                                                   nullptr)) ||
-        FAILED(device->GetRenderTargetData(source, copy))) {
-        SafeRelease(copy);
-    }
-    SafeRelease(source);
-    return copy;
-}
-
-// Diagnostic des vecteurs faux (13/10/2026) : toutes les 300 images, relit la profondeur et les vecteurs produits par le
-// shader en cinq points de l'écran et les compare au même calcul fait sur le processeur (en double) avec les mêmes
-// matrices et la même profondeur. Lent (copie de la carte vers la mémoire), d'où la fréquence réduite.
-void LogSampledMotion(IDirect3DDevice9* device, IDirect3DTexture9* depth, IDirect3DTexture9* motion,
-                      const Matrix4& previous, const Matrix4& inverseCurrent, const float* depthDecode, UINT width,
-                      UINT height) noexcept {
-    static int counter = 0;
-    if (++counter % 300 != 0) {
-        return;
-    }
-    IDirect3DSurface9* depthCopy = ReadBack(device, depth);
-    IDirect3DSurface9* motionCopy = ReadBack(device, motion);
-    D3DLOCKED_RECT depthRect{};
-    D3DLOCKED_RECT motionRect{};
-    if (depthCopy != nullptr && motionCopy != nullptr &&
-        SUCCEEDED(depthCopy->LockRect(&depthRect, nullptr, D3DLOCK_READONLY))) {
-        if (SUCCEEDED(motionCopy->LockRect(&motionRect, nullptr, D3DLOCK_READONLY))) {
-            // Position de la caméra : le point dont l'image a x = y = w = 0, soit inverse(caméra) x (0, 0, 1, 0) une fois
-            // ramené en coordonnées homogènes.
-            Matrix4 inversePrevious{};
-            if (Inverse(previous, inversePrevious)) {
-                std::array<double, 4> now = Transform(inverseCurrent, {0.0, 0.0, 1.0, 0.0});
-                std::array<double, 4> before = Transform(inversePrevious, {0.0, 0.0, 1.0, 0.0});
-                log::Info("Vecteurs : caméra en ({:.2f} {:.2f} {:.2f}), avant ({:.2f} {:.2f} {:.2f}), déplacement {:.2f}",
-                          now[0] / now[3], now[1] / now[3], now[2] / now[3], before[0] / before[3],
-                          before[1] / before[3], before[2] / before[3],
-                          std::sqrt(std::pow(now[0] / now[3] - before[0] / before[3], 2) +
-                                    std::pow(now[1] / now[3] - before[1] / before[3], 2) +
-                                    std::pow(now[2] / now[3] - before[2] / before[3], 2)));
-            }
-            // Échelle de la projection (champ de vision) des deux caméras : longueur des lignes 0 et 1 sur x, y, z.
-            const auto rowLength = [](const Matrix4& m, int row) {
-                return std::sqrt(m[row * 4] * m[row * 4] + m[row * 4 + 1] * m[row * 4 + 1] +
-                                 m[row * 4 + 2] * m[row * 4 + 2]);
-            };
-            Matrix4 current{};
-            if (Inverse(inverseCurrent, current)) {
-                log::Info("Vecteurs : échelle de projection {:.4f} x {:.4f}, avant {:.4f} x {:.4f}", rowLength(current, 0),
-                          rowLength(current, 1), rowLength(previous, 0), rowLength(previous, 1));
-            }
-            constexpr double kPoints[5][2] = {{0.5, 0.5}, {0.1, 0.1}, {0.9, 0.1}, {0.1, 0.9}, {0.9, 0.9}};
-            for (const auto& point : kPoints) {
-                const UINT x = static_cast<UINT>(point[0] * width);
-                const UINT y = static_cast<UINT>(point[1] * height);
-                const float z = reinterpret_cast<const float*>(static_cast<const std::uint8_t*>(depthRect.pBits) +
-                                                               y * depthRect.Pitch)[x];
-                const std::uint16_t* m = reinterpret_cast<const std::uint16_t*>(
-                                             static_cast<const std::uint8_t*>(motionRect.pBits) + y * motionRect.Pitch) +
-                                         x * 2;
-                const double u = (x + 0.5) / width;
-                const double v = (y + 0.5) / height;
-                const double decoded = std::fmin((z - depthDecode[1]) / depthDecode[0], depthDecode[2]);
-                std::array<double, 4> world = Transform(inverseCurrent, {u * 2.0 - 1.0, 1.0 - v * 2.0, decoded, 1.0});
-                const double w = world[3];
-                for (double& c : world) {
-                    c /= w;
-                }
-                const std::array<double, 4> before = Transform(previous, world);
-                const double cx = ((before[0] / before[3]) * 0.5 + 0.5 - u) * width;
-                const double cy = (0.5 - (before[1] / before[3]) * 0.5 - v) * height;
-                log::Info("Vecteurs ({:.1f}, {:.1f}) : profondeur {:.6f}, monde ({:.1f} {:.1f} {:.1f}), shader ({:.2f}, "
-                          "{:.2f}) px, processeur ({:.2f}, {:.2f}) px",
-                          point[0], point[1], z, world[0], world[1], world[2], HalfToFloat(m[0]), HalfToFloat(m[1]), cx,
-                          cy);
-            }
-            motionCopy->UnlockRect();
-        }
-        depthCopy->UnlockRect();
-    } else {
-        log::Warn("Vecteurs : relecture impossible");
-    }
-    SafeRelease(depthCopy);
-    SafeRelease(motionCopy);
 }
 
 }  // namespace
@@ -289,7 +171,6 @@ IDirect3DTexture9* MotionVectors::Render(IDirect3DDevice9* device, IDirect3DText
     device->SetViewport(&savedViewport);
     SafeRelease(savedTarget);
     SafeRelease(savedDepth);
-    LogSampledMotion(device, depth, target_, previous, inverseCurrent, depthDecode, desc.Width, desc.Height);
     return target_;
 }
 
