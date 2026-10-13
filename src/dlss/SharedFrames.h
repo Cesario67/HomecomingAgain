@@ -31,8 +31,8 @@ constexpr bool SlotIsFree(std::uint64_t value, std::uint64_t consumed, std::uint
 }
 
 // À la fin de la scène 3D, avec les textures de la scène et de la profondeur du moteur et celle des vecteurs de
-// mouvement (non possédées).
-void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
+// mouvement (non possédées). Renvoie true si l'image a été transmise (false si elle a été sautée).
+bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
                 IDirect3DBaseTexture9* motion) noexcept;
 
 }  // namespace hca::dlss

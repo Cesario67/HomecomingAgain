@@ -13,4 +13,8 @@ float MeanWarpError(const std::uint8_t* current, const std::uint8_t* previous, c
                     std::uint32_t width, std::uint32_t height, bool useMotion, float signX, float signY,
                     std::uint32_t step) noexcept;
 
+// Longueur moyenne des vecteurs de mouvement (pixels), échantillonnée tous les `step` pixels. Fonction pure (testée).
+float MeanMotionLength(const std::uint16_t* motion, std::uint32_t width, std::uint32_t height,
+                       std::uint32_t step) noexcept;
+
 }  // namespace hca::dlss

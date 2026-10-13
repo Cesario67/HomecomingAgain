@@ -1,4 +1,5 @@
 // Tests des fonctions pures du programme DLSS. Code de sortie : nombre d'échecs.
+#include <cmath>
 #include <cstdio>
 
 #include "Arguments.h"
@@ -67,6 +68,9 @@ int main() {
         const float right = MeanWarpError(current.data(), previous.data(), motion.data(), w, h, true, 1, 1, 1);
         const float wrong = MeanWarpError(current.data(), previous.data(), motion.data(), w, h, true, -1, 1, 1);
         Check(right == 0.0f && none > 10.0f && wrong > 10.0f, "contrôle des vecteurs : bon signe à écart nul");
-    }    std::printf(g_failures == 0 ? "Tous les tests passent.\n" : "%d échec(s).\n", g_failures);
+        Check(std::fabs(hca::dlss::MeanMotionLength(motion.data(), w, h, 1) - 5.0f) < 1e-4f,
+              "longueur moyenne des vecteurs");
+    }
+    std::printf(g_failures == 0 ? "Tous les tests passent.\n" : "%d échec(s).\n", g_failures);
     return g_failures;
 }

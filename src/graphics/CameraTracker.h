@@ -30,7 +30,12 @@ bool SameCamera(const Matrix4& a, const Matrix4& b) noexcept;
 // Fin de la scène 3D : choisit la caméra de l'image (appelé par Current).
 void OnSceneEnd() noexcept;
 
-// Caméra de l'image en cours et de la précédente ; false tant que les deux ne sont pas connues.
+// Caméra de l'image en cours et de la précédente retenue par CommitFrame ; false tant que les deux ne sont pas connues.
 bool Current(Matrix4& current, Matrix4& previous) noexcept;
+
+// La caméra de l'image en cours devient la « précédente ». Appelé quand l'image a été transmise au processus DLSS (ou
+// qu'elle n'avait pas de vecteurs) : quand une image est sautée, les vecteurs de la suivante doivent se rapporter à la
+// dernière image transmise. Constaté le 13/10/2026 : 12 à 21 images sautées au début du jeu.
+void CommitFrame() noexcept;
 
 }  // namespace hca::graphics::camera

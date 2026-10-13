@@ -51,7 +51,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
     std::uint32_t received = 0;
     std::uint32_t total = 0;
     bool saved = false;
-    bool motionChecked = false;
+    std::uint32_t nextMotionCheck = 180;
     ULONGLONG nextReport = GetTickCount64() + 5000;
     while (parent == nullptr || WaitForSingleObject(parent, 0) == WAIT_TIMEOUT) {
         const std::uint64_t next = reader.WaitNext(value, 100);
@@ -60,9 +60,11 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             total += static_cast<std::uint32_t>(next - value);
             const bool consecutive = next == value + 1;
             value = next;
-            // Contrôle des vecteurs de mouvement, sur deux images consécutives (la précédente est encore dans son
-            // emplacement : les emplacements sont rendus au mod avec une image de retard, voir plus bas).
-            if (!motionChecked && total >= 180 && consecutive) {
+            // Contrôle des vecteurs de mouvement toutes les 300 images (environ 5 s), sur deux images consécutives (la
+            // précédente est encore dans son emplacement : les emplacements sont rendus au mod avec une image de
+            // retard, voir plus bas). Les vecteurs de l'image v se rapportent à l'image v - 1 transmise, même quand le
+            // mod a sauté des images du jeu entre les deux.
+            if (total >= nextMotionCheck && consecutive) {
                 std::vector<std::uint8_t> previousColor;
                 std::vector<std::uint8_t> color;
                 std::vector<float> depth;
@@ -70,7 +72,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                 if (reader.ReadBack(static_cast<std::size_t>((value - 1) % hca::dlss::kSlots), previousColor, depth,
                                     motion) &&
                     reader.ReadBack(static_cast<std::size_t>(value % hca::dlss::kSlots), color, depth, motion)) {
-                    motionChecked = true;
+                    nextMotionCheck = total + 300;
                     using hca::dlss::MeanWarpError;
                     const std::uint32_t w = parsed->width;
                     const std::uint32_t h = parsed->height;
@@ -79,9 +81,11 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                     const float np = MeanWarpError(color.data(), previousColor.data(), motion.data(), w, h, true, -1, 1, 4);
                     const float pn = MeanWarpError(color.data(), previousColor.data(), motion.data(), w, h, true, 1, -1, 4);
                     const float nn = MeanWarpError(color.data(), previousColor.data(), motion.data(), w, h, true, -1, -1, 4);
-                    Log(std::format("contrôle des vecteurs (écart moyen de luminosité avec l'image précédente) : sans "
-                                    "vecteurs {:.2f}, avec (+x +y) {:.2f}, (-x +y) {:.2f}, (+x -y) {:.2f}, (-x -y) {:.2f}",
-                                    none, pp, np, pn, nn));
+                    const float length = hca::dlss::MeanMotionLength(motion.data(), w, h, 4);
+                    Log(std::format("contrôle des vecteurs (image {}, longueur moyenne {:.2f} px ; écart moyen de "
+                                    "luminosité avec l'image précédente) : sans vecteurs {:.2f}, avec (+x +y) {:.2f}, "
+                                    "(-x +y) {:.2f}, (+x -y) {:.2f}, (-x -y) {:.2f}",
+                                    value, length, none, pp, np, pn, nn));
                 }
             }
             // Image de contrôle après 2 s d'images reçues (environ 120), lue dans l'emplacement de la dernière image.

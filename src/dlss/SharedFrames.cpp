@@ -439,11 +439,11 @@ void LaunchHelper(State& s) {
 
 }  // namespace
 
-void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth, IDirect3DBaseTexture9* motion) noexcept {
+bool ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth, IDirect3DBaseTexture9* motion) noexcept {
     State& s = g_state;
     // Les vecteurs de mouvement manquent à la première image (pas encore de caméra précédente) : image ignorée.
     if (!GetConfig().dlssShareFrames || sceneColor == nullptr || depth == nullptr || motion == nullptr) {
-        return;
+        return false;
     }
     if (!s.attempted) {
         s.attempted = true;
@@ -454,7 +454,7 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
         }
     }
     if (!s.ready) {
-        return;
+        return false;
     }
     LARGE_INTEGER start{};
     LARGE_INTEGER end{};
@@ -466,7 +466,7 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
     if (s.vk.getFenceStatus(s.device, s.fences[slot]) != VK_SUCCESS) {
         ++s.skippedCopy;  // copie précédente de cet emplacement pas encore terminée : on ne bloque pas le jeu
         Report(s);
-        return;
+        return false;
     }
     // Synchronisation en retour : l'emplacement contient l'image value - kSharedSlots, que le processus DLSS doit avoir
     // fini de lire. Vérification sans attente : sinon l'image est sautée (le jeu n'attend jamais le processus DLSS).
@@ -475,7 +475,7 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
     if (!SlotIsFree(value, consumed, kSharedSlots)) {
         ++s.skippedConsumer;
         Report(s);
-        return;
+        return false;
     }
     VkImage game[3]{};
     VkImageCreateInfo unused{};
@@ -483,7 +483,7 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
         !GameImage(motion, game[2], unused)) {
         ++s.skippedCopy;
         Report(s);
-        return;
+        return false;
     }
     ID3D9VkInteropDevice* interop = Interop();
     // Le travail Direct3D 9 en attente doit être soumis avant le nôtre (documentation de l'interface DXVK).
@@ -515,7 +515,7 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
     if (result != VK_SUCCESS) {
         log::Error("DLSS : soumission de la copie refusée ({}), partage arrêté", static_cast<int>(result));
         s.ready = false;
-        return;
+        return false;
     }
     s.producedValue = value;
     ++s.shared;
@@ -523,6 +523,7 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth,
     QueryPerformanceFrequency(&frequency);
     s.cpuMs += static_cast<double>(end.QuadPart - start.QuadPart) * 1000.0 / static_cast<double>(frequency.QuadPart);
     Report(s);
+    return true;
 }
 
 }  // namespace hca::dlss

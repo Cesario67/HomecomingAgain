@@ -111,7 +111,12 @@ HRESULT STDMETHODCALLTYPE HookSetRenderTarget(IDirect3DDevice9* device, DWORD in
         if (GetSsao().ConsumeSceneReady() && GetConfig().dlssShareFrames) {
             // Fin de la scène 3D : vecteurs de mouvement, puis partage des trois images avec le processus DLSS.
             IDirect3DTexture9* motion = GetMotionVectors().Render(device, GetSsao().DepthTexture());
-            dlss::ShareFrame(GetSsao().SceneTexture(), GetSsao().DepthTexture(), motion);
+            const bool shared = dlss::ShareFrame(GetSsao().SceneTexture(), GetSsao().DepthTexture(), motion);
+            // Image sautée : la caméra précédente reste celle de la dernière image transmise (vecteurs cohérents pour
+            // le DLSS). Sans vecteurs (première image), la caméra est retenue pour amorcer.
+            if (shared || motion == nullptr) {
+                camera::CommitFrame();
+            }
         }
         shadows::OnSetRenderTarget(index, surface);
         camera::OnSetRenderTarget(index, surface, GetSsao().DepthSurface());

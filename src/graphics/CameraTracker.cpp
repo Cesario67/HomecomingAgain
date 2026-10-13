@@ -1,5 +1,6 @@
 #include "graphics/CameraTracker.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <cstdint>
@@ -38,7 +39,17 @@ bool g_haveCurrent = false;
 bool g_havePrevious = false;
 Matrix4 g_current{};
 Matrix4 g_previous{};
-int g_logsLeft = 6;
+// Statistiques du journal (toutes les kReportFrames images) : caméra qui alterne entre plusieurs candidates ou qui change
+// d'une image du jeu à la suivante (diagnostic des vecteurs de mouvement faux, 13/10/2026).
+constexpr int kReportFrames = 600;
+Matrix4 g_lastFrame{};
+bool g_haveLastFrame = false;
+int g_framesSeen = 0;
+int g_framesWithCamera = 0;
+int g_framesSeveralCandidates = 0;
+std::size_t g_mostCandidates = 0;
+int g_framesChanged = 0;
+int g_candidateLogsLeft = 5;
 
 bool HasCameraConstants(const DWORD* bytecode) {
     bool worldViewProj = false;
@@ -163,25 +174,49 @@ void OnSceneEnd() noexcept {
     }
     g_current = best->matrix;
     g_haveCurrent = true;
-    if (g_logsLeft > 0) {
-        --g_logsLeft;
-        const Matrix4& m = best->matrix;
-        log::Info("Caméra : {} dessins sur {} d'accord ({} caméras proposées) ; lignes [{:.4f} {:.4f} {:.4f} {:.3f}] "
-                  "[{:.4f} {:.4f} {:.4f} {:.3f}] [{:.4f} {:.4f} {:.4f} {:.3f}] [{:.4f} {:.4f} {:.4f} {:.3f}]",
-                  best->votes, g_drawsSeen, g_candidateCount, m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8],
-                  m[9], m[10], m[11], m[12], m[13], m[14], m[15]);
+    ++g_framesWithCamera;
+    if (g_haveLastFrame && !SameCamera(g_lastFrame, g_current)) {
+        ++g_framesChanged;
+    }
+    g_lastFrame = g_current;
+    g_haveLastFrame = true;
+    if (g_candidateCount > 1) {
+        ++g_framesSeveralCandidates;
+        g_mostCandidates = std::max(g_mostCandidates, g_candidateCount);
+        if (g_candidateLogsLeft > 0) {
+            --g_candidateLogsLeft;
+            for (std::size_t i = 0; i < g_candidateCount; ++i) {
+                const Matrix4& m = g_candidates[i].matrix;
+                log::Info("Caméra : candidate {} sur {}, {} dessins, regard ({:.3f} {:.3f} {:.3f}), w = {:.2f}", i + 1,
+                          g_candidateCount, g_candidates[i].votes, m[12], m[13], m[14], m[15]);
+            }
+        }
     }
 }
 
 void OnPresent() noexcept {
-    if (g_decided && g_haveCurrent) {
-        g_previous = g_current;
-        g_havePrevious = true;
+    if (++g_framesSeen >= kReportFrames) {
+        log::Info("Caméra : {} images, dont {} avec caméra, {} avec plusieurs candidates (au plus {}), {} où la caméra a "
+                  "changé depuis l'image précédente",
+                  g_framesSeen, g_framesWithCamera, g_framesSeveralCandidates, g_mostCandidates, g_framesChanged);
+        g_framesSeen = 0;
+        g_framesWithCamera = 0;
+        g_framesSeveralCandidates = 0;
+        g_mostCandidates = 0;
+        g_framesChanged = 0;
     }
     g_decided = false;
     g_afterDepthPass = false;
     g_candidateCount = 0;
     g_drawsSeen = 0;
+}
+
+void CommitFrame() noexcept {
+    OnSceneEnd();
+    if (g_haveCurrent && g_candidateCount > 0) {
+        g_previous = g_current;
+        g_havePrevious = true;
+    }
 }
 
 bool Current(Matrix4& current, Matrix4& previous) noexcept {

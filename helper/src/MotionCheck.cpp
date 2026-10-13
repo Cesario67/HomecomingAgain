@@ -48,4 +48,25 @@ float MeanWarpError(const std::uint8_t* current, const std::uint8_t* previous, c
     return count > 0 ? static_cast<float>(sum / static_cast<double>(count)) : 0.0f;
 }
 
+float MeanMotionLength(const std::uint16_t* motion, std::uint32_t width, std::uint32_t height,
+                       std::uint32_t step) noexcept {
+    if (motion == nullptr || step == 0) {
+        return 0.0f;
+    }
+    double sum = 0.0;
+    std::uint64_t count = 0;
+    for (std::uint32_t y = 0; y < height; y += step) {
+        for (std::uint32_t x = 0; x < width; x += step) {
+            const std::size_t i = static_cast<std::size_t>(y) * width + x;
+            const float dx = HalfToFloat(motion[i * 2]);
+            const float dy = HalfToFloat(motion[i * 2 + 1]);
+            if (std::isfinite(dx) && std::isfinite(dy)) {
+                sum += std::sqrt(dx * dx + dy * dy);
+                ++count;
+            }
+        }
+    }
+    return count > 0 ? static_cast<float>(sum / static_cast<double>(count)) : 0.0f;
+}
+
 }  // namespace hca::dlss
