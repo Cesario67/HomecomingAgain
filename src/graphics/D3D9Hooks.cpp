@@ -20,6 +20,7 @@
 #include "graphics/BorderlessWindow.h"
 #include "graphics/CameraTracker.h"
 #include "graphics/Jitter.h"
+#include "input/ButtonIcons.h"
 #include "input/MenuBridge.h"
 #include "graphics/D3D9On12.h"
 #include "graphics/FrameCapture.h"
@@ -81,6 +82,7 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
     camera::OnPresent();
     jitter::OnPresent();
     input::OnPresent();
+    input::RefreshButtonIcons();
     if (GetConfig().backBufferDump) {
         InternalDrawScope internal;
         dump::OnPresent(device);

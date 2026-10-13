@@ -319,6 +319,10 @@ void TestButtonIcons() {
     Check(IconTypeFor(0, true) == 1 && IconTypeFor(0, false) == 0, "icônes auto : Xbox 360 avec manette, PC sans");
     Check(IconTypeFor(1, true) == 0 && IconTypeFor(2, false) == 1 && IconTypeFor(3, true) == 2 && IconTypeFor(9, true) == 0,
           "icônes forcées : PC, Xbox 360, PS3, valeur inconnue = PC");
+    using hca::input::FaceIconName;
+    Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
+              std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
+          "noms des icônes A, B, X, Y selon le type");
 }
 
 void TestDepthEncoding() {

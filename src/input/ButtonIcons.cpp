@@ -28,7 +28,45 @@ int ControllerType() {
     return IconTypeFor(GetConfig().buttonIcons, PadConnected());
 }
 
+// Icônes des boutons 0 à 3 de la manette (désassemblage du 13/10/2026) : la fonction qui traduit un bouton en nom
+// d'icône renvoie l'adresse d'un nom écrit en dur, par « mov eax, adresse » (B8 + adresse) en 0x10986469,
+// 0x10986488, 0x109864A7 et 0x109864C6 ("shv_buttonpccontrol1" à "4" : chiffres entourés, constaté). Ces adresses
+// sont remplacées par celles de nos noms, dont le contenu suit le type d'icônes (RefreshButtonIcons). Les icônes Xbox
+// 360 et PS3 existent dans les données du jeu (Engine\assets_pc_b.xml).
+constexpr std::uintptr_t kFaceIconInstructions[4] = {0x10986469, 0x10986488, 0x109864A7, 0x109864C6};
+constexpr std::uint32_t kOriginalFaceNames[4] = {0x11078458, 0x11078430, 0x11078408, 0x110783E0};
+constexpr std::size_t kNameCapacity = 40;
+char g_faceNames[4][kNameCapacity]{};
+bool g_facePatched = false;
+int g_faceType = -1;
+
 }  // namespace
+
+const char* FaceIconName(int type, int button) noexcept {
+    static constexpr const char* kNames[3][4] = {
+        {"shv_buttonpccontrol1", "shv_buttonpccontrol2", "shv_buttonpccontrol3", "shv_buttonpccontrol4"},
+        {"shv_buttonxbox360_a_32", "shv_buttonxbox360_b_32", "shv_buttonxbox360_x_32", "shv_buttonxbox360_y_32"},
+        {"shv_buttonps3_x_32", "shv_buttonps3_circle_32", "shv_buttonps3_square_32", "shv_buttonps3_triangle_32"},
+    };
+    if (type < 0 || type > 2 || button < 0 || button > 3) {
+        return kNames[0][0];
+    }
+    return kNames[type][button];
+}
+
+void RefreshButtonIcons() noexcept {
+    if (!g_facePatched) {
+        return;
+    }
+    const int type = IconTypeFor(GetConfig().buttonIcons, PadConnected());
+    if (type == g_faceType) {
+        return;
+    }
+    g_faceType = type;
+    for (int i = 0; i < 4; ++i) {
+        strcpy_s(g_faceNames[i], FaceIconName(type, i));
+    }
+}
 
 int IconTypeFor(int setting, bool padConnected) noexcept {
     switch (setting) {
@@ -65,6 +103,26 @@ void InstallButtonIcons(HMODULE engine) {
         static_cast<std::int32_t>(target - static_cast<std::intptr_t>(kControllerTypeFunction + sizeof(jump)));
     std::memcpy(jump + 1, &offset, sizeof(offset));
     const bool ok = hooking::WriteCode(function, jump, sizeof(jump));
+
+    // Boutons 0 à 3 : chaque instruction est vérifiée (B8 + adresse du nom d'origine) avant d'être redirigée.
+    bool faceOk = true;
+    for (int i = 0; i < 4; ++i) {
+        std::uint8_t expected[5] = {0xB8};
+        std::memcpy(expected + 1, &kOriginalFaceNames[i], 4);
+        faceOk = faceOk && std::memcmp(reinterpret_cast<const void*>(kFaceIconInstructions[i]), expected, 5) == 0;
+    }
+    if (faceOk) {
+        for (int i = 0; i < 4; ++i) {
+            strcpy_s(g_faceNames[i], FaceIconName(0, i));
+            std::uint8_t instruction[5] = {0xB8};
+            const auto name = static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(g_faceNames[i]));
+            std::memcpy(instruction + 1, &name, 4);
+            faceOk = faceOk && hooking::WriteCode(reinterpret_cast<void*>(kFaceIconInstructions[i]), instruction, 5);
+        }
+        g_facePatched = faceOk;
+        RefreshButtonIcons();
+    }
+    log::Info("Icônes de boutons : boutons A, B, X, Y {}", faceOk ? "redirigés" : "non modifiés (code différent)");
     log::Info("Icônes de boutons : {} ({})", setting == kSettingAuto ? "auto, Xbox 360 si une manette est branchée"
                                              : setting == kSettingXbox ? "Xbox 360"
                                                                        : "PS3",
