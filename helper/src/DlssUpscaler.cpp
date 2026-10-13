@@ -146,7 +146,12 @@ bool DlssUpscaler::Impl::SubmitAndWait(std::uint64_t processedValue) const {
     // Compteur « traitées » passé à la valeur de l'image par la carte graphique, dès la fin du DLSS : le mod attend ce
     // signal (sur la carte) avant de recopier la sortie dans la scène du jeu.
     VkTimelineSemaphoreSubmitInfo timeline{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
+    // Valeur déjà atteinte (le chien de garde du mod l'a passée lui-même) : un nouveau signal serait invalide.
+    std::uint64_t current = 0;
     if (processedValue != 0 && vk.processed != VK_NULL_HANDLE) {
+        Device<PFN_vkGetSemaphoreCounterValue>("vkGetSemaphoreCounterValue")(vk.device, vk.processed, &current);
+    }
+    if (processedValue != 0 && vk.processed != VK_NULL_HANDLE && current < processedValue) {
         timeline.signalSemaphoreValueCount = 1;
         timeline.pSignalSemaphoreValues = &processedValue;
         submit.pNext = &timeline;

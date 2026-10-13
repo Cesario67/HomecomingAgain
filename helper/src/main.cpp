@@ -127,7 +127,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                 }
             }
             // Image de contrôle après 2 s d'images reçues (environ 120), lue dans l'emplacement de la dernière image.
-            if (!saved && total >= 120) {
+            // Relectures lentes (images sur disque) : pas pendant le retour de l'image, la carte du jeu attend le DLSS.
+            if (parsed->processed == 0 && !saved && total >= 120) {
                 saved = true;
                 std::vector<std::uint8_t> color;
                 std::vector<float> depth;
@@ -179,7 +180,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                 QueryPerformanceFrequency(&frequency);
                 evaluateMs += static_cast<double>(end.QuadPart - start.QuadPart) * 1000.0 /
                               static_cast<double>(frequency.QuadPart);
-                if (!outputSaved && total >= 300 && evaluated > 0) {
+                if (parsed->processed == 0 && !outputSaved && total >= 300 && evaluated > 0) {
                     outputSaved = true;
                     std::vector<std::uint8_t> output;
                     std::vector<std::uint8_t> input;

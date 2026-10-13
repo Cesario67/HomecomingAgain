@@ -360,7 +360,7 @@ VkImageMemoryBarrier Barrier(VkImage image, VkImageLayout from, VkImageLayout to
                              VkAccessFlags dstAccess);
 
 // Chien de garde du retour : si le processus DLSS ne passe pas le compteur « traitées » à la valeur attendue par la
-// carte graphique dans les 300 ms (processus planté ou figé), le mod le fait lui-même depuis le processeur pour débloquer
+// carte graphique dans les 500 ms (processus planté ou figé), le mod le fait lui-même depuis le processeur pour débloquer
 // la carte, et coupe le retour : le jeu continue avec son image d'origine.
 DWORD WINAPI WatchdogThread(void* parameter) {
     State& s = *static_cast<State*>(parameter);
@@ -377,7 +377,7 @@ DWORD WINAPI WatchdogThread(void* parameter) {
         const ULONGLONG now = GetTickCount64();
         if (stuckSince == 0) {
             stuckSince = now;
-        } else if (now - stuckSince > 300) {
+        } else if (now - stuckSince > 500) {
             s.returnEnabled = false;
             VkSemaphoreSignalInfo signal{VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO};
             signal.semaphore = s.processed.semaphore;
