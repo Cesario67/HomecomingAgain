@@ -1,62 +1,56 @@
 #include "input/TextureNameProbe.h"
 
+#include <windows.h>
+
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <mutex>
 #include <set>
 #include <string>
 
 #include "core/Config.h"
-#include "core/Hooking.h"
 #include "core/Log.h"
 
 namespace hca::input {
 
 namespace {
 
-constexpr std::uintptr_t kExpectedEngineBase = 0x10000000;
-constexpr std::uintptr_t kRelay = 0x1004A890;          // jmp 10AED2B0
-constexpr std::uintptr_t kLoadByName = 0x10AED2B0;     // chargement d'une texture par son nom
-constexpr std::size_t kMaxLogged = 80;
+constexpr std::size_t kMaxLogged = 120;
+// Les deux appelants qui affichent une icône d'action (0x109076B0, 0x1092E4D0) sont notés quel que soit le nom.
+constexpr std::uintptr_t kPromptCallers[] = {0x1090777D, 0x1092E582};
 
-std::uintptr_t g_original = kLoadByName;
 std::mutex g_lock;
 std::set<std::string> g_seen;
+int g_lastMode = -2;
+int g_lastFlags = -2;
 
-// Lecture protégée : l'argument n'est pas garanti valide (fonction vue seulement au désassemblage).
-bool CopyName(const char* name, char (&buffer)[96]) noexcept {
+bool ReadTexture(const void* item, std::uintptr_t& handle, std::uintptr_t& resource) noexcept {
     __try {
-        std::size_t i = 0;
-        for (; i + 1 < sizeof(buffer) && name[i] != '\0'; ++i) {
-            buffer[i] = name[i];
-        }
-        buffer[i] = '\0';
-        return i > 0;
+        handle = *reinterpret_cast<const std::uintptr_t*>(static_cast<const std::uint8_t*>(item) + 0x80);
+        resource = handle != 0 ? *reinterpret_cast<const std::uintptr_t*>(handle + 0x58) : 0;
+        return true;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         return false;
     }
 }
 
-void __cdecl OnTextureRequested(const char* name) {
-    char buffer[96]{};
-    if (name == nullptr || !CopyName(name, buffer) || !IsButtonIconName(buffer)) {
-        return;
-    }
-    std::lock_guard<std::mutex> lock(g_lock);
-    if (g_seen.size() < kMaxLogged && g_seen.insert(buffer).second) {
-        log::Info("Icônes de boutons : texture demandée « {} »", buffer);
-    }
-}
-
-// Relais : appelle OnTextureRequested avec le 3e argument puis saute à l'original (pile intacte).
-__declspec(naked) void TextureRelay() {
-    __asm {
-        pushad
-        push dword ptr [esp + 44]   // 32 (pushad) + 4 (retour) + 8 : 3e argument
-        call OnTextureRequested
-        add esp, 4
-        popad
-        jmp dword ptr [g_original]
+// Mode d'entrée lu par 0x109076B0, 0x10907540 et 0x10986360 avant de choisir une icône : octet +0x178 de
+// [[[0x111D2460]+0x38]+8] (0 : icônes clavier), puis bit 0 du mot +0x220 de l'objet renvoyé par 0x104F7170
+// ([0x11597320] si son mot +0x14 a le bit 0x8000 ; 1 : icône d'action PC). -1 si illisible ou absent.
+void ReadInputMode(int& mode, int& flags) noexcept {
+    mode = -1;
+    flags = -1;
+    __try {
+        const auto root = *reinterpret_cast<const std::uintptr_t*>(0x111D2460);
+        const auto inner = *reinterpret_cast<const std::uintptr_t*>(root + 0x38);
+        const auto state = *reinterpret_cast<const std::uintptr_t*>(inner + 8);
+        mode = *reinterpret_cast<const std::uint8_t*>(state + 0x178);
+        const auto object = *reinterpret_cast<const std::uintptr_t*>(0x11597320);
+        if (object != 0 && (*reinterpret_cast<const std::uint32_t*>(object + 0x14) & 0x8000) != 0) {
+            flags = static_cast<int>(*reinterpret_cast<const std::uint32_t*>(object + 0x220));
+        }
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
     }
 }
 
@@ -70,25 +64,51 @@ bool IsButtonIconName(const char* name) noexcept {
            std::strncmp(name, "pc_", 3) == 0;
 }
 
-void InstallTextureNameProbe(HMODULE engine) {
-    if (!GetConfig().iconLog || engine == nullptr ||
-        reinterpret_cast<std::uintptr_t>(engine) != kExpectedEngineBase) {
+void OnTextureApplied(void* item, const char* requested, const char* applied, std::uintptr_t caller) noexcept {
+    if (!GetConfig().iconLog || requested == nullptr) {
         return;
     }
-    // Le relais doit être exactement « jmp 10AED2B0 ».
-    std::uint8_t expected[5] = {0xE9};
-    const auto rel = static_cast<std::int32_t>(kLoadByName - (kRelay + 5));
-    std::memcpy(expected + 1, &rel, 4);
-    if (std::memcmp(reinterpret_cast<const void*>(kRelay), expected, 5) != 0) {
-        log::Warn("Icônes de boutons : relais de chargement des textures différent, diagnostic non installé");
+    bool promptCaller = false;
+    for (const std::uintptr_t prompt : kPromptCallers) {
+        promptCaller = promptCaller || caller == prompt;
+    }
+    if (!IsButtonIconName(requested) && !promptCaller) {
         return;
     }
-    std::uint8_t jump[5] = {0xE9};
-    const auto target = static_cast<std::int32_t>(reinterpret_cast<std::intptr_t>(&TextureRelay) -
-                                                  static_cast<std::intptr_t>(kRelay + 5));
-    std::memcpy(jump + 1, &target, 4);
-    const bool ok = hooking::WriteCode(reinterpret_cast<void*>(kRelay), jump, 5);
-    log::Info("Icônes de boutons : journal des textures d'icônes demandées {}", ok ? "actif" : "impossible");
+    std::uintptr_t handle = 0;
+    std::uintptr_t resource = 0;
+    const bool read = ReadTexture(item, handle, resource);
+    int mode = 0;
+    int flags = 0;
+    ReadInputMode(mode, flags);
+    char key[200]{};
+    std::snprintf(key, sizeof(key), "%s|%s|%08zX|%d|%d|%d|%d", requested, applied != nullptr ? applied : "",
+                  static_cast<std::size_t>(caller), handle != 0, resource != 0, mode, flags);
+    try {
+        std::lock_guard<std::mutex> lock(g_lock);
+        if (g_seen.size() < kMaxLogged && g_seen.insert(key).second) {
+            log::Info("Icônes de boutons : « {} »{}{} demandée par {:08X}, poignée {:08X}, texture {:08X}{}, mode {}, "
+                      "indicateurs {:X}",
+                      requested, applied != nullptr ? " remplacée par " : "", applied != nullptr ? applied : "", caller,
+                      handle, resource, read ? "" : " (illisible)", mode, flags);
+        }
+    } catch (...) {
+    }
+}
+
+void WatchInputMode() noexcept {
+    if (!GetConfig().iconLog) {
+        return;
+    }
+    int mode = 0;
+    int flags = 0;
+    ReadInputMode(mode, flags);
+    if (mode == g_lastMode && flags == g_lastFlags) {
+        return;
+    }
+    g_lastMode = mode;
+    g_lastFlags = flags;
+    log::Info("Icônes de boutons : mode d'entrée {}, indicateurs {:X}", mode, flags);
 }
 
 }  // namespace hca::input

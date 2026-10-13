@@ -327,6 +327,16 @@ void TestButtonIcons() {
     Check(hca::input::IsButtonIconName("shv_buttonpccontrol1_64") && hca::input::IsButtonIconName("pc_1flash") &&
               !hca::input::IsButtonIconName("shv_hud_arrow1") && !hca::input::IsButtonIconName(nullptr),
           "noms d'icônes de boutons reconnus");
+    using hca::input::ReplacementIconName;
+    const auto same = [](const char* a, const char* b) { return a != nullptr && std::string(a) == b; };
+    Check(same(ReplacementIconName("shv_buttonpccontrol1", 1), "shv_buttonxbox360_a_32") &&
+              same(ReplacementIconName("shv_buttonpccontrol4_64", 2), "shv_buttonps3_triangle_32") &&
+              same(ReplacementIconName("pc_3flash", 1), "shv_x360xflash"),
+          "texture PC remplacée par l'icône Xbox 360 ou PS3");
+    Check(ReplacementIconName("shv_buttonpccontrol1", 0) == nullptr && ReplacementIconName("shv_buttonactionpc", 1) == nullptr &&
+              ReplacementIconName("shv_buttonpccontrol12", 1) == nullptr && ReplacementIconName("pc_1flash_64", 1) == nullptr &&
+              ReplacementIconName(nullptr, 1) == nullptr,
+          "autres textures et type PC laissés tels quels");
 }
 
 void TestDepthEncoding() {
