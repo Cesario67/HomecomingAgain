@@ -97,6 +97,29 @@ void LogSampledMotion(IDirect3DDevice9* device, IDirect3DTexture9* depth, IDirec
     if (depthCopy != nullptr && motionCopy != nullptr &&
         SUCCEEDED(depthCopy->LockRect(&depthRect, nullptr, D3DLOCK_READONLY))) {
         if (SUCCEEDED(motionCopy->LockRect(&motionRect, nullptr, D3DLOCK_READONLY))) {
+            // Position de la caméra : le point dont l'image a x = y = w = 0, soit inverse(caméra) x (0, 0, 1, 0) une fois
+            // ramené en coordonnées homogènes.
+            Matrix4 inversePrevious{};
+            if (Inverse(previous, inversePrevious)) {
+                std::array<double, 4> now = Transform(inverseCurrent, {0.0, 0.0, 1.0, 0.0});
+                std::array<double, 4> before = Transform(inversePrevious, {0.0, 0.0, 1.0, 0.0});
+                log::Info("Vecteurs : caméra en ({:.2f} {:.2f} {:.2f}), avant ({:.2f} {:.2f} {:.2f}), déplacement {:.2f}",
+                          now[0] / now[3], now[1] / now[3], now[2] / now[3], before[0] / before[3],
+                          before[1] / before[3], before[2] / before[3],
+                          std::sqrt(std::pow(now[0] / now[3] - before[0] / before[3], 2) +
+                                    std::pow(now[1] / now[3] - before[1] / before[3], 2) +
+                                    std::pow(now[2] / now[3] - before[2] / before[3], 2)));
+            }
+            // Échelle de la projection (champ de vision) des deux caméras : longueur des lignes 0 et 1 sur x, y, z.
+            const auto rowLength = [](const Matrix4& m, int row) {
+                return std::sqrt(m[row * 4] * m[row * 4] + m[row * 4 + 1] * m[row * 4 + 1] +
+                                 m[row * 4 + 2] * m[row * 4 + 2]);
+            };
+            Matrix4 current{};
+            if (Inverse(inverseCurrent, current)) {
+                log::Info("Vecteurs : échelle de projection {:.4f} x {:.4f}, avant {:.4f} x {:.4f}", rowLength(current, 0),
+                          rowLength(current, 1), rowLength(previous, 0), rowLength(previous, 1));
+            }
             constexpr double kPoints[5][2] = {{0.5, 0.5}, {0.1, 0.1}, {0.9, 0.1}, {0.1, 0.9}, {0.9, 0.9}};
             for (const auto& point : kPoints) {
                 const UINT x = static_cast<UINT>(point[0] * width);
