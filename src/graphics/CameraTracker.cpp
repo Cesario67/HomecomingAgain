@@ -38,7 +38,7 @@ bool g_haveCurrent = false;
 bool g_havePrevious = false;
 Matrix4 g_current{};
 Matrix4 g_previous{};
-int g_logsLeft = 3;
+int g_logsLeft = 6;
 
 bool HasCameraConstants(const DWORD* bytecode) {
     bool worldViewProj = false;
@@ -165,8 +165,11 @@ void OnSceneEnd() noexcept {
     g_haveCurrent = true;
     if (g_logsLeft > 0) {
         --g_logsLeft;
-        log::Info("Caméra : {} dessins sur {} d'accord ({} caméras proposées), regard ({:.3f} {:.3f} {:.3f})", best->votes,
-                  g_drawsSeen, g_candidateCount, best->matrix[12], best->matrix[13], best->matrix[14]);
+        const Matrix4& m = best->matrix;
+        log::Info("Caméra : {} dessins sur {} d'accord ({} caméras proposées) ; lignes [{:.4f} {:.4f} {:.4f} {:.3f}] "
+                  "[{:.4f} {:.4f} {:.4f} {:.3f}] [{:.4f} {:.4f} {:.4f} {:.3f}] [{:.4f} {:.4f} {:.4f} {:.3f}]",
+                  best->votes, g_drawsSeen, g_candidateCount, m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8],
+                  m[9], m[10], m[11], m[12], m[13], m[14], m[15]);
     }
 }
 
