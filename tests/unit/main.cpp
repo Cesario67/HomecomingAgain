@@ -18,6 +18,7 @@
 #include "graphics/CameraMath.h"
 #include "graphics/CameraTracker.h"
 #include "graphics/DepthEncoding.h"
+#include "graphics/Jitter.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -237,6 +238,39 @@ void TestDepthEncoding() {
     Check(!ParseEncoding(98, zero, 1, untouched), "facteur nul refusé");
 }
 
+void TestJitter() {
+    using namespace hca::graphics::jitter;
+    Check(Halton(1, 2) == 0.5f && Halton(2, 2) == 0.25f && Halton(3, 2) == 0.75f &&
+              std::fabs(Halton(1, 3) - 1.0f / 3.0f) < 1e-6f && std::fabs(Halton(2, 3) - 2.0f / 3.0f) < 1e-6f,
+          "suite de Halton (bases 2 et 3)");
+    // 16 phases dans [-0.5, 0.5), de moyenne proche de 0, puis répétition.
+    float sumX = 0.0f;
+    float sumY = 0.0f;
+    bool inRange = true;
+    for (std::uint64_t frame = 0; frame < 16; ++frame) {
+        const Offset o = OffsetForFrame(frame, 1.0f);
+        inRange &= o.x >= -0.5f && o.x < 0.5f && o.y >= -0.5f && o.y < 0.5f;
+        sumX += o.x;
+        sumY += o.y;
+    }
+    const Offset first = OffsetForFrame(0, 2.0f);
+    const Offset again = OffsetForFrame(16, 2.0f);
+    Check(inRange && std::fabs(sumX / 16) < 0.05f && std::fabs(sumY / 16) < 0.05f && first.x == again.x &&
+              first.y == again.y && first.x == (Halton(1, 2) - 0.5f) * 2.0f,
+          "décalages de caméra : 16 phases centrées, amplitude appliquée");
+    // Perspective : un point (x, y, z, w) projeté est déplacé de (dx, dy) en coordonnées normalisées.
+    float m[16] = {1.6f, 0, 0, 0, 0, 2.9f, 0, 0, 0, 0, 1.0002f, -3.0006f, 0, 0, 1, 0};
+    const float point[4] = {10, -5, 100, 1};
+    Check(ApplyToMatrix(m, 0.01f, -0.02f), "décalage appliqué à une perspective");
+    const float x = m[0] * point[0] + m[1] * point[1] + m[2] * point[2] + m[3];
+    const float y = m[4] * point[0] + m[5] * point[1] + m[6] * point[2] + m[7];
+    const float w = m[12] * point[0] + m[13] * point[1] + m[14] * point[2] + m[15];
+    Check(std::fabs(x / w - (1.6f * 10 / 100 + 0.01f)) < 1e-5f && std::fabs(y / w - (2.9f * -5 / 100 - 0.02f)) < 1e-5f,
+          "décalage constant à l'écran");
+    float ortho[16] = {0.001f, 0, 0, -0.999f, 0, -0.002f, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1};
+    Check(!ApplyToMatrix(ortho, 0.01f, 0.01f) && ortho[3] == -0.999f, "projection d'interface laissée telle quelle");
+}
+
 }  // namespace
 
 int main() {
@@ -253,6 +287,7 @@ int main() {
     TestSharedFrames();
     TestCameraMath();
     TestDepthEncoding();
+    TestJitter();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

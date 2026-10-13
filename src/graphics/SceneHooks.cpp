@@ -9,6 +9,7 @@
 #include "dlss/SharedFrames.h"
 #include "graphics/CameraTracker.h"
 #include "graphics/DepthEncoding.h"
+#include "graphics/Jitter.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/InternalDraw.h"
 #include "graphics/MotionVectors.h"
@@ -109,7 +110,11 @@ HRESULT STDMETHODCALLTYPE HookSetRenderTarget(IDirect3DDevice9* device, DWORD in
     if (!t_internalDraw) {
         // Avant le changement de cible : le SSAO s'applique à la cible encore active (l'image de la scène).
         GetSsao().OnSetRenderTarget(device, index, surface);
-        if (GetSsao().ConsumeSceneReady() && GetConfig().dlssShareFrames) {
+        const bool sceneEnded = GetSsao().ConsumeSceneReady();
+        if (sceneEnded) {
+            jitter::OnSceneEnd();
+        }
+        if (sceneEnded && GetConfig().dlssShareFrames) {
             // Fin de la scène 3D : vecteurs de mouvement, puis partage des trois images avec le processus DLSS.
             IDirect3DTexture9* motion = GetMotionVectors().Render(device, GetSsao().DepthTexture());
             const bool shared = dlss::ShareFrame(GetSsao().SceneTexture(), GetSsao().DepthTexture(), motion);
@@ -121,6 +126,9 @@ HRESULT STDMETHODCALLTYPE HookSetRenderTarget(IDirect3DDevice9* device, DWORD in
         }
         shadows::OnSetRenderTarget(index, surface);
         camera::OnSetRenderTarget(index, surface, GetSsao().DepthSurface());
+        if (GetConfig().dlssShareFrames) {
+            jitter::OnSetRenderTarget(index, surface, GetSsao().DepthSurface());
+        }
     }
     return g_setRenderTarget(device, index, surface);
 }
@@ -161,7 +169,12 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
                                                        UINT count) {
     if (!t_internalDraw) {
         GetSsao().OnVertexShaderConstants(start, data, count);
+        // La caméra est lue avant le décalage (jitter) : les vecteurs de mouvement n'en tiennent pas compte.
         camera::OnVertexShaderConstants(start, data, count);
+        float copy[kMaxConstantVectors * 4];
+        if (count <= kMaxConstantVectors && jitter::Adjust(start, data, count, copy)) {
+            return g_setVertexShaderConstantF(device, start, copy, count);
+        }
     }
     return g_setVertexShaderConstantF(device, start, data, count);
 }

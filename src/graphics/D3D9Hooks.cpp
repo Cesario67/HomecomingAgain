@@ -19,6 +19,7 @@
 #include "graphics/BackBufferDump.h"
 #include "graphics/BorderlessWindow.h"
 #include "graphics/CameraTracker.h"
+#include "graphics/Jitter.h"
 #include "graphics/D3D9On12.h"
 #include "graphics/FrameCapture.h"
 #include "graphics/InternalDraw.h"
@@ -76,6 +77,7 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
     }
     GetSsao().OnPresent();
     camera::OnPresent();
+    jitter::OnPresent();
     if (GetConfig().backBufferDump) {
         InternalDrawScope internal;
         dump::OnPresent(device);
