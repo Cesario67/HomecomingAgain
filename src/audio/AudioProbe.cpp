@@ -1,5 +1,6 @@
 #include "audio/AudioProbe.h"
 
+#include <intrin.h>
 #include <mmreg.h>
 #include <objbase.h>
 
@@ -132,9 +133,35 @@ void TrackVoice(void* voice, UINT32 channels) {
     }
 }
 
+// Objet de sortie audio du moteur : le code appelant (0x1084A296, build 6.30) le garde dans ebx au moment d'appeler
+// SubmitSourceBuffer. Le relais ci-dessous le note avant de passer la main au hook (étape 1 de la stéréo).
+extern "C" void* g_engineSpeaker = nullptr;
+HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer, const void* wma);
+
+extern "C" __declspec(naked) void SubmitSourceBufferRelay() {
+    __asm { mov g_engineSpeaker, ebx }
+    __asm { jmp HookSubmitSourceBuffer }
+}
 // Énergie de chaque canal de chaque voix (flottants entrelacés), journalisée toutes les 5 s : montre par quelle voix et
 // dans quel canal passent les sons.
 HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer, const void* wma) {
+    // Étape 1 de la stéréo (docs) : adresse, dans le moteur, du code qui envoie le flux 5.1, pour remonter à son mélangeur.
+    static bool s_callerLogged = false;
+    if (voice == g_surroundVoice && !s_callerLogged) {
+        s_callerLogged = true;
+        const auto caller = reinterpret_cast<std::uintptr_t>(_ReturnAddress());
+        HMODULE module = nullptr;
+        GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           reinterpret_cast<LPCWSTR>(caller), &module);
+        log::Info("Audio : flux 5.1 envoyé depuis 0x{:08X} (module 0x{:08X}, décalage 0x{:X})", caller,
+                  reinterpret_cast<std::uintptr_t>(module), caller - reinterpret_cast<std::uintptr_t>(module));
+        if (caller == 0x1084A298 && g_engineSpeaker != nullptr) {
+            void** vtable = *static_cast<void***>(g_engineSpeaker);
+            log::Info("Audio : objet de sortie du moteur 0x{:08X}, vtable 0x{:08X}, méthode +0x108 = 0x{:08X}, +0x124 (conversion 5.1) = 0x{:08X}",
+                      reinterpret_cast<std::uintptr_t>(g_engineSpeaker), reinterpret_cast<std::uintptr_t>(vtable),
+                      reinterpret_cast<std::uintptr_t>(vtable[0x108 / 4]), reinterpret_cast<std::uintptr_t>(vtable[0x124 / 4]));
+        }
+    }
     // Correction du flux 5.1 du moteur. En sortie stéréo, la voix a été créée en stéréo (voir HookCreateSourceVoice) :
     // les 6 canaux sont convertis ici en 2, sur place, et XAudio2 reçoit une copie du descripteur avec la taille réduite.
     XAudio2BufferFull converted{};
@@ -250,7 +277,8 @@ HRESULT STDMETHODCALLTYPE HookCreateSourceVoice(void* xaudio, void** voice, cons
     if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr) {
         TrackVoice(*voice, asStereo ? 2 : format->nChannels);
         if (g_submitSourceBuffer == nullptr) {
-            hooking::PatchVtable(*voice, kSubmitSourceBufferIndex, &HookSubmitSourceBuffer, &g_submitSourceBuffer);
+            hooking::PatchVtable(*voice, kSubmitSourceBufferIndex, reinterpret_cast<SubmitSourceBufferFn>(&SubmitSourceBufferRelay),
+                                 &g_submitSourceBuffer);
         }
     }
     if (SUCCEEDED(result) && voice != nullptr && *voice != nullptr && format != nullptr && format->nChannels == 6) {
