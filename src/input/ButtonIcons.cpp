@@ -33,22 +33,30 @@ int ControllerType() {
 // 0x10986488, 0x109864A7 et 0x109864C6 ("shv_buttonpccontrol1" à "4" : chiffres entourés, constaté). Ces adresses
 // sont remplacées par celles de nos noms, dont le contenu suit le type d'icônes (RefreshButtonIcons). Les icônes Xbox
 // 360 et PS3 existent dans les données du jeu (Engine\assets_pc_b.xml).
-constexpr std::uintptr_t kFaceIconInstructions[4] = {0x10986469, 0x10986488, 0x109864A7, 0x109864C6};
-constexpr std::uint32_t kOriginalFaceNames[4] = {0x11078458, 0x11078430, 0x11078408, 0x110783E0};
+// Les 4 suivantes (0x1098645D, 0x1098647C, 0x1098649B, 0x109864BA) donnent la variante animée ("pc_1flash" à
+// "pc_4flash"), choisie par le moteur selon un indicateur de l'appelant.
+constexpr int kFaceSlots = 8;
+constexpr std::uintptr_t kFaceIconInstructions[kFaceSlots] = {0x10986469, 0x10986488, 0x109864A7, 0x109864C6,
+                                                              0x1098645D, 0x1098647C, 0x1098649B, 0x109864BA};
+constexpr std::uint32_t kOriginalFaceNames[kFaceSlots] = {0x11078458, 0x11078430, 0x11078408, 0x110783E0,
+                                                          0x11078474, 0x1107844C, 0x11078424, 0x110783FC};
 constexpr std::size_t kNameCapacity = 40;
-char g_faceNames[4][kNameCapacity]{};
+char g_faceNames[kFaceSlots][kNameCapacity]{};
 bool g_facePatched = false;
 int g_faceType = -1;
 
 }  // namespace
 
 const char* FaceIconName(int type, int button) noexcept {
-    static constexpr const char* kNames[3][4] = {
-        {"shv_buttonpccontrol1", "shv_buttonpccontrol2", "shv_buttonpccontrol3", "shv_buttonpccontrol4"},
-        {"shv_buttonxbox360_a_32", "shv_buttonxbox360_b_32", "shv_buttonxbox360_x_32", "shv_buttonxbox360_y_32"},
-        {"shv_buttonps3_x_32", "shv_buttonps3_circle_32", "shv_buttonps3_square_32", "shv_buttonps3_triangle_32"},
+    static constexpr const char* kNames[3][8] = {
+        {"shv_buttonpccontrol1", "shv_buttonpccontrol2", "shv_buttonpccontrol3", "shv_buttonpccontrol4", "pc_1flash",
+         "pc_2flash", "pc_3flash", "pc_4flash"},
+        {"shv_buttonxbox360_a_32", "shv_buttonxbox360_b_32", "shv_buttonxbox360_x_32", "shv_buttonxbox360_y_32",
+         "shv_aflash", "shv_bflash", "shv_x360xflash", "shv_yflash"},
+        {"shv_buttonps3_x_32", "shv_buttonps3_circle_32", "shv_buttonps3_square_32", "shv_buttonps3_triangle_32",
+         "shv_xflash", "shv_circleflash", "shv_squareflash", "shv_triangleflash"},
     };
-    if (type < 0 || type > 2 || button < 0 || button > 3) {
+    if (type < 0 || type > 2 || button < 0 || button > 7) {
         return kNames[0][0];
     }
     return kNames[type][button];
@@ -63,7 +71,7 @@ void RefreshButtonIcons() noexcept {
         return;
     }
     g_faceType = type;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < kFaceSlots; ++i) {
         strcpy_s(g_faceNames[i], FaceIconName(type, i));
     }
 }
@@ -106,13 +114,13 @@ void InstallButtonIcons(HMODULE engine) {
 
     // Boutons 0 à 3 : chaque instruction est vérifiée (B8 + adresse du nom d'origine) avant d'être redirigée.
     bool faceOk = true;
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < kFaceSlots; ++i) {
         std::uint8_t expected[5] = {0xB8};
         std::memcpy(expected + 1, &kOriginalFaceNames[i], 4);
         faceOk = faceOk && std::memcmp(reinterpret_cast<const void*>(kFaceIconInstructions[i]), expected, 5) == 0;
     }
     if (faceOk) {
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < kFaceSlots; ++i) {
             strcpy_s(g_faceNames[i], FaceIconName(0, i));
             std::uint8_t instruction[5] = {0xB8};
             const auto name = static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(g_faceNames[i]));

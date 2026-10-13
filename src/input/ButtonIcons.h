@@ -18,7 +18,8 @@ void InstallButtonIcons(HMODULE engine);
 
 // Fonction pure (testée par tests/unit) : type de manette rendu au moteur (0 = PC, 1 = Xbox 360, 2 = PS3).
 int IconTypeFor(int setting, bool padConnected) noexcept;
-// Fonction pure (testée) : nom de l'icône du bouton 0 à 3 (A, B, X, Y) pour le type 0 = PC, 1 = Xbox 360, 2 = PS3.
+// Fonction pure (testée) : nom de l'icône du bouton 0 à 3 (A, B, X, Y), fixe (0 à 3) ou animée (4 à 7), pour le
+// type 0 = PC, 1 = Xbox 360, 2 = PS3.
 const char* FaceIconName(int type, int button) noexcept;
 // Met à jour les noms des icônes A, B, X, Y selon le réglage et la manette (appelé à chaque Present).
 void RefreshButtonIcons() noexcept;

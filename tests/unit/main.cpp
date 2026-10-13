@@ -321,7 +321,7 @@ void TestButtonIcons() {
           "icônes forcées : PC, Xbox 360, PS3, valeur inconnue = PC");
     using hca::input::FaceIconName;
     Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
-              std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
+              std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(1, 6)) == "shv_x360xflash" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
           "noms des icônes A, B, X, Y selon le type");
 }
 
