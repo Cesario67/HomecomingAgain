@@ -21,6 +21,7 @@
 #include "graphics/Jitter.h"
 #include "graphics/SceneEnd.h"
 #include "input/ButtonIcons.h"
+#include "input/TextureNameProbe.h"
 #include "input/MenuBridge.h"
 #include "input/XInputProbe.h"
 #include "graphics/FilmGrain.h"
@@ -323,6 +324,9 @@ void TestButtonIcons() {
     Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
               std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(1, 6)) == "shv_x360xflash" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
           "noms des icônes A, B, X, Y selon le type");
+    Check(hca::input::IsButtonIconName("shv_buttonpccontrol1_64") && hca::input::IsButtonIconName("pc_1flash") &&
+              !hca::input::IsButtonIconName("shv_hud_arrow1") && !hca::input::IsButtonIconName(nullptr),
+          "noms d'icônes de boutons reconnus");
 }
 
 void TestDepthEncoding() {
