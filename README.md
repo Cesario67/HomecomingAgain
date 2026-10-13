@@ -35,7 +35,7 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **16x anisotropic filtering**: sharp textures on the ground and at an angle.
 - **Ambient occlusion (SSAO)**: subtle darkening of corners and contact between objects, computed from the
   engine's depth and applied before the interface.
-- **Sharper shadows**: 4096x4096 shadow map instead of 2048x2048.
+- **Sharper shadows**: 8192x8192 shadow map instead of 2048x2048, with the slope bias scaled to match.
 - **Adjustable film grain**: off, halved or as in the original.
 
 ### Comfort
@@ -58,7 +58,7 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Window]` | `Borderless=1` | Borderless fullscreen |
 | `[Graphics]` | `SMAA`, `Anisotropy` | Anti-aliasing, texture filtering |
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Ambient occlusion and its strength |
-| `[Graphics]` | `ShadowResolution=4096` | Shadow map size (2048 originally) |
+| `[Graphics]` | `ShadowResolution=8192` | Shadow map size (2048 originally, 4096 or 8192) |
 | `[Graphics]` | `FilmGrain=100` | Film grain in % (0 = none) |
 | `[Audio]` | `ChannelFix=1` | Fixed sound (0 = original sound) |
 | `[Movies]` | `SkipKey=46` | Key to skip cutscenes (46 = Delete, 0 = none) |

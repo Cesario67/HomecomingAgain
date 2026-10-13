@@ -27,7 +27,7 @@ public sealed record PatchSettings
     public int Anisotropy { get; init; } = 16;
     public bool Ssao { get; init; } = true;
     public int SsaoStrength { get; init; } = 100;
-    public int ShadowResolution { get; init; } = 4096;
+    public int ShadowResolution { get; init; } = 8192;
     public int FilmGrain { get; init; } = 100;
 
     // --- DLSS ([DLSS]) : ShareFrames, Jitter et Apply ensemble. Désactivé par défaut (NVIDIA RTX et DXVK nécessaires).

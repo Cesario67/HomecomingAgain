@@ -37,7 +37,7 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Filtrage anisotrope x16** : textures nettes au sol et vues de biais.
 - **Occlusion ambiante (SSAO)** : léger assombrissement des coins et du contact entre les objets, calculé à partir
   de la profondeur du moteur et appliqué avant l'interface.
-- **Ombres plus fines** : carte d'ombres en 4096x4096 au lieu de 2048x2048.
+- **Ombres plus fines** : carte d'ombres en 8192x8192 au lieu de 2048x2048, avec un décalage de pente adapté.
 - **Grain de pellicule réglable** : désactivé, réduit de moitié ou comme à l'origine.
 
 ### Confort
@@ -61,7 +61,7 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Window]` | `Borderless=1` | Plein écran sans bordure |
 | `[Graphics]` | `SMAA`, `Anisotropy` | Anticrénelage, filtrage des textures |
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Occlusion ambiante et son intensité |
-| `[Graphics]` | `ShadowResolution=4096` | Taille de la carte d'ombres (2048 d'origine) |
+| `[Graphics]` | `ShadowResolution=8192` | Taille de la carte d'ombres (2048 d'origine, 4096 ou 8192) |
 | `[Graphics]` | `FilmGrain=100` | Grain de pellicule en % (0 = aucun) |
 | `[Audio]` | `ChannelFix=1` | Son corrigé (0 = son d'origine) |
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
