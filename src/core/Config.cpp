@@ -99,6 +99,7 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
     config.xinputLog = ReadBool(iniPath, L"Input", L"XInputLog", defaults.xinputLog);
     config.menuPad = ReadBool(iniPath, L"Input", L"MenuPad", defaults.menuPad);
+    config.buttonIcons = ReadInt(iniPath, L"Input", L"ButtonIcons", defaults.buttonIcons, 0, 3);
 
 
     config.logKeepCount = ReadInt(iniPath, L"Debug", L"LogKeepCount", defaults.logKeepCount, 1, 500);

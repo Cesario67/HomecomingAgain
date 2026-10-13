@@ -103,4 +103,15 @@ public sealed class SettingsTests
         Assert.True(defaults.Smaa);
         Assert.Equal(60, defaults.TargetFps);
     }
+
+    [Fact]
+    public void ButtonIconsAreWrittenAndClamped()
+    {
+        IniDocument mod = IniDocument.Parse("");
+        Assert.Equal(0, PatchSettings.Read(mod, KeyValueDocument.Parse("")).ButtonIcons);  // auto par défaut
+        new PatchSettings { ButtonIcons = 3 }.WriteMod(mod);
+        Assert.Equal(3, PatchSettings.Read(mod, KeyValueDocument.Parse("")).ButtonIcons);
+        new PatchSettings { ButtonIcons = 9 }.WriteMod(mod);
+        Assert.Equal(3, mod.GetInt("Input", "ButtonIcons", -1));
+    }
 }

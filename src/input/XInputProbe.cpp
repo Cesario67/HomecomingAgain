@@ -206,7 +206,7 @@ float StickAmount(SHORT x, SHORT y) noexcept {
 }
 
 void InstallXInputProbe(HMODULE engine) {
-    if ((!GetConfig().xinputLog && !GetConfig().menuPad) || engine == nullptr) {
+    if ((!GetConfig().xinputLog && !GetConfig().menuPad && GetConfig().buttonIcons != 0) || engine == nullptr) {
         return;
     }
     InitializeCriticalSection(&g_lock);

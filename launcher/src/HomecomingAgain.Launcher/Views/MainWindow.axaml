@@ -76,6 +76,12 @@
                         ItemsSource="{Binding FilmGrainLevels}" SelectedItem="{Binding SelectedFilmGrain}" />
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[FilmGrainHint]}" />
+            <Grid ColumnDefinitions="220,*">
+              <TextBlock Text="{Binding L[ButtonIcons]}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding ButtonIconSets}" SelectedItem="{Binding SelectedButtonIcons}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[ButtonIconsHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
             <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />

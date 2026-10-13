@@ -20,6 +20,7 @@
 #include "graphics/DepthEncoding.h"
 #include "graphics/Jitter.h"
 #include "graphics/SceneEnd.h"
+#include "input/ButtonIcons.h"
 #include "input/MenuBridge.h"
 #include "input/XInputProbe.h"
 #include "graphics/FilmGrain.h"
@@ -313,6 +314,13 @@ void TestMenuPadKeys() {
           "stick à gauche, et à droite sous le seuil d'appui");
 }
 
+void TestButtonIcons() {
+    using hca::input::IconTypeFor;
+    Check(IconTypeFor(0, true) == 1 && IconTypeFor(0, false) == 0, "icônes auto : Xbox 360 avec manette, PC sans");
+    Check(IconTypeFor(1, true) == 0 && IconTypeFor(2, false) == 1 && IconTypeFor(3, true) == 2 && IconTypeFor(9, true) == 0,
+          "icônes forcées : PC, Xbox 360, PS3, valeur inconnue = PC");
+}
+
 void TestDepthEncoding() {
     using hca::graphics::depth::Encoding;
     using hca::graphics::depth::ParseEncoding;
@@ -386,6 +394,7 @@ int main() {
     TestSceneEnd();
     TestXInputDescriptions();
     TestMenuPadKeys();
+    TestButtonIcons();
     TestDepthEncoding();
     TestJitter();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);

@@ -17,6 +17,7 @@ constexpr SHORT kReleaseThreshold = 10923;  // un tiers
 std::atomic<WORD> g_buttons{0};
 std::atomic<SHORT> g_stickX{0};
 std::atomic<SHORT> g_stickY{0};
+std::atomic<bool> g_connected{false};
 std::atomic<int> g_framesSinceScene{kMenuFrames + 1};
 std::atomic<bool> g_loggedMenu{false};
 // Directions du stick déjà enfoncées (lecture du clavier, un seul thread du moteur).
@@ -48,6 +49,7 @@ KeySet KeysForPad(WORD buttons, SHORT stickX, SHORT stickY, KeySet& stickHeld) n
 }
 
 void OnPadState(WORD buttons, SHORT stickX, SHORT stickY) noexcept {
+    g_connected.store(true);
     g_buttons.store(buttons);
     g_stickX.store(stickX);
     g_stickY.store(stickY);
@@ -55,6 +57,11 @@ void OnPadState(WORD buttons, SHORT stickX, SHORT stickY) noexcept {
 
 void OnPadDisconnected() noexcept {
     OnPadState(0, 0, 0);
+    g_connected.store(false);
+}
+
+bool PadConnected() noexcept {
+    return g_connected.load();
 }
 
 void OnSceneDrawn() noexcept {

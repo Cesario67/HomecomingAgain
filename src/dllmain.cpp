@@ -10,6 +10,7 @@
 
 #include "audio/AudioProbe.h"
 #include "compat/MovieSkip.h"
+#include "input/ButtonIcons.h"
 #include "input/DirectInputHooks.h"
 #include "input/XInputProbe.h"
 #include "compat/SkipMovies.h"
@@ -79,6 +80,7 @@ void Startup() {
         hca::audio::InstallAudioProbe(engine);
         hca::input::InstallXInputProbe(engine);
         hca::input::InstallDirectInputHooks(engine);
+        hca::input::InstallButtonIcons(engine);
         if (hca::GetConfig().frameStats) {
             hca::frames::waits::Install(engine);
         }

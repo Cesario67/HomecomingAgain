@@ -34,6 +34,8 @@ KeySet KeysForPad(WORD buttons, SHORT stickX, SHORT stickY, KeySet& stickHeld) n
 // État partagé entre la lecture de la manette (thread du moteur) et la lecture du clavier.
 void OnPadState(WORD buttons, SHORT stickX, SHORT stickY) noexcept;
 void OnPadDisconnected() noexcept;
+// Première manette branchée (dernière lecture du moteur) ; sert aussi aux icônes de boutons (input/ButtonIcons.h).
+bool PadConnected() noexcept;
 // Détection du menu : appelés par les hooks Direct3D, à chaque fin de scène 3D et à chaque Present. Plus de
 // kMenuFrames images sans scène 3D : menu, chargement ou vidéo (hypothèse à confirmer par le journal).
 constexpr int kMenuFrames = 30;

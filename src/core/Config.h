@@ -98,6 +98,8 @@ struct Config {
     bool xinputLog = true;
     // Dans les menus, croix, stick gauche, A et B traduits en touches du clavier (input/MenuBridge.h).
     bool menuPad = true;
+    // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
+    int buttonIcons = 0;
 
 
     // [Debug]
