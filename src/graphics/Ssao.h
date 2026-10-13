@@ -37,6 +37,13 @@ public:
     // la scène n'est connue qu'après une première application de l'effet.
     IDirect3DTexture9* DepthTexture() const noexcept { return depthTexture_; }
     IDirect3DTexture9* SceneTexture() const noexcept { return sceneTexture_; }
+    // Vrai une fois, juste après le dernier OnSetRenderTarget si la scène 3D vient de se terminer (avant les
+    // post-traitements et l'interface).
+    bool ConsumeSceneReady() noexcept {
+        const bool ready = sceneReady_;
+        sceneReady_ = false;
+        return ready;
+    }
 
 private:
     bool Apply(IDirect3DDevice9* device) noexcept;
@@ -51,6 +58,7 @@ private:
     IDirect3DTexture9* sceneTexture_ = nullptr;
     bool depthWritten_ = false;
     bool applied_ = false;
+    bool sceneReady_ = false;
     Projection projection_;
     bool projectionSeen_ = false;
     bool failed_ = false;

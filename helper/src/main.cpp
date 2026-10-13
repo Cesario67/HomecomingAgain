@@ -37,7 +37,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         return 2;
     }
     g_log.open(parsed->logPath.empty() ? L"HomecomingAgain.Dlss.log" : parsed->logPath, std::ios::trunc);
-    Log("HomecomingAgain.Dlss : démarrage (jalon 3, lecture des images partagées)");
+    Log("HomecomingAgain.Dlss : démarrage (jalon 3, lecture des images partagées, anneau de 3 et compteur en retour)");
 
     const HANDLE parent = OpenProcess(SYNCHRONIZE, FALSE, parsed->parentPid);
     hca::dlss::SharedFrameReader reader(*parsed, Log);
@@ -57,23 +57,25 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             received += static_cast<std::uint32_t>(next - value);
             total += static_cast<std::uint32_t>(next - value);
             value = next;
-        }
-        // Image de contrôle après 2 s d'images reçues (environ 120).
-        if (!saved && total >= 120) {
-            saved = true;
-            std::vector<std::uint8_t> color;
-            std::vector<float> depth;
-            if (reader.ReadBack(color, depth)) {
-                const std::wstring dir = parsed->outputDir.empty() ? L"." : parsed->outputDir;
-                const bool a = hca::dlss::WriteColorBmp(dir + L"\\dlss_scene.bmp", color.data(), parsed->width,
-                                                        parsed->height);
-                const bool b = hca::dlss::WriteDepthBmp(dir + L"\\dlss_profondeur.bmp", depth.data(), parsed->width,
-                                                        parsed->height);
-                Log(std::format("images de contrôle enregistrées : scène {}, profondeur {}", a ? "oui" : "non",
-                                b ? "oui" : "non"));
-            } else {
-                Log("relecture des images impossible");
+            // Image de contrôle après 2 s d'images reçues (environ 120), lue dans l'emplacement de la dernière image.
+            if (!saved && total >= 120) {
+                saved = true;
+                std::vector<std::uint8_t> color;
+                std::vector<float> depth;
+                if (reader.ReadBack(static_cast<std::size_t>(value % hca::dlss::kSlots), color, depth)) {
+                    const std::wstring dir = parsed->outputDir.empty() ? L"." : parsed->outputDir;
+                    const bool a = hca::dlss::WriteColorBmp(dir + L"\\dlss_scene.bmp", color.data(), parsed->width,
+                                                            parsed->height);
+                    const bool b = hca::dlss::WriteDepthBmp(dir + L"\\dlss_profondeur.bmp", depth.data(),
+                                                            parsed->width, parsed->height);
+                    Log(std::format("images de contrôle enregistrées : scène {}, profondeur {}", a ? "oui" : "non",
+                                    b ? "oui" : "non"));
+                } else {
+                    Log("relecture des images impossible");
+                }
             }
+            // Pas encore de traitement : l'image est lue, son emplacement est rendu au mod.
+            reader.MarkConsumed(value);
         }
         if (GetTickCount64() >= nextReport) {
             nextReport += 5000;

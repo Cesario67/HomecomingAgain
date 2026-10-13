@@ -125,14 +125,14 @@ void Ssao::OnPresent() noexcept {
 }
 
 void Ssao::OnSetRenderTarget(IDirect3DDevice9* device, DWORD index, IDirect3DSurface9* surface) noexcept {
-    if (!GetConfig().ssao || index != 0 || surface == nullptr || depthSurface_ == nullptr) {
+    if (index != 0 || surface == nullptr || depthSurface_ == nullptr) {
         return;
     }
     if (surface == depthSurface_) {
         depthWritten_ = true;
         return;
     }
-    if (!depthWritten_ || applied_ || failed_) {
+    if (!depthWritten_ || applied_) {
         return;
     }
     D3DSURFACE_DESC desc{};
@@ -145,7 +145,22 @@ void Ssao::OnSetRenderTarget(IDirect3DDevice9* device, DWORD index, IDirect3DSur
         return;
     }
     applied_ = true;
-    Apply(device);
+    // Fin de la scène 3D, avant les post-traitements et l'interface : point utilisé aussi par le partage des images
+    // pour le DLSS (voir SceneReady), que le SSAO soit activé ou non.
+    IDirect3DSurface9* current = nullptr;
+    if (SUCCEEDED(device->GetRenderTarget(0, &current)) && current != nullptr) {
+        IDirect3DTexture9* container = nullptr;
+        if (SUCCEEDED(current->GetContainer(__uuidof(IDirect3DTexture9), reinterpret_cast<void**>(&container))) &&
+            container != nullptr) {
+            sceneTexture_ = container;
+            container->Release();
+        }
+        current->Release();
+    }
+    sceneReady_ = true;
+    if (GetConfig().ssao && !failed_) {
+        Apply(device);
+    }
 }
 
 bool Ssao::EnsureResources(IDirect3DDevice9* device, UINT width, UINT height) noexcept {

@@ -6,6 +6,7 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "dlss/SharedFrames.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/InternalDraw.h"
 #include "graphics/ShadowResolution.h"
@@ -95,6 +96,9 @@ HRESULT STDMETHODCALLTYPE HookSetRenderTarget(IDirect3DDevice9* device, DWORD in
     if (!t_internalDraw) {
         // Avant le changement de cible : le SSAO s'applique à la cible encore active (l'image de la scène).
         GetSsao().OnSetRenderTarget(device, index, surface);
+        if (GetSsao().ConsumeSceneReady()) {
+            dlss::ShareFrame(GetSsao().SceneTexture(), GetSsao().DepthTexture());
+        }
         shadows::OnSetRenderTarget(index, surface);
     }
     return g_setRenderTarget(device, index, surface);
@@ -171,7 +175,7 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShader(IDirect3DDevice9* device, IDirect3D
 void Install(IDirect3DDevice9* device) {
     const Config& config = GetConfig();
     const bool shadowsActive = shadows::ActiveAtlasSize() != shadows::kOriginalAtlasSize;
-    if (!shadowsActive && !config.ssao && !grain::Active()) {
+    if (!shadowsActive && !config.ssao && !grain::Active() && !config.dlssShareFrames) {
         return;
     }
     bool ok = true;

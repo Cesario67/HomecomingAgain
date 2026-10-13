@@ -13,15 +13,14 @@
 #include <vector>
 
 #include "core/Config.h"
-#include "core/Paths.h"
 #include "core/Log.h"
+#include "core/Paths.h"
 #include "dlss/DxvkInterop.h"
 
 namespace hca::dlss {
 
 namespace {
 
-constexpr std::uint32_t kSlots = 3;
 constexpr ULONGLONG kReportIntervalMs = 10000;
 
 // Fonctions Vulkan chargées depuis le périphérique de DXVK (vulkan-1.dll est déjà chargé par DXVK).
@@ -35,6 +34,7 @@ struct VulkanFunctions {
     PFN_vkGetMemoryWin32HandleKHR getMemoryWin32Handle = nullptr;
     PFN_vkCreateSemaphore createSemaphore = nullptr;
     PFN_vkGetSemaphoreWin32HandleKHR getSemaphoreWin32Handle = nullptr;
+    PFN_vkGetSemaphoreCounterValue getSemaphoreCounterValue = nullptr;
     PFN_vkCreateCommandPool createCommandPool = nullptr;
     PFN_vkAllocateCommandBuffers allocateCommandBuffers = nullptr;
     PFN_vkResetCommandBuffer resetCommandBuffer = nullptr;
@@ -54,8 +54,13 @@ struct SharedImage {
     HANDLE handle = nullptr;  // handle NT exporté, gardé ouvert pour le processus DLSS
     VkExtent3D extent{};
     VkFormat format = VK_FORMAT_UNDEFINED;
-    VkDeviceSize size = 0;    // taille de l'allocation, nécessaire à l'import dans le processus DLSS
+    VkDeviceSize size = 0;     // taille de l'allocation, nécessaire à l'import dans le processus DLSS
     bool initialized = false;  // disposition passée de UNDEFINED à GENERAL
+};
+
+struct ExportedTimeline {
+    VkSemaphore semaphore = VK_NULL_HANDLE;
+    HANDLE handle = nullptr;
 };
 
 struct State {
@@ -67,18 +72,19 @@ struct State {
     VkDevice device = VK_NULL_HANDLE;
     VkQueue queue = VK_NULL_HANDLE;
     std::uint32_t queueFamily = 0;
-    SharedImage color;
-    SharedImage depth;
-    VkSemaphore timeline = VK_NULL_HANDLE;
-    HANDLE timelineHandle = nullptr;
-    std::uint64_t timelineValue = 0;
+    // Anneau : l'image numéro v (valeur du compteur « produites ») va dans l'emplacement SlotForFrame(v, kSharedSlots).
+    SharedImage color[kSharedSlots];
+    SharedImage depth[kSharedSlots];
+    ExportedTimeline produced;  // signalé par le mod quand l'image v est copiée
+    ExportedTimeline consumed;  // signalé par le processus DLSS quand il a fini avec l'image v
+    std::uint64_t producedValue = 0;
     VkCommandPool pool = VK_NULL_HANDLE;
-    VkCommandBuffer commands[kSlots]{};
-    VkFence fences[kSlots]{};
-    std::uint64_t frame = 0;
+    VkCommandBuffer commands[kSharedSlots]{};
+    VkFence fences[kSharedSlots]{};
     // Statistiques journalisées toutes les 10 s.
     std::uint32_t shared = 0;
-    std::uint32_t skipped = 0;
+    std::uint32_t skippedCopy = 0;      // copie précédente de l'emplacement pas finie sur la carte
+    std::uint32_t skippedConsumer = 0;  // le processus DLSS n'a pas encore libéré l'emplacement
     double cpuMs = 0.0;
     ULONGLONG nextReport = 0;
 };
@@ -121,6 +127,7 @@ bool LoadFunctions(State& s) {
     ok &= LoadDevice(getDeviceProc, s.device, "vkGetMemoryWin32HandleKHR", s.vk.getMemoryWin32Handle);
     ok &= LoadDevice(getDeviceProc, s.device, "vkCreateSemaphore", s.vk.createSemaphore);
     ok &= LoadDevice(getDeviceProc, s.device, "vkGetSemaphoreWin32HandleKHR", s.vk.getSemaphoreWin32Handle);
+    ok &= LoadDevice(getDeviceProc, s.device, "vkGetSemaphoreCounterValue", s.vk.getSemaphoreCounterValue);
     ok &= LoadDevice(getDeviceProc, s.device, "vkCreateCommandPool", s.vk.createCommandPool);
     ok &= LoadDevice(getDeviceProc, s.device, "vkAllocateCommandBuffers", s.vk.allocateCommandBuffers);
     ok &= LoadDevice(getDeviceProc, s.device, "vkResetCommandBuffer", s.vk.resetCommandBuffer);
@@ -156,7 +163,7 @@ bool GameImage(IDirect3DBaseTexture9* texture, VkImage& image, VkImageCreateInfo
     return SUCCEEDED(result) && image != VK_NULL_HANDLE;
 }
 
-bool CreateSharedImage(State& s, const VkImageCreateInfo& source, SharedImage& out, const char* name) {
+bool CreateSharedImage(State& s, const VkImageCreateInfo& source, SharedImage& out, const std::string& name) {
     VkExternalMemoryImageCreateInfo external{VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO};
     external.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
     VkImageCreateInfo info{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -221,7 +228,7 @@ bool CreateSharedImage(State& s, const VkImageCreateInfo& source, SharedImage& o
     return true;
 }
 
-bool CreateSync(State& s) {
+bool CreateTimeline(State& s, ExportedTimeline& out, const char* name) {
     VkSemaphoreTypeCreateInfo type{VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
     type.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
     VkExportSemaphoreCreateInfo exportInfo{VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO};
@@ -229,19 +236,22 @@ bool CreateSync(State& s) {
     exportInfo.handleTypes = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
     VkSemaphoreCreateInfo semaphore{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
     semaphore.pNext = &exportInfo;
-    if (s.vk.createSemaphore(s.device, &semaphore, nullptr, &s.timeline) == VK_SUCCESS) {
-        VkSemaphoreGetWin32HandleInfoKHR handleInfo{VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR};
-        handleInfo.semaphore = s.timeline;
-        handleInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-        if (s.vk.getSemaphoreWin32Handle(s.device, &handleInfo, &s.timelineHandle) == VK_SUCCESS) {
-            log::Info("DLSS : sémaphore timeline exporté, handle 0x{:X}",
-                      reinterpret_cast<std::uintptr_t>(s.timelineHandle));
-        }
-    } else {
-        log::Warn("DLSS : sémaphore timeline exportable impossible (synchronisation par le processus DLSS à revoir)");
-        s.timeline = VK_NULL_HANDLE;
+    if (s.vk.createSemaphore(s.device, &semaphore, nullptr, &out.semaphore) != VK_SUCCESS) {
+        log::Warn("DLSS : compteur « {} » exportable impossible", name);
+        return false;
     }
+    VkSemaphoreGetWin32HandleInfoKHR handleInfo{VK_STRUCTURE_TYPE_SEMAPHORE_GET_WIN32_HANDLE_INFO_KHR};
+    handleInfo.semaphore = out.semaphore;
+    handleInfo.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
+    if (s.vk.getSemaphoreWin32Handle(s.device, &handleInfo, &out.handle) != VK_SUCCESS) {
+        log::Warn("DLSS : export du compteur « {} » impossible", name);
+        return false;
+    }
+    log::Info("DLSS : compteur « {} » exporté, handle 0x{:X}", name, reinterpret_cast<std::uintptr_t>(out.handle));
+    return true;
+}
 
+bool CreateCommands(State& s) {
     VkCommandPoolCreateInfo poolInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = s.queueFamily;
@@ -251,7 +261,7 @@ bool CreateSync(State& s) {
     VkCommandBufferAllocateInfo allocate{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     allocate.commandPool = s.pool;
     allocate.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocate.commandBufferCount = kSlots;
+    allocate.commandBufferCount = kSharedSlots;
     if (s.vk.allocateCommandBuffers(s.device, &allocate, s.commands) != VK_SUCCESS) {
         return false;
     }
@@ -279,8 +289,14 @@ bool Initialize(State& s, IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTextur
     if (!LoadFunctions(s) || !GameImage(sceneColor, image, colorInfo) || !GameImage(depth, image, depthInfo)) {
         return false;
     }
-    return CreateSharedImage(s, colorInfo, s.color, "scène") && CreateSharedImage(s, depthInfo, s.depth, "profondeur") &&
-           CreateSync(s);
+    for (std::uint32_t i = 0; i < kSharedSlots; ++i) {
+        if (!CreateSharedImage(s, colorInfo, s.color[i], std::format("scène {}", i)) ||
+            !CreateSharedImage(s, depthInfo, s.depth[i], std::format("profondeur {}", i))) {
+            return false;
+        }
+    }
+    return CreateTimeline(s, s.produced, "images produites") && CreateTimeline(s, s.consumed, "images consommées") &&
+           CreateCommands(s);
 }
 
 VkImageMemoryBarrier Barrier(VkImage image, VkImageLayout from, VkImageLayout to, VkAccessFlags srcAccess,
@@ -297,29 +313,30 @@ VkImageMemoryBarrier Barrier(VkImage image, VkImageLayout from, VkImageLayout to
     return barrier;
 }
 
-void RecordCopy(State& s, VkCommandBuffer commands, VkImage gameColor, VkImage gameDepth) {
+void RecordCopy(State& s, VkCommandBuffer commands, VkImage gameColor, VkImage gameDepth, SharedImage& color,
+                SharedImage& depth) {
     // Images du jeu : laissées en GENERAL (disposition rapportée par DXVK) ; dépendance sur tout le travail déjà soumis.
     const VkImageMemoryBarrier before[4] = {
         Barrier(gameColor, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_WRITE_BIT,
                 VK_ACCESS_TRANSFER_READ_BIT),
         Barrier(gameDepth, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_WRITE_BIT,
                 VK_ACCESS_TRANSFER_READ_BIT),
-        Barrier(s.color.image, s.color.initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
+        Barrier(color.image, color.initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT),
-        Barrier(s.depth.image, s.depth.initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
+        Barrier(depth.image, depth.initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_LAYOUT_GENERAL, VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT)};
     s.vk.cmdPipelineBarrier(commands, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr,
                             0, nullptr, 4, before);
-    s.color.initialized = true;
-    s.depth.initialized = true;
+    color.initialized = true;
+    depth.initialized = true;
 
     VkImageCopy region{};
     region.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     region.dstSubresource = region.srcSubresource;
-    region.extent = s.color.extent;
-    s.vk.cmdCopyImage(commands, gameColor, VK_IMAGE_LAYOUT_GENERAL, s.color.image, VK_IMAGE_LAYOUT_GENERAL, 1, &region);
-    region.extent = s.depth.extent;
-    s.vk.cmdCopyImage(commands, gameDepth, VK_IMAGE_LAYOUT_GENERAL, s.depth.image, VK_IMAGE_LAYOUT_GENERAL, 1, &region);
+    region.extent = color.extent;
+    s.vk.cmdCopyImage(commands, gameColor, VK_IMAGE_LAYOUT_GENERAL, color.image, VK_IMAGE_LAYOUT_GENERAL, 1, &region);
+    region.extent = depth.extent;
+    s.vk.cmdCopyImage(commands, gameDepth, VK_IMAGE_LAYOUT_GENERAL, depth.image, VK_IMAGE_LAYOUT_GENERAL, 1, &region);
 
     // Après la copie : le travail suivant de DXVK (qui réécrira ces images) attend la fin de nos lectures.
     VkMemoryBarrier after{VK_STRUCTURE_TYPE_MEMORY_BARRIER};
@@ -339,16 +356,21 @@ void Report(State& s) {
         return;
     }
     s.nextReport = now + kReportIntervalMs;
-    log::Info("DLSS : images partagées {}, sautées {}, temps processeur moyen {:.3f} ms, compteur {}", s.shared,
-              s.skipped, s.shared > 0 ? s.cpuMs / s.shared : 0.0, s.timelineValue);
+    std::uint64_t consumed = 0;
+    s.vk.getSemaphoreCounterValue(s.device, s.consumed.semaphore, &consumed);
+    log::Info("DLSS : images partagées {}, sautées {} (copie en cours) et {} (lecteur en retard), temps processeur "
+              "moyen {:.3f} ms, produites {}, consommées {}",
+              s.shared, s.skippedCopy, s.skippedConsumer, s.shared > 0 ? s.cpuMs / s.shared : 0.0, s.producedValue,
+              consumed);
     s.shared = 0;
-    s.skipped = 0;
+    s.skippedCopy = 0;
+    s.skippedConsumer = 0;
     s.cpuMs = 0.0;
 }
 
-// Lance HomecomingAgain.Dlss.exe (64 bits, à côté de SilentHill.exe) en lui transmettant les trois handles par
-// héritage : seuls ces handles sont hérités (liste explicite), leurs valeurs numériques sont les mêmes dans le processus
-// enfant et lui sont passées en ligne de commande avec la taille, les formats et la carte graphique.
+// Lance HomecomingAgain.Dlss.exe (64 bits, à côté de SilentHill.exe) en lui transmettant les handles par héritage :
+// seuls ces handles sont hérités (liste explicite), leurs valeurs numériques sont les mêmes dans le processus enfant et
+// lui sont passées en ligne de commande avec la taille, les formats et la carte graphique.
 void LaunchHelper(State& s) {
     const std::wstring exe = GetPaths().gameDir + L"\\HomecomingAgain.Dlss.exe";
     if (GetFileAttributesW(exe.c_str()) == INVALID_FILE_ATTRIBUTES) {
@@ -357,17 +379,28 @@ void LaunchHelper(State& s) {
     }
     VkPhysicalDeviceProperties properties{};
     s.vk.getProperties(s.physicalDevice, &properties);
-    HANDLE handles[3] = {s.color.handle, s.depth.handle, s.timelineHandle};
+    std::vector<HANDLE> handles;
+    std::wstring colors;
+    std::wstring depths;
+    for (std::uint32_t i = 0; i < kSharedSlots; ++i) {
+        handles.push_back(s.color[i].handle);
+        handles.push_back(s.depth[i].handle);
+        colors += std::format(L"{}0x{:X}", i == 0 ? L"" : L",", reinterpret_cast<std::uintptr_t>(s.color[i].handle));
+        depths += std::format(L"{}0x{:X}", i == 0 ? L"" : L",", reinterpret_cast<std::uintptr_t>(s.depth[i].handle));
+    }
+    handles.push_back(s.produced.handle);
+    handles.push_back(s.consumed.handle);
     for (HANDLE handle : handles) {
         SetHandleInformation(handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT);
     }
     std::wstring command = std::format(
-        L"\"{}\" --parent {} --width {} --height {} --color 0x{:X} --color-format {} --color-size {} --depth 0x{:X} "
-        L"--depth-format {} --depth-size {} --semaphore 0x{:X} --vendor 0x{:X} --device 0x{:X} --log \"{}\" --out \"{}\"",
-        exe, GetCurrentProcessId(), s.color.extent.width, s.color.extent.height,
-        reinterpret_cast<std::uintptr_t>(s.color.handle), static_cast<int>(s.color.format), s.color.size,
-        reinterpret_cast<std::uintptr_t>(s.depth.handle), static_cast<int>(s.depth.format), s.depth.size,
-        reinterpret_cast<std::uintptr_t>(s.timelineHandle), properties.vendorID, properties.deviceID,
+        L"\"{}\" --parent {} --width {} --height {} --color {} --color-format {} --color-size {} --depth {} "
+        L"--depth-format {} --depth-size {} --semaphore 0x{:X} --consumed 0x{:X} --vendor 0x{:X} --device 0x{:X} "
+        L"--log \"{}\" --out \"{}\"",
+        exe, GetCurrentProcessId(), s.color[0].extent.width, s.color[0].extent.height, colors,
+        static_cast<int>(s.color[0].format), s.color[0].size, depths, static_cast<int>(s.depth[0].format),
+        s.depth[0].size, reinterpret_cast<std::uintptr_t>(s.produced.handle),
+        reinterpret_cast<std::uintptr_t>(s.consumed.handle), properties.vendorID, properties.deviceID,
         GetPaths().logsDir + L"\\HomecomingAgain.Dlss.log", GetPaths().modDir + L"\\captures");
 
     SIZE_T attributeSize = 0;
@@ -377,24 +410,29 @@ void LaunchHelper(State& s) {
     STARTUPINFOEXW startup{};
     startup.StartupInfo.cb = sizeof(startup);
     PROCESS_INFORMATION process{};
-    const bool ok = InitializeProcThreadAttributeList(attributes, 1, 0, &attributeSize) &&
-                    UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles,
-                                              sizeof(handles), nullptr, nullptr) &&
-                    (startup.lpAttributeList = attributes,
-                     CreateProcessW(exe.c_str(), command.data(), nullptr, nullptr, TRUE,
-                                    EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW, nullptr,
-                                    GetPaths().gameDir.c_str(), &startup.StartupInfo, &process));
-    if (attributes != nullptr && attributeSize != 0) {
+    bool ok = InitializeProcThreadAttributeList(attributes, 1, 0, &attributeSize) != FALSE;
+    const bool listReady = ok;
+    ok = ok && UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles.data(),
+                                         handles.size() * sizeof(HANDLE), nullptr, nullptr) != FALSE;
+    if (ok) {
+        startup.lpAttributeList = attributes;
+        ok = CreateProcessW(exe.c_str(), command.data(), nullptr, nullptr, TRUE,
+                            EXTENDED_STARTUPINFO_PRESENT | CREATE_NO_WINDOW, nullptr, GetPaths().gameDir.c_str(),
+                            &startup.StartupInfo, &process) != FALSE;
+    }
+    const DWORD error = GetLastError();
+    if (listReady) {
         DeleteProcThreadAttributeList(attributes);
     }
     if (!ok) {
-        log::Warn("DLSS : lancement de HomecomingAgain.Dlss.exe impossible (erreur {})", GetLastError());
+        log::Warn("DLSS : lancement de HomecomingAgain.Dlss.exe impossible (erreur {})", error);
         return;
     }
     CloseHandle(process.hThread);
     CloseHandle(process.hProcess);
     log::Info("DLSS : HomecomingAgain.Dlss.exe lancé (processus {})", process.dwProcessId);
 }
+
 }  // namespace
 
 void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth) noexcept {
@@ -418,9 +456,19 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth)
     LARGE_INTEGER frequency{};
     QueryPerformanceCounter(&start);
 
-    const std::uint32_t slot = SlotForFrame(s.frame++, kSlots);
+    const std::uint64_t value = s.producedValue + 1;
+    const std::uint32_t slot = SlotForFrame(value, kSharedSlots);
     if (s.vk.getFenceStatus(s.device, s.fences[slot]) != VK_SUCCESS) {
-        ++s.skipped;  // copie précédente de cet emplacement pas encore terminée : on ne bloque pas le jeu
+        ++s.skippedCopy;  // copie précédente de cet emplacement pas encore terminée : on ne bloque pas le jeu
+        Report(s);
+        return;
+    }
+    // Synchronisation en retour : l'emplacement contient l'image value - kSharedSlots, que le processus DLSS doit avoir
+    // fini de lire. Vérification sans attente : sinon l'image est sautée (le jeu n'attend jamais le processus DLSS).
+    std::uint64_t consumed = 0;
+    s.vk.getSemaphoreCounterValue(s.device, s.consumed.semaphore, &consumed);
+    if (!SlotIsFree(value, consumed, kSharedSlots)) {
+        ++s.skippedConsumer;
         Report(s);
         return;
     }
@@ -428,7 +476,7 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth)
     VkImage gameDepth = VK_NULL_HANDLE;
     VkImageCreateInfo unused{};
     if (!GameImage(sceneColor, gameColor, unused) || !GameImage(depth, gameDepth, unused)) {
-        ++s.skipped;
+        ++s.skippedCopy;
         Report(s);
         return;
     }
@@ -441,21 +489,18 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth)
     VkCommandBufferBeginInfo begin{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     s.vk.beginCommandBuffer(commands, &begin);
-    RecordCopy(s, commands, gameColor, gameDepth);
+    RecordCopy(s, commands, gameColor, gameDepth, s.color[slot], s.depth[slot]);
     s.vk.endCommandBuffer(commands);
 
-    const std::uint64_t signalValue = s.timelineValue + 1;
     VkTimelineSemaphoreSubmitInfo timelineInfo{VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO};
     timelineInfo.signalSemaphoreValueCount = 1;
-    timelineInfo.pSignalSemaphoreValues = &signalValue;
+    timelineInfo.pSignalSemaphoreValues = &value;
     VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    submit.pNext = &timelineInfo;
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &commands;
-    if (s.timeline != VK_NULL_HANDLE) {
-        submit.pNext = &timelineInfo;
-        submit.signalSemaphoreCount = 1;
-        submit.pSignalSemaphores = &s.timeline;
-    }
+    submit.signalSemaphoreCount = 1;
+    submit.pSignalSemaphores = &s.produced.semaphore;
     s.vk.resetFences(s.device, 1, &s.fences[slot]);
     // Pendant le verrou de la file, aucun appel Direct3D 9 depuis ce thread (documentation DXVK).
     interop->LockSubmissionQueue();
@@ -466,9 +511,7 @@ void ShareFrame(IDirect3DBaseTexture9* sceneColor, IDirect3DBaseTexture9* depth)
         s.ready = false;
         return;
     }
-    if (s.timeline != VK_NULL_HANDLE) {
-        s.timelineValue = signalValue;
-    }
+    s.producedValue = value;
     ++s.shared;
     QueryPerformanceCounter(&end);
     QueryPerformanceFrequency(&frequency);

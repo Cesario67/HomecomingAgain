@@ -71,7 +71,6 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
     }
     if (dlss::Available()) {
         dlss::Probe(GetSsao().SceneTexture(), GetSsao().DepthTexture());
-        dlss::ShareFrame(GetSsao().SceneTexture(), GetSsao().DepthTexture());
     }
     GetSsao().OnPresent();
     if (GetConfig().backBufferDump) {

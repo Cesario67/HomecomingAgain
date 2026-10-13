@@ -22,11 +22,12 @@ struct SharedFrameReader::Impl {
     VkDevice device = VK_NULL_HANDLE;
     VkQueue queue = VK_NULL_HANDLE;
     std::uint32_t queueFamily = 0;
-    VkImage color = VK_NULL_HANDLE;
-    VkImage depth = VK_NULL_HANDLE;
-    VkDeviceMemory colorMemory = VK_NULL_HANDLE;
-    VkDeviceMemory depthMemory = VK_NULL_HANDLE;
-    VkSemaphore timeline = VK_NULL_HANDLE;
+    VkImage color[kSlots]{};
+    VkImage depth[kSlots]{};
+    VkDeviceMemory colorMemory[kSlots]{};
+    VkDeviceMemory depthMemory[kSlots]{};
+    VkSemaphore timeline = VK_NULL_HANDLE;  // « produites »
+    VkSemaphore consumed = VK_NULL_HANDLE;  // « consommées »
     VkCommandPool pool = VK_NULL_HANDLE;
 
     template <typename Fn>
@@ -40,8 +41,9 @@ struct SharedFrameReader::Impl {
 
     bool CreateInstance();
     bool CreateDevice();
-    bool ImportImage(const SharedImageArgs& shared, VkImage& image, VkDeviceMemory& memory, const char* name);
-    bool ImportSemaphore();
+    bool ImportImage(const SharedImageArgs& shared, std::uint64_t handle, VkImage& image, VkDeviceMemory& memory,
+                     const std::string& name);
+    bool ImportSemaphore(std::uint64_t handle, VkSemaphore& semaphore, const char* name);
     std::uint32_t FindMemoryType(std::uint32_t bits, VkMemoryPropertyFlags flags);
 };
 
@@ -138,8 +140,8 @@ std::uint32_t SharedFrameReader::Impl::FindMemoryType(std::uint32_t bits, VkMemo
     return UINT32_MAX;
 }
 
-bool SharedFrameReader::Impl::ImportImage(const SharedImageArgs& shared, VkImage& image, VkDeviceMemory& memory,
-                                          const char* name) {
+bool SharedFrameReader::Impl::ImportImage(const SharedImageArgs& shared, std::uint64_t handle, VkImage& image,
+                                          VkDeviceMemory& memory, const std::string& name) {
     // Paramètres identiques à ceux du mod (dlss/SharedFrames.cpp, CreateSharedImage) : obligatoire pour l'import.
     VkExternalMemoryImageCreateInfo external{VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO};
     external.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
@@ -166,7 +168,7 @@ bool SharedFrameReader::Impl::ImportImage(const SharedImageArgs& shared, VkImage
     VkImportMemoryWin32HandleInfoKHR import{VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR};
     import.pNext = &dedicated;
     import.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-    import.handle = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(shared.handle));
+    import.handle = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(handle));
     VkMemoryAllocateInfo allocate{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     allocate.pNext = &import;
     allocate.allocationSize = shared.allocationSize;
@@ -182,21 +184,22 @@ bool SharedFrameReader::Impl::ImportImage(const SharedImageArgs& shared, VkImage
     return true;
 }
 
-bool SharedFrameReader::Impl::ImportSemaphore() {
+bool SharedFrameReader::Impl::ImportSemaphore(std::uint64_t handle, VkSemaphore& semaphore, const char* name) {
     VkSemaphoreTypeCreateInfo type{VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO};
     type.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
     VkSemaphoreCreateInfo info{VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
     info.pNext = &type;
-    if (Device<PFN_vkCreateSemaphore>("vkCreateSemaphore")(device, &info, nullptr, &timeline) != VK_SUCCESS) {
+    if (Device<PFN_vkCreateSemaphore>("vkCreateSemaphore")(device, &info, nullptr, &semaphore) != VK_SUCCESS) {
         return false;
     }
     VkImportSemaphoreWin32HandleInfoKHR import{VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR};
-    import.semaphore = timeline;
+    import.semaphore = semaphore;
     import.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT;
-    import.handle = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(args.semaphore));
+    import.handle = reinterpret_cast<HANDLE>(static_cast<std::uintptr_t>(handle));
     const VkResult result =
         Device<PFN_vkImportSemaphoreWin32HandleKHR>("vkImportSemaphoreWin32HandleKHR")(device, &import);
-    log(std::format("sémaphore importé : {}", result == VK_SUCCESS ? "oui" : std::format("non ({})", static_cast<int>(result))));
+    log(std::format("compteur « {} » importé : {}", name,
+                    result == VK_SUCCESS ? "oui" : std::format("non ({})", static_cast<int>(result))));
     return result == VK_SUCCESS;
 }
 
@@ -211,10 +214,13 @@ SharedFrameReader::~SharedFrameReader() {
         s.Device<PFN_vkDeviceWaitIdle>("vkDeviceWaitIdle")(s.device);
         s.Device<PFN_vkDestroyCommandPool>("vkDestroyCommandPool")(s.device, s.pool, nullptr);
         s.Device<PFN_vkDestroySemaphore>("vkDestroySemaphore")(s.device, s.timeline, nullptr);
-        s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.color, nullptr);
-        s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.depth, nullptr);
-        s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.colorMemory, nullptr);
-        s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.depthMemory, nullptr);
+        s.Device<PFN_vkDestroySemaphore>("vkDestroySemaphore")(s.device, s.consumed, nullptr);
+        for (std::size_t i = 0; i < kSlots; ++i) {
+            s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.color[i], nullptr);
+            s.Device<PFN_vkDestroyImage>("vkDestroyImage")(s.device, s.depth[i], nullptr);
+            s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.colorMemory[i], nullptr);
+            s.Device<PFN_vkFreeMemory>("vkFreeMemory")(s.device, s.depthMemory[i], nullptr);
+        }
         s.Device<PFN_vkDestroyDevice>("vkDestroyDevice")(s.device, nullptr);
     }
     if (s.instance != VK_NULL_HANDLE) {
@@ -224,8 +230,18 @@ SharedFrameReader::~SharedFrameReader() {
 
 bool SharedFrameReader::Open() {
     Impl& s = *impl_;
-    return s.CreateInstance() && s.CreateDevice() && s.ImportImage(s.args.color, s.color, s.colorMemory, "scène") &&
-           s.ImportImage(s.args.depth, s.depth, s.depthMemory, "profondeur") && s.ImportSemaphore();
+    if (!s.CreateInstance() || !s.CreateDevice()) {
+        return false;
+    }
+    for (std::size_t i = 0; i < kSlots; ++i) {
+        if (!s.ImportImage(s.args.color, s.args.color.handles[i], s.color[i], s.colorMemory[i], std::format("scène {}", i)) ||
+            !s.ImportImage(s.args.depth, s.args.depth.handles[i], s.depth[i], s.depthMemory[i],
+                           std::format("profondeur {}", i))) {
+            return false;
+        }
+    }
+    return s.ImportSemaphore(s.args.semaphore, s.timeline, "produites") &&
+           s.ImportSemaphore(s.args.consumed, s.consumed, "consommées");
 }
 
 std::uint64_t SharedFrameReader::WaitNext(std::uint64_t lastValue, std::uint32_t timeoutMs) {
@@ -245,7 +261,15 @@ std::uint64_t SharedFrameReader::WaitNext(std::uint64_t lastValue, std::uint32_t
     return value;
 }
 
-bool SharedFrameReader::ReadBack(std::vector<std::uint8_t>& color, std::vector<float>& depth) {
+void SharedFrameReader::MarkConsumed(std::uint64_t value) {
+    Impl& s = *impl_;
+    VkSemaphoreSignalInfo signal{VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO};
+    signal.semaphore = s.consumed;
+    signal.value = value;
+    s.Device<PFN_vkSignalSemaphore>("vkSignalSemaphore")(s.device, &signal);
+}
+
+bool SharedFrameReader::ReadBack(std::size_t slot, std::vector<std::uint8_t>& color, std::vector<float>& depth) {
     Impl& s = *impl_;
     const VkDeviceSize pixels = static_cast<VkDeviceSize>(s.args.width) * s.args.height;
     const VkDeviceSize size = pixels * 4;  // 4 octets par pixel pour les deux formats (BGRA8 et R32F)
@@ -281,8 +305,8 @@ bool SharedFrameReader::ReadBack(std::vector<std::uint8_t>& color, std::vector<f
     region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
     region.imageExtent = {s.args.width, s.args.height, 1};
     const auto copy = s.Device<PFN_vkCmdCopyImageToBuffer>("vkCmdCopyImageToBuffer");
-    copy(commands, s.color, VK_IMAGE_LAYOUT_GENERAL, buffers[0], 1, &region);
-    copy(commands, s.depth, VK_IMAGE_LAYOUT_GENERAL, buffers[1], 1, &region);
+    copy(commands, s.color[slot % kSlots], VK_IMAGE_LAYOUT_GENERAL, buffers[0], 1, &region);
+    copy(commands, s.depth[slot % kSlots], VK_IMAGE_LAYOUT_GENERAL, buffers[1], 1, &region);
     s.Device<PFN_vkEndCommandBuffer>("vkEndCommandBuffer")(commands);
     VkSubmitInfo submit{VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit.commandBufferCount = 1;

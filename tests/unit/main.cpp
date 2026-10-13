@@ -176,6 +176,9 @@ void TestSharedFrames() {
     std::printf("Partage des images (DLSS)\n");
     Check(hca::dlss::SlotForFrame(0, 3) == 0 && hca::dlss::SlotForFrame(4, 3) == 1 && hca::dlss::SlotForFrame(5, 0) == 0,
           "emplacements tournants");
+    using hca::dlss::SlotIsFree;
+    Check(SlotIsFree(1, 0, 3) && SlotIsFree(3, 0, 3) && !SlotIsFree(4, 0, 3) && SlotIsFree(4, 1, 3) && !SlotIsFree(7, 3, 3),
+          "emplacement libre seulement si l'image précédente est consommée");
 }
 
 }  // namespace

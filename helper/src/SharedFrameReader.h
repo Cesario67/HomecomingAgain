@@ -24,8 +24,10 @@ public:
     bool Open();
     // Attend que le compteur dépasse `lastValue` (au plus `timeoutMs`). Renvoie la valeur atteinte, ou `lastValue`.
     std::uint64_t WaitNext(std::uint64_t lastValue, std::uint32_t timeoutMs);
-    // Copie les deux images vers la mémoire de l'ordinateur (contrôle du jalon 3).
-    bool ReadBack(std::vector<std::uint8_t>& color, std::vector<float>& depth);
+    // Signale au mod que l'image `value` est lue : son emplacement peut être réécrit.
+    void MarkConsumed(std::uint64_t value);
+    // Copie les deux images de l'emplacement slot vers la mémoire de l'ordinateur (images de contrôle).
+    bool ReadBack(std::size_t slot, std::vector<std::uint8_t>& color, std::vector<float>& depth);
 
 private:
     struct Impl;
