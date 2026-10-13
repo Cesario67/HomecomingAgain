@@ -127,8 +127,11 @@ Conséquences pour le plan :
   `[DLSS] ShareFrames=1`, `Jitter=1`, `Apply=1`. Image du DLSS rendue 494 fois sur 494 en 10 s, 59 i/s, plus de
   tremblement, fluide. Chien de garde (500 ms) vérifié : il a coupé le retour quand le programme DLSS s'est bloqué
   sur l'enregistrement des images de contrôle (corrigé : plus de relecture pendant le retour).
-- **À faire** : vecteurs de mouvement des personnages (mSkinningMatrices), signal de réinitialisation aux
-  changements de plan, SMAA à couper quand le DLSS est actif, installation par le launcher, réglage dans le launcher.
+- Changements de plan (vérifié en jeu le 13/10/2026) : réinitialisation du DLSS signalée au démarrage et au passage
+  d'une porte, aucun faux signal en tournant la caméra, aucune image fantôme ; SMAA coupé sur les images du DLSS
+  (vérifié : image propre).
+- **À faire** : vecteurs de mouvement des personnages (mSkinningMatrices),
+  installation par le launcher, réglage dans le launcher.
 - **À faire : test en jeu réel** (mis de côté le 13/10/2026). Non vérifié : marche et course (vrai déplacement de la
   caméra), autres lieux (extérieurs, grandes pièces), coupures de caméra (cinématiques, portes, changements de pièce,
   à signaler au DLSS par un indicateur de réinitialisation). Méthode : 1 à 2 minutes de jeu normal, puis compter les
