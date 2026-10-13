@@ -3,6 +3,7 @@
 #include <d3d9.h>
 
 #include "graphics/Projection.h"
+#include "graphics/SceneEnd.h"
 
 namespace hca::graphics {
 
@@ -60,6 +61,7 @@ private:
     bool depthWritten_ = false;
     bool applied_ = false;
     bool sceneReady_ = false;
+    SceneEndDetector sceneEnd_;
     Projection projection_;
     bool projectionSeen_ = false;
     bool failed_ = false;

@@ -19,6 +19,7 @@
 #include "graphics/CameraTracker.h"
 #include "graphics/DepthEncoding.h"
 #include "graphics/Jitter.h"
+#include "graphics/SceneEnd.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -248,6 +249,36 @@ void TestCameraCut() {
     Check(IsCameraCut(singular, base, 15.0f, 20.0f), "caméra non inversible : changement de plan");
 }
 
+// Suites de cibles relevées par F11 le 13/10/2026 (surfaces représentées par des entiers).
+void TestSceneEnd() {
+    using hca::graphics::SceneEndDetector;
+    const int depth = 1, scene = 2, post = 3, shadow = 4, reduced = 5;
+    struct Step {
+        const int* surface;
+        bool full;
+    };
+    // Shaders en basse qualité : profondeur, scène A8R8G8B8, ombres, flou réduit, profondeur, scène, post-traitement.
+    const Step lowQuality[] = {{&depth, true},  {&scene, true}, {&shadow, false}, {&reduced, false},
+                               {&scene, true},  {&depth, true}, {&scene, true},   {&post, true}};
+    // Shaders en haute qualité : la scène est elle-même en A16B16G16R16F, reflet en 1024x512 avant les ombres.
+    const Step highQuality[] = {{&depth, true}, {&scene, true}, {&reduced, false}, {&shadow, false},
+                                {&scene, true}, {&depth, true}, {&scene, true},  {&post, true}};
+    for (const auto* steps : {lowQuality, highQuality}) {
+        SceneEndDetector detector;
+        int endedAt = -1;
+        for (int i = 0; i < 8; ++i) {
+            const bool isDepth = steps[i].surface == &depth;
+            if (detector.OnSetRenderTarget(steps[i].surface, isDepth, steps[i].full)) {
+                endedAt = endedAt < 0 ? i : 100;
+            }
+        }
+        Check(endedAt == 7 && detector.Scene() == &scene, "fin de scène au passage vers le post-traitement");
+    }
+    SceneEndDetector detector;
+    Check(!detector.OnSetRenderTarget(&scene, false, true) && !detector.OnSetRenderTarget(&post, false, true),
+          "pas de fin de scène sans pré-passe de profondeur");
+}
+
 void TestDepthEncoding() {
     using hca::graphics::depth::Encoding;
     using hca::graphics::depth::ParseEncoding;
@@ -318,6 +349,7 @@ int main() {
     TestSharedFrames();
     TestCameraMath();
     TestCameraCut();
+    TestSceneEnd();
     TestDepthEncoding();
     TestJitter();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);

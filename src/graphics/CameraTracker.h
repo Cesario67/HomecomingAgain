@@ -14,7 +14,8 @@ namespace hca::graphics::camera {
 // dans les dessins d'un tel shader après le début de la pré-passe de profondeur (dont le shader n'a pas mWorld), pour
 // exclure les cartes d'ombres dessinées avant. Les matrices qui ne sont pas des caméras en perspective (interface 2D,
 // effets plein écran) sont rejetées, et la caméra retenue est celle sur laquelle le plus de dessins s'accordent.
-// Constaté le 13/10/2026 : le premier dessin qualifié était une projection orthographique d'interface.
+// Constaté le 13/10/2026 : le premier dessin qualifié était une projection orthographique d'interface. Les dessins de la
+// pré-passe comptent aussi (le moteur leur envoie mWorld) : certaines pièces n'ont aucun shader avec mWorld après elle.
 
 void OnVertexShaderCreated(const DWORD* bytecode, IDirect3DVertexShader9* shader) noexcept;
 void OnSetVertexShader(IDirect3DVertexShader9* shader) noexcept;

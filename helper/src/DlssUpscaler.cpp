@@ -327,6 +327,12 @@ bool DlssUpscaler::Initialize(const VulkanContext& context, const Arguments& arg
     create.Feature.InTargetHeight = s.height;
     create.Feature.InPerfQualityValue = NVSDK_NGX_PerfQuality_Value_DLAA;
     create.InFeatureCreateFlags = NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+    // Shaders du jeu en haute qualité : scène en flottants 16 bits (HDR linéaire, relevé du 13/10/2026), exposition
+    // laissée au DLSS. En basse qualité, scène 8 bits déjà dans l'espace de l'écran.
+    const bool hdr = s.colorFormat == VK_FORMAT_R16G16B16A16_SFLOAT;
+    if (hdr) {
+        create.InFeatureCreateFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR | NVSDK_NGX_DLSS_Feature_Flags_AutoExposure;
+    }
     if (!s.Begin()) {
         return false;
     }
@@ -335,7 +341,7 @@ bool DlssUpscaler::Initialize(const VulkanContext& context, const Arguments& arg
         s.log(std::format("DLSS : création de la fonction DLSS impossible ({})", ResultText(result)));
         return false;
     }
-    s.log(std::format("DLSS : prêt en mode DLAA ({}x{})", s.width, s.height));
+    s.log(std::format("DLSS : prêt en mode DLAA ({}x{}, image {})", s.width, s.height, hdr ? "HDR 16 bits" : "8 bits"));
     return true;
 }
 
