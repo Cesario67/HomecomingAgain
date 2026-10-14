@@ -57,6 +57,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 ### Confort
 
 - **Passer les cinématiques** : la touche Suppr passe les cinématiques en vidéo.
+- **Logos de démarrage accélérés** : l'écran titre arrive au bout de 5 s environ au lieu de 23. Les logos (Konami,
+  Double Helix, mentions légales) défilent en accéléré ; le jeu a déjà fini de charger pendant qu'ils s'affichent.
 - **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par
   défaut) et en français.
 
@@ -79,6 +81,7 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Graphics]` | `FilmGrain=100` | Grain de pellicule en % (0 = aucun) |
 | `[Audio]` | `ChannelFix=1` | Son corrigé (0 = son d'origine) |
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
+| `[Movies]` | `SkipLogos=1` | Logos de démarrage accélérés (0 = d'origine) |
 | `[Input]` | `ButtonIcons=0` | Icônes de boutons : 0 = auto (Xbox si une manette est branchée), 1 = PC (d'origine), 2 = Xbox, 3 = PlayStation |
 | `[Input]` | `MenuPad=1` | Manette dans les menus (croix, stick gauche, A, B, Start) |
 | `[Camera]` | `CameraFix=0` | Correctif de caméra à la manette (d'après le Camera Fix d'Emertels) : le personnage tourne avec le stick droit, réponse verticale proportionnelle, sensibilité de visée séparée. Vitesses `HorizontalSpeed`, `VerticalSpeed`, `AimHorizontalSpeed`, `AimVerticalSpeed` (0,25 à 3,0). Le launcher libère aussi le stick droit dans `Engine\binds_pc_mjs.cfg` |

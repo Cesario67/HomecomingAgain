@@ -12,6 +12,7 @@
 #include "audio/AudioProbe.h"
 #include "compat/MovieSkip.h"
 #include "compat/SkipMovies.h"
+#include "compat/StartupLogos.h"
 #include "dlss/SharedFrames.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
@@ -154,6 +155,16 @@ void TestSkipMovies() {
           "vidéos Bink reconnues, casse ignorée");
     Check(!hca::compat::IsMoviePath(L"vars_pc.cfg") && !hca::compat::IsMoviePath(L"bik") && !hca::compat::IsMoviePath(L"a.bikx"),
           "autres fichiers ouverts normalement");
+}
+
+void TestStartupLogos() {
+    hca::compat::FirstLoadingScreen screen;
+    // Avant les logos (boucle pas encore lancée), pendant, puis fin : seule la fin compte, une seule fois.
+    const bool before = screen.Update(false);
+    const bool during = screen.Update(true) || screen.Update(true);
+    const bool end = screen.Update(false);
+    const bool later = screen.Update(true) || screen.Update(false);
+    Check(!before && !during && end && !later, "logos : fin de la première boucle de chargement seulement");
 }
 
 void TestMovieSkip() {
@@ -432,6 +443,7 @@ int main() {
     TestFilmGrain();
     TestSkipMovies();
     TestMovieSkip();
+    TestStartupLogos();
     TestChannelFix();
     TestSharedFrames();
     TestCameraMath();

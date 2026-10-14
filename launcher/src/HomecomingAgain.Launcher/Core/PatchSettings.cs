@@ -44,6 +44,9 @@ public sealed record PatchSettings
     public int TargetFps { get; init; } = 60;
     public bool PreciseTimer { get; init; } = true;
 
+    // --- Démarrage ([Movies] SkipLogos)
+    public bool SkipLogos { get; init; } = true;
+
     // --- Compatibilité ([Compat])
     public bool WindowThreadLock { get; init; } = true;
     public bool D3DMultithreaded { get; init; } = true;
@@ -80,6 +83,7 @@ public sealed record PatchSettings
             CameraFix = mod.GetBool("Camera", "CameraFix", defaults.CameraFix),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
+            SkipLogos = mod.GetBool("Movies", "SkipLogos", defaults.SkipLogos),
             WindowThreadLock = mod.GetBool("Compat", "WindowThreadLock", defaults.WindowThreadLock),
             D3DMultithreaded = mod.GetBool("Compat", "D3DMultithreaded", defaults.D3DMultithreaded),
             CrashDumps = mod.GetBool("Crash", "CrashDumps", defaults.CrashDumps),
@@ -105,6 +109,7 @@ public sealed record PatchSettings
         mod.SetBool("Camera", "CameraFix", CameraFix);
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
+        mod.SetBool("Movies", "SkipLogos", SkipLogos);
         mod.SetBool("Compat", "WindowThreadLock", WindowThreadLock);
         mod.SetBool("Compat", "D3DMultithreaded", D3DMultithreaded);
         mod.SetBool("Crash", "CrashDumps", CrashDumps);

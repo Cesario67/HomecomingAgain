@@ -97,6 +97,7 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.dlssApply = ReadBool(iniPath, L"DLSS", L"Apply", defaults.dlssApply);
 
     config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
+    config.skipLogos = ReadBool(iniPath, L"Movies", L"SkipLogos", defaults.skipLogos);
     config.menuPad = ReadBool(iniPath, L"Input", L"MenuPad", defaults.menuPad);
     config.buttonIcons = ReadInt(iniPath, L"Input", L"ButtonIcons", defaults.buttonIcons, 0, 3);
 

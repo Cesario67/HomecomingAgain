@@ -14,6 +14,7 @@
 #include "input/DirectInputHooks.h"
 #include "input/XInputHooks.h"
 #include "compat/SkipMovies.h"
+#include "compat/StartupLogos.h"
 #include "compat/WindowThreadLock.h"
 #include "core/Config.h"
 #include "core/Log.h"
@@ -79,6 +80,7 @@ void Startup() {
         hca::compat::InstallWindowThreadLock(engine);
         hca::compat::InstallSkipMovies(engine);
         hca::compat::InstallMovieSkip(engine);
+        hca::compat::InstallStartupLogos(engine);
         hca::audio::InstallAudioProbe(engine);
         hca::input::InstallXInputHooks(engine);
         hca::input::InstallDirectInputHooks(engine);

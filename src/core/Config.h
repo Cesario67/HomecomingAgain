@@ -92,6 +92,8 @@ struct Config {
     // Touche pour passer les cinématiques en vidéo (code de touche virtuelle Windows, 0x2E = Suppr, 0 = aucune).
 
     int movieSkipKey = 0x2E;
+    // Logos de démarrage accélérés jusqu'à l'écran titre (voir compat/StartupLogos.h).
+    bool skipLogos = true;
 
     // [Input]
     // Dans les menus, croix, stick gauche, A et B traduits en touches du clavier (input/MenuBridge.h).

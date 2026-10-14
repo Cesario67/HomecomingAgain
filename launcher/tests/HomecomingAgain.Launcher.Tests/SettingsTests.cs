@@ -44,6 +44,7 @@ public sealed class SettingsTests
         Assert.True(settings.Ssao);
         Assert.Equal(8192, settings.ShadowResolution);
         Assert.True(settings.WindowThreadLock && settings.D3DMultithreaded && settings.HangDetection);
+        Assert.True(settings.SkipLogos);
     }
 
     [Theory]
@@ -72,7 +73,7 @@ public sealed class SettingsTests
             FullResolutionTextures = true, Smaa = false, Anisotropy = 4, TargetFps = 144, PreciseTimer = false,
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
-            FilmGrain = 0,
+            FilmGrain = 0, SkipLogos = false,
         };
         IniDocument mod = IniDocument.Parse("");
         KeyValueDocument game = KeyValueDocument.Parse(OriginalGameSettings);

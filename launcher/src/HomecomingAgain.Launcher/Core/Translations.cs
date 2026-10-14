@@ -153,6 +153,11 @@ public static class Translations
                                   "Above 60 fps, the game's behaviour (animations, physics, QTEs) has not been verified."),
             ["PreciseTimer"] = ("Minuteur Windows précis (1 ms)", "Precise Windows timer (1 ms)"),
             ["PreciseTimerHint"] = ("Attentes plus régulières entre les images.", "More regular waits between frames."),
+            ["SkipLogos"] = ("Logos de démarrage accélérés", "Faster startup logos"),
+            ["SkipLogosHint"] = ("Konami, Double Helix et les mentions légales défilent en accéléré : l'écran titre arrive en " +
+                                 "5 s environ au lieu de 23. Le jeu a déjà fini de charger pendant ces logos.",
+                                 "Konami, Double Helix and the legal screen play fast-forwarded: the title screen appears " +
+                                 "in about 5 s instead of 23. The game has already finished loading during these logos."),
             ["SecCompatibility"] = ("Compatibilité", "Compatibility"),
             ["WindowThreadLock"] = ("Fenêtre réactive pendant les chargements (overlay Steam)",
                                     "Responsive window during loading (Steam overlay)"),
