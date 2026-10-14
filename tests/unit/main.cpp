@@ -20,6 +20,7 @@
 #include "graphics/DepthEncoding.h"
 #include "graphics/Jitter.h"
 #include "graphics/SceneEnd.h"
+#include "crash/HangClock.h"
 #include "input/ButtonIcons.h"
 #include "input/MenuBridge.h"
 #include "graphics/FilmGrain.h"
@@ -411,7 +412,17 @@ void TestCameraTuning() {
 
 }  // namespace
 
+void TestHangClock() {
+    using hca::crash::HangElapsed;
+    // Dernière image à 100, jamais en arrière-plan : 400 ticks sans image.
+    Check(HangElapsed(500, 100, 0) == 400, "blocage : temps depuis la dernière image");
+    // Alt-Tab de 100 à 450 sans image : seul le temps depuis le retour au premier plan compte.
+    Check(HangElapsed(500, 100, 450) == 50, "blocage : temps en arrière-plan ignoré");
+    Check(HangElapsed(500, 600, 0) == 0, "blocage : image plus récente que la mesure");
+}
+
 int main() {
+    TestHangClock();
     TestStrings();
     TestBorderless();
     TestFramePeriod();
