@@ -17,7 +17,7 @@ public sealed record InstallStatus(ExeInfo Exe, bool HasOriginalExeBackup, strin
 public static class ModInstaller
 {
     private const string SettingsFile = "HomecomingAgain.ini";
-    private static readonly string[] LicenseFiles = ["LICENSE.txt", "LICENSE-SMAA.txt"];
+    private static readonly string[] LicenseFiles = ["LICENSE.txt", "LICENSE-SMAA.txt", "LICENSE-CAMERAFIX.txt"];
 
     public static InstallStatus ReadStatus(GamePaths paths) => new(
         ExePatcher.ReadInfo(paths.GameExe),
@@ -135,6 +135,11 @@ public static class ModInstaller
             ExePatcher.RestoreOriginal(paths.GameExe);
             report.Add(Loc.Get("UninstallExeRestored"));
         }
+        // Sans le mod, le stick droit doit de nouveau tourner le personnage.
+        if (ControllerBinds.Save(paths, cameraFix: false))
+        {
+            report.Add(Loc.Get("UninstallBindsRestored"));
+        }
         report.Add(Loc.Get("UninstallKept"));
         return report;
     }
@@ -151,6 +156,16 @@ public static class ModInstaller
             File.Copy(paths.GameSettings, paths.GameSettingsBackup);
         }
         settings.Save(paths.GameSettings);
+    }
+
+    /// <summary>Commandes du stick droit selon le correctif de caméra (voir <see cref="ControllerBinds"/>).</summary>
+    public static void SaveControllerBinds(GamePaths paths, bool cameraFix)
+    {
+        if (File.Exists(paths.GameBinds) && ControllerBinds.IsApplied(File.ReadAllText(paths.GameBinds)) != cameraFix)
+        {
+            EnsureGameNotRunning(paths);
+            ControllerBinds.Save(paths, cameraFix);
+        }
     }
 
     // Le jeu réécrit vars_pc.cfg à sa fermeture : modifier les réglages pendant qu'il tourne serait perdu.

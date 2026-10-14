@@ -92,12 +92,24 @@ struct Config {
     // Touche pour passer les cinématiques en vidéo (code de touche virtuelle Windows, 0x2E = Suppr, 0 = aucune).
 
     int movieSkipKey = 0x2E;
+    // Logos de démarrage accélérés jusqu'à l'écran titre (voir compat/StartupLogos.h).
+    bool skipLogos = true;
 
     // [Input]
     // Dans les menus, croix, stick gauche, A et B traduits en touches du clavier (input/MenuBridge.h).
     bool menuPad = true;
     // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
     int buttonIcons = 0;
+
+    // [Camera]
+    // Correctif de caméra à la manette, porté du Camera Fix d'Emertels (voir patches/CameraFix.h). Désactivé par
+    // défaut : il faut aussi retirer COMMAND_TURNLEFT et COMMAND_TURNRIGHT du stick droit dans binds_pc_mjs.cfg.
+    bool cameraFix = false;
+    // Vitesses de 0,25 à 3 (1 = calibrage du Camera Fix), voir patches/CameraTuning.h.
+    float cameraHorizontalSpeed = 1.0f;
+    float cameraVerticalSpeed = 1.0f;
+    float cameraAimHorizontalSpeed = 1.0f;
+    float cameraAimVerticalSpeed = 1.0f;
 
 
     // [Debug]

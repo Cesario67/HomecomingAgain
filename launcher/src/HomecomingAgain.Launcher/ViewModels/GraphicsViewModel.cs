@@ -94,6 +94,10 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial Choice<int> SelectedFilmGrain { get; set; }
 
+    /// <summary>Correctif de caméra à la manette ([Camera] CameraFix et commandes du stick droit).</summary>
+    [ObservableProperty]
+    public partial bool CameraFix { get; set; }
+
     [ObservableProperty]
     public partial bool HighQualityShaders { get; set; }
 
@@ -137,6 +141,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedShadowResolution = ShadowResolutions.LastOrDefault(choice => choice.Value <= settings.ShadowResolution) ?? ShadowResolutions[0];
         SelectedFilmGrain = FilmGrainLevels.LastOrDefault(choice => choice.Value <= settings.FilmGrain) ?? FilmGrainLevels[0];
         SelectedButtonIcons = ButtonIconSets.FirstOrDefault(choice => choice.Value == settings.ButtonIcons) ?? ButtonIconSets[0];
+        CameraFix = settings.CameraFix;
         HighQualityShaders = settings.HighQualityShaders;
         FullResolutionTextures = settings.FullResolutionTextures;
     }
@@ -154,6 +159,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         ShadowResolution = SelectedShadowResolution.Value,
         FilmGrain = SelectedFilmGrain.Value,
         ButtonIcons = SelectedButtonIcons.Value,
+        CameraFix = CameraFix,
         HighQualityShaders = HighQualityShaders,
         FullResolutionTextures = FullResolutionTextures,
     };

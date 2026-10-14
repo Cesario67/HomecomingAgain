@@ -95,6 +95,15 @@ public static class Translations
                                    "invites en jeu (Ouvrir, Sauvegarder...). Le jeu d'origine affiche les chiffres 1 à 4.",
                                    "A, B, X, Y button icons in menus, the inventory, the controls screen and in-game prompts " +
                                    "(Open, Save...). The original game shows the digits 1 to 4."),
+            ["CameraFix"] = ("Correctif de caméra (stick droit)", "Camera fix (right stick)"),
+            ["CameraFixHint"] = ("Le personnage tourne avec la caméra, le stick vertical répond de façon proportionnelle, et " +
+                                 "la visée a sa propre sensibilité (vitesses dans la section [Camera] de HomecomingAgain.ini). " +
+                                 "Le stick droit ne tourne plus le personnage dans Engine\\binds_pc_mjs.cfg (copie de " +
+                                 "secours faite). D'après le Camera Fix d'Emerson Teles (licence MIT).",
+                                 "The character turns with the camera, vertical stick response is proportional, and aiming " +
+                                 "has its own sensitivity (speeds in the [Camera] section of HomecomingAgain.ini). The right " +
+                                 "stick no longer turns the character in Engine\\binds_pc_mjs.cfg (backup made). Based on " +
+                                 "Camera Fix by Emerson Teles (MIT license)."),
             ["Anisotropy"] = ("Filtrage anisotrope", "Anisotropic filtering"),
             ["AnisoOff"] = ("Désactivé (jeu d'origine)", "Off (original game)"),
             ["AnisotropyHint"] = ("Textures nettes au sol et vues de biais. Impact négligeable sur une carte graphique récente.",
@@ -144,6 +153,11 @@ public static class Translations
                                   "Above 60 fps, the game's behaviour (animations, physics, QTEs) has not been verified."),
             ["PreciseTimer"] = ("Minuteur Windows précis (1 ms)", "Precise Windows timer (1 ms)"),
             ["PreciseTimerHint"] = ("Attentes plus régulières entre les images.", "More regular waits between frames."),
+            ["SkipLogos"] = ("Logos de démarrage accélérés", "Faster startup logos"),
+            ["SkipLogosHint"] = ("Konami, Double Helix et les mentions légales défilent en accéléré : l'écran titre arrive en " +
+                                 "5 s environ au lieu de 23. Le jeu a déjà fini de charger pendant ces logos.",
+                                 "Konami, Double Helix and the legal screen play fast-forwarded: the title screen appears " +
+                                 "in about 5 s instead of 23. The game has already finished loading during these logos."),
             ["SecCompatibility"] = ("Compatibilité", "Compatibility"),
             ["WindowThreadLock"] = ("Fenêtre réactive pendant les chargements (overlay Steam)",
                                     "Responsive window during loading (Steam overlay)"),
@@ -210,6 +224,7 @@ public static class Translations
             ["UninstallDllRestored"] = ("version.dll d'origine remise en place.", "Original version.dll restored."),
             ["UninstallKept"] = ("Réglages et journaux conservés.", "Settings and logs kept."),
             ["UninstallExeRestored"] = ("SilentHill.exe d'origine restauré.", "Original SilentHill.exe restored."),
+            ["UninstallBindsRestored"] = ("Commandes du stick droit d'origine remises.", "Original right stick bindings restored."),
             ["InstallUnknownVersion"] = ("Version du jeu différente de celle analysée : certains correctifs peuvent " +
                                          "être ignorés (voir le journal).",
                                          "Game version differs from the analysed one: some fixes may be skipped (see the log)."),

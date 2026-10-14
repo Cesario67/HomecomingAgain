@@ -105,6 +105,11 @@ Prochaine étape et plan : `docs/a-faire.md`.
 
 ## Workflow avec Claude Code
 
+- **À chaque modification, appliquer la méthode de `docs/methode-de-travail.md`** (lire ce fichier en début de
+  session) : rétro-ingénierie, correctifs vérifiés par octets, tests (et preuve qu'ils détectent le défaut),
+  installation et tests en jeu, commits, PR et release. En particulier : d'autres sessions peuvent travailler en
+  même temps dans ce dossier, donc **committer en nommant ses fichiers un par un, jamais `git add -A`**.
+
 - L'utilisateur a de solides bases en **C#**, pas en C++ : expliquer les concepts C++ et Win32 nouveaux
   avec des équivalents C# quand c'est pertinent (pointeurs de fonction / délégués, RAII / `IDisposable`,
   `HANDLE` / `SafeHandle`, etc.).

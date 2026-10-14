@@ -14,6 +14,7 @@
 #include "input/DirectInputHooks.h"
 #include "input/XInputHooks.h"
 #include "compat/SkipMovies.h"
+#include "compat/StartupLogos.h"
 #include "compat/WindowThreadLock.h"
 #include "core/Config.h"
 #include "core/Log.h"
@@ -24,6 +25,7 @@
 #include "framepacing/FrameMonitor.h"
 #include "framepacing/WaitProfiler.h"
 #include "graphics/D3D9Hooks.h"
+#include "patches/CameraFix.h"
 #include "patches/FrameRateCap.h"
 
 namespace {
@@ -74,9 +76,11 @@ void Startup() {
     if (engine != nullptr) {
         hca::graphics::Install(engine);
         hca::patches::ApplyFrameRateCap(engine);
+        hca::patches::ApplyCameraFix(engine);
         hca::compat::InstallWindowThreadLock(engine);
         hca::compat::InstallSkipMovies(engine);
         hca::compat::InstallMovieSkip(engine);
+        hca::compat::InstallStartupLogos(engine);
         hca::audio::InstallAudioProbe(engine);
         hca::input::InstallXInputHooks(engine);
         hca::input::InstallDirectInputHooks(engine);

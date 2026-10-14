@@ -6,6 +6,7 @@
 #include "core/Hooking.h"
 #include "core/Log.h"
 #include "input/MenuBridge.h"
+#include "patches/CameraFix.h"
 
 namespace hca::input {
 
@@ -24,8 +25,10 @@ DWORD WINAPI HookGetState(DWORD user, XINPUT_STATE* state) {
     if (user == 0) {
         if (result == ERROR_SUCCESS && state != nullptr) {
             OnPadState(state->Gamepad.wButtons, state->Gamepad.sThumbLX, state->Gamepad.sThumbLY);
+            patches::NoteRightStick(state->Gamepad.sThumbRX, state->Gamepad.sThumbRY);
         } else {
             OnPadDisconnected();
+            patches::NoteRightStick(0, 0);
         }
     }
     return result;
@@ -34,7 +37,8 @@ DWORD WINAPI HookGetState(DWORD user, XINPUT_STATE* state) {
 }  // namespace
 
 void InstallXInputHooks(HMODULE engine) {
-    if ((!GetConfig().menuPad && GetConfig().buttonIcons != 0) || engine == nullptr) {
+    const Config& config = GetConfig();
+    if ((!config.menuPad && config.buttonIcons != 0 && !config.cameraFix) || engine == nullptr) {
         return;
     }
     const bool get = hooking::PatchImportOrdinal(engine, kXInputDll, kGetStateOrdinal, &HookGetState, &g_getState);

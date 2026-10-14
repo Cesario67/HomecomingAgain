@@ -104,6 +104,8 @@
               </ItemsControl>
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[ButtonIconsHint]}" />
+            <CheckBox Content="{Binding L[CameraFix]}" IsChecked="{Binding CameraFix}" />
+            <TextBlock Classes="hint" Text="{Binding L[CameraFixHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
             <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />
@@ -129,6 +131,8 @@
             <TextBlock Classes="warning" Text="{Binding L[HighFpsWarning]}" IsVisible="{Binding ShowHighFrameRateWarning}" />
             <CheckBox Content="{Binding L[PreciseTimer]}" IsChecked="{Binding PreciseTimer}" />
             <TextBlock Classes="hint" Text="{Binding L[PreciseTimerHint]}" />
+            <CheckBox Content="{Binding L[SkipLogos]}" IsChecked="{Binding SkipLogos}" />
+            <TextBlock Classes="hint" Text="{Binding L[SkipLogosHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecCompatibility]}" />
             <CheckBox Content="{Binding L[WindowThreadLock]}" IsChecked="{Binding WindowThreadLock}" />

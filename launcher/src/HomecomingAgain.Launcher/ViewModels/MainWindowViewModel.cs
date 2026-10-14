@@ -159,6 +159,7 @@ public sealed partial class MainWindowViewModel : LocalizedViewModel
         IniDocument mod = IniDocument.Load(Paths!.ModIni);
         settings.WriteMod(mod);
         mod.Save(Paths.ModIni);
+        ModInstaller.SaveControllerBinds(Paths, settings.CameraFix);
         if (!File.Exists(Paths.GameSettings))
         {
             return string.Join(" ", dlss.Prepend(Loc.Get("SettingsSavedModOnly")));

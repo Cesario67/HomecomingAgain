@@ -1,5 +1,6 @@
 #include "core/Hooking.h"
 
+#include <cstdint>
 #include <cstring>
 
 namespace hca::hooking {
@@ -63,6 +64,19 @@ bool WriteCode(void* address, const void* bytes, size_t size) noexcept {
     VirtualProtect(address, size, oldProtect, &oldProtect);
     FlushInstructionCache(GetCurrentProcess(), address, size);
     return true;
+}
+
+bool WriteJump(void* site, const void* target, size_t length) noexcept {
+    std::uint8_t code[16];
+    if (length < 5 || length > sizeof(code)) {
+        return false;
+    }
+    std::memset(code, 0x90, sizeof(code));
+    code[0] = 0xE9;
+    const auto relative = static_cast<std::int32_t>(reinterpret_cast<std::intptr_t>(target) -
+                                                    (reinterpret_cast<std::intptr_t>(site) + 5));
+    std::memcpy(code + 1, &relative, sizeof(relative));
+    return WriteCode(site, code, length);
 }
 
 bool PatchImportOrdinalRaw(HMODULE module, const char* dllName, WORD ordinal, void* replacement,

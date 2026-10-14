@@ -12,6 +12,7 @@
 #include "audio/AudioProbe.h"
 #include "compat/MovieSkip.h"
 #include "compat/SkipMovies.h"
+#include "compat/StartupLogos.h"
 #include "dlss/SharedFrames.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
@@ -20,12 +21,14 @@
 #include "graphics/DepthEncoding.h"
 #include "graphics/Jitter.h"
 #include "graphics/SceneEnd.h"
+#include "crash/HangClock.h"
 #include "input/ButtonIcons.h"
 #include "input/MenuBridge.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
 #include "graphics/ShadowResolution.h"
+#include "patches/CameraTuning.h"
 #include "patches/FrameRateCap.h"
 
 namespace {
@@ -152,6 +155,16 @@ void TestSkipMovies() {
           "vidéos Bink reconnues, casse ignorée");
     Check(!hca::compat::IsMoviePath(L"vars_pc.cfg") && !hca::compat::IsMoviePath(L"bik") && !hca::compat::IsMoviePath(L"a.bikx"),
           "autres fichiers ouverts normalement");
+}
+
+void TestStartupLogos() {
+    hca::compat::FirstLoadingScreen screen;
+    // Avant les logos (boucle pas encore lancée), pendant, puis fin : seule la fin compte, une seule fois.
+    const bool before = screen.Update(false);
+    const bool during = screen.Update(true) || screen.Update(true);
+    const bool end = screen.Update(false);
+    const bool later = screen.Update(true) || screen.Update(false);
+    Check(!before && !during && end && !later, "logos : fin de la première boucle de chargement seulement");
 }
 
 void TestMovieSkip() {
@@ -378,9 +391,49 @@ void TestJitter() {
     Check(!ApplyToMatrix(ortho, 0.01f, 0.01f) && ortho[3] == -0.999f, "projection d'interface laissée telle quelle");
 }
 
+void TestCameraTuning() {
+    using namespace hca::patches::camera;
+    std::printf("Correctif de caméra\n");
+    Check(ClampSpeed(0.1f) == 0.25f && ClampSpeed(5.0f) == 3.0f && ClampSpeed(1.5f) == 1.5f &&
+              ClampSpeed(std::nanf("")) == 1.0f,
+          "vitesses bornées à [0,25 ; 3], valeur non finie ramenée à 1");
+    const CameraGains defaults = ComputeGains({});
+    Check(defaults.yawRadiansPerSecond == 1.5f && std::fabs(defaults.padPitchGain - 171.88733987074934) < 1e-6 &&
+              std::fabs(defaults.pitchGain - 2.8647889f) < 1e-6f,
+          "réglages à 1 : 1,5 rad/s et gain vertical 2,8648 du Camera Fix");
+    const CameraGains fast = ComputeGains({2.0f, 0.5f, 3.0f, 1.5f});
+    Check(fast.yawRadiansPerSecond == 3.0f && std::fabs(fast.pitchGain - 1.4323945f) < 1e-6f &&
+              fast.aimOutputX == 1.0f && fast.aimOutputY == 0.5f && fast.aimInputGain == 2.0f,
+          "réglages appliqués, visée = réglage / 3");
+    Check(!IsStickDeflected(0.05f) && !IsStickDeflected(-0.04f) && IsStickDeflected(0.06f) && IsStickDeflected(-1.0f),
+          "zone morte de 5 % du stick");
+    Check(!IsRawStickDeflected(1638) && IsRawStickDeflected(1700) && IsRawStickDeflected(-32768),
+          "zone morte sur l'axe XInput brut");
+    Check(std::fabs(TurnDegrees(1.0f, 1.0f, 1.5f) + 85.943671f) < 1e-3f && TurnDegrees(-0.5f, 0.1f, 2.0f) > 0.0f &&
+              TurnDegrees(0.0f, 1.0f, 1.5f) == 0.0f,
+          "rotation par image en degrés, signe du Camera Fix");
+    Check(std::fabs(HeadingFromForward(1.0f, 0.0f)) < 1e-6f &&
+              std::fabs(HeadingFromForward(0.0f, 1.0f) - 1.5707963f) < 1e-6f &&
+              std::fabs(HeadingFromForward(0.0f, -1.0f) - 4.712389f) < 1e-5f,
+          "cap dans [0 ; 2π[");
+    Check(IsPrecisionCameraName("Precision") && !IsPrecisionCameraName("PrecisionX") &&
+              !IsPrecisionCameraName("Navigation") && !IsPrecisionCameraName("Prec") && !IsPrecisionCameraName(nullptr),
+          "caméra de visée reconnue par son nom exact");
+}
+
 }  // namespace
 
+void TestHangClock() {
+    using hca::crash::HangElapsed;
+    // Dernière image à 100, jamais en arrière-plan : 400 ticks sans image.
+    Check(HangElapsed(500, 100, 0) == 400, "blocage : temps depuis la dernière image");
+    // Alt-Tab de 100 à 450 sans image : seul le temps depuis le retour au premier plan compte.
+    Check(HangElapsed(500, 100, 450) == 50, "blocage : temps en arrière-plan ignoré");
+    Check(HangElapsed(500, 600, 0) == 0, "blocage : image plus récente que la mesure");
+}
+
 int main() {
+    TestHangClock();
     TestStrings();
     TestBorderless();
     TestFramePeriod();
@@ -390,6 +443,7 @@ int main() {
     TestFilmGrain();
     TestSkipMovies();
     TestMovieSkip();
+    TestStartupLogos();
     TestChannelFix();
     TestSharedFrames();
     TestCameraMath();
@@ -399,6 +453,7 @@ int main() {
     TestButtonIcons();
     TestDepthEncoding();
     TestJitter();
+    TestCameraTuning();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

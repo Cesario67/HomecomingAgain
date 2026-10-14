@@ -23,6 +23,10 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool PreciseTimer { get; set; } = true;
 
+    /// <summary>Logos de démarrage accélérés jusqu'à l'écran titre ([Movies] SkipLogos).</summary>
+    [ObservableProperty]
+    public partial bool SkipLogos { get; set; } = true;
+
     [ObservableProperty]
     public partial bool WindowThreadLock { get; set; } = true;
 
@@ -55,6 +59,7 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
         SelectedFrameRate = FrameRates.FirstOrDefault(choice => choice.Value == settings.TargetFps)
                             ?? AddCustomFrameRate(settings.TargetFps);
         PreciseTimer = settings.PreciseTimer;
+        SkipLogos = settings.SkipLogos;
         WindowThreadLock = settings.WindowThreadLock;
         D3DMultithreaded = settings.D3DMultithreaded;
         CrashDumps = settings.CrashDumps;
@@ -67,6 +72,7 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     {
         TargetFps = SelectedFrameRate.Value,
         PreciseTimer = PreciseTimer,
+        SkipLogos = SkipLogos,
         WindowThreadLock = WindowThreadLock,
         D3DMultithreaded = D3DMultithreaded,
         CrashDumps = CrashDumps,

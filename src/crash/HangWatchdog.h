@@ -8,6 +8,7 @@ namespace hca::crash {
 // `[Crash] HangSeconds` sans image, il journalise une fois l'état du thread principal (celui de la fenêtre) et
 // du thread de rendu, puis écrit un minidump. Windows ferme un jeu qui ne répond plus (« Application Hang ») sans
 // laisser de trace exploitable : c'est ce qui manquait au premier essai en fenêtré 1080p.
+// Le temps passé hors du premier plan ne compte pas : le jeu s'y met en pause (voir crash/HangClock.h).
 void StartHangWatchdog(DWORD mainThreadId) noexcept;
 
 }  // namespace hca::crash
