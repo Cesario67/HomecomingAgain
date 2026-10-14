@@ -44,6 +44,7 @@
     <EmbeddedResource Include="$(PayloadDir)\HomecomingAgain.ini" LogicalName="payload/HomecomingAgain.ini" />
     <EmbeddedResource Include="$(PayloadDir)\LICENSE.txt" LogicalName="payload/LICENSE.txt" />
     <EmbeddedResource Include="$(PayloadDir)\LICENSE-SMAA.txt" LogicalName="payload/LICENSE-SMAA.txt" />
+    <EmbeddedResource Include="$(PayloadDir)\LICENSE-CAMERAFIX.txt" LogicalName="payload/LICENSE-CAMERAFIX.txt" />
   </ItemGroup>
   <!-- Option DLSS : DXVK, programme DLSS 64 bits, moteur DLSS de NVIDIA et licences (environ 67 Mo). -->
   <ItemGroup Condition="Exists('$(PayloadDir)\HomecomingAgain.Dlss.exe') And Exists('$(PayloadDir)\d3d9.dll')">

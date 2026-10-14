@@ -100,6 +100,16 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.menuPad = ReadBool(iniPath, L"Input", L"MenuPad", defaults.menuPad);
     config.buttonIcons = ReadInt(iniPath, L"Input", L"ButtonIcons", defaults.buttonIcons, 0, 3);
 
+    config.cameraFix = ReadBool(iniPath, L"Camera", L"CameraFix", defaults.cameraFix);
+    config.cameraHorizontalSpeed =
+        ReadFloat(iniPath, L"Camera", L"HorizontalSpeed", defaults.cameraHorizontalSpeed, 0.25f, 3.0f);
+    config.cameraVerticalSpeed =
+        ReadFloat(iniPath, L"Camera", L"VerticalSpeed", defaults.cameraVerticalSpeed, 0.25f, 3.0f);
+    config.cameraAimHorizontalSpeed =
+        ReadFloat(iniPath, L"Camera", L"AimHorizontalSpeed", defaults.cameraAimHorizontalSpeed, 0.25f, 3.0f);
+    config.cameraAimVerticalSpeed =
+        ReadFloat(iniPath, L"Camera", L"AimVerticalSpeed", defaults.cameraAimVerticalSpeed, 0.25f, 3.0f);
+
 
     config.logKeepCount = ReadInt(iniPath, L"Debug", L"LogKeepCount", defaults.logKeepCount, 1, 500);
     config.frameCapture = ReadBool(iniPath, L"Debug", L"FrameCapture", defaults.frameCapture);

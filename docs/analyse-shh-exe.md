@@ -174,3 +174,35 @@ Mesure avec les deux correctifs : **8 lancements sur 8 via Steam, overlay charg�
 Appliqué par le launcher (`HomecomingAgain.exe install`) avec l'accord de l'utilisateur : bit `IMAGE_FILE_LARGE_ADDRESS_AWARE`
 (0x20) de `SilentHill.exe`, original conservé dans `SilentHill.exe.hca-original`. Vérifié en jeu : espace
 d'adressage **4095 Mo** (2047 avant), 59,6 i/s, aucun blocage. Prérequis aux essais de rendu en haute résolution.
+
+## Caméra à la manette : sites du Camera Fix d'Emertels (14/10/2026)
+
+Le Camera Fix 1.0 (Emerson Teles, licence MIT, voir `third_party/camerafix/ORIGINE.md`) modifie le moteur d'une
+installation Unknown Project 3.20, dont le `g_SilentHill.sgl` diffère du nôtre (SHA-256 `2A7C3003...` contre
+`A0EBEEC3...` pour Steam build 6.30). Ses sites ont été comparés à notre moteur, sans rien télécharger de ses binaires :
+ses octets ajoutés (`navigation_speed_signatures.h`) ont été posés sur une copie du moteur Steam dans le scratchpad,
+puis désassemblés avec `dumpbin`.
+
+**Vérifié** (désassemblage du moteur Steam) :
+
+| Adresse | Instruction d'origine | Rôle |
+| --- | --- | --- |
+| `0x108DB3D6` | `movss [esp+28h],xmm0` | cap de la caméra de navigation, rangé aussi en `[esi+11Ch]` juste après |
+| `0x108DAFFB` | `mulsd xmm1,[0x10F91290]` | tangage à la manette : Y² (`[ebx+24h]` au carré) x 60 degrés/s (double 60.0) |
+| `0x108DB012` | `movss xmm1,[0x111D6368]` | tangage de l'autre branche : Y x constante (1400 dans le fichier) |
+| `0x103851E0` | `movss xmm1,[esi+0AD8h]` | entrée du personnage |
+| `0x10711F24` | `movss xmm0,[0x10F8A2E4]` | juste après le rangement de la sortie horizontale de visée en `[esp+20h]` |
+| `0x1071EA28` | `movss [esp+1Ch],xmm0` | sortie verticale de visée ; les indicateurs du `cmp` de `0x1071EA21` servent ensuite |
+| `0x10145F50` | `push ebp` ... | fonction cdecl (personnage, degrés), dernier appel en `0x1005D7FB` |
+| `0x10D20A56` | `jmp [0x117EED0C]` | relais d'import de la CRT (le Camera Fix y appelle `_CIatan2` ; remplacé par `std::atan2`) |
+| `0x10386000-0x103864FF` | `int 3` | zone libre où le Camera Fix met son code (inutilisée par HomecomingAgain) |
+
+Dans la fonction `0x108DABF0` (mise à jour de la caméra de navigation), `edi` reçoit en `0x108DAC1E` le résultat de
+`0x10066022` et n'est plus modifié jusqu'à `0x108DB3D6` ; `ebx` vaut `[ebp+0Ch]` à partir de `0x108DAF6D`.
+
+**Hypothèses** reprises du Camera Fix, validées par ses tests en jeu sur son moteur, pas par nous : `edi` = transformation
+du personnage suivi (avant en `+0x20`/`+0x28`), `esi+0x120` = vitesse du suivi automatique, `[esp+24h]` = durée de
+l'image, `[ebp+0Ch]+0x20` = commande X de la caméra, `+0xAE8`/`+0xAEC` du personnage = entrée de visée, chaîne
+`[0x1158982C]+8` vers le nom de la caméra active (« Precision » en visée). Le choix de branche du tangage
+(`[ecx+178h]` et bit 0 de `[eax+220h]`) n'est pas identifié : on ne sait pas si la souris passe par l'une d'elles, d'où
+la condition « stick droit incliné » de `patches/CameraFix.cpp`.

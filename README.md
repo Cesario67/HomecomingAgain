@@ -76,6 +76,7 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Movies]` | `SkipKey=46` | Key to skip cutscenes (46 = Delete, 0 = none) |
 | `[Input]` | `ButtonIcons=0` | Button icons: 0 = auto (Xbox if a controller is plugged in), 1 = PC (original), 2 = Xbox, 3 = PlayStation |
 | `[Input]` | `MenuPad=1` | Controller in menus (D-pad, left stick, A, B, Start) |
+| `[Camera]` | `CameraFix=0` | Controller camera fix (based on Emertels' Camera Fix): the character turns with the right stick, proportional vertical response, separate aim sensitivity. Speeds `HorizontalSpeed`, `VerticalSpeed`, `AimHorizontalSpeed`, `AimVerticalSpeed` (0.25 to 3.0). The launcher also frees the right stick in `Engine\binds_pc_mjs.cfg` |
 | `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA): all three at 1 to enable it, with DXVK (done by the launcher) |
 
 ## Known limitations
@@ -108,6 +109,8 @@ not covered by the GPL and stays under the NVIDIA RTX SDKs License.
 
 - Uses SMAA. Copyright (C) 2011 by Jorge Jimenez, Jose I. Echevarria, Belen Masia, Fernando Navarro and Diego
   Gutierrez. See `third_party/smaa/LICENSE.txt`.
+- Controller camera fix ported from Camera Fix by Emerson Teles (Emertels), MIT license, Copyright (c) 2026 Emerson
+  Teles. See `third_party/camerafix/LICENSE.txt` and `third_party/camerafix/ORIGINE.md`.
 - DXVK interop interfaces (excerpt of `d3d9_interfaces.h`), zlib license. Copyright (c) 2017 Philip Rebohle,
   (c) 2019 Joshua Ashton, (c) 2019 Robin Kertels. See `third_party/dxvk/LICENSE.txt`.
 - NVIDIA DLSS SDK (`nvngx_dlss.dll` and the NGX library linked into `HomecomingAgain.Dlss.exe`), NVIDIA RTX SDKs

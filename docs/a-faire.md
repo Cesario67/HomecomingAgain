@@ -45,6 +45,9 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
   sensibilité de la caméra réglables (point faible signalé par des joueurs), échange des gâchettes, vibration.
 - Fait (14/10/2026) : icônes de boutons Xbox 360 ou PS3 partout (menus, inventaire, commandes, invites en jeu),
   menu principal à la manette. Reste : branchement à chaud, plusieurs manettes.
+- Fait (14/10/2026) : correctif de caméra au stick droit porté du Camera Fix d'Emertels (MIT), en mémoire
+  (`patches/CameraFix`), désactivé par défaut, activé par le launcher avec les touches du stick droit. Validé en jeu
+  à la manette par l'utilisateur. Reste : vérifier que la souris ne passe pas par ces sites.
 - Manettes non XInput (PlayStation) : conversion comme `ControllerMapping` de DPStabilityFix.
 - Clavier / souris : touches reconfigurables via `binds_pc_mjs.cfg` (le fichier d'origine est déjà un format texte).
 

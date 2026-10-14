@@ -37,6 +37,9 @@ public sealed record PatchSettings
     // 2 = Xbox 360, 3 = PS3.
     public int ButtonIcons { get; init; }
 
+    // --- Caméra à la manette ([Camera] CameraFix, plus les commandes du stick droit, voir ControllerBinds).
+    public bool CameraFix { get; init; }
+
     // --- Cadence ([Frames])
     public int TargetFps { get; init; } = 60;
     public bool PreciseTimer { get; init; } = true;
@@ -74,6 +77,7 @@ public sealed record PatchSettings
             FilmGrain = mod.GetInt("Graphics", "FilmGrain", defaults.FilmGrain),
             Dlss = mod.GetBool("DLSS", "ShareFrames", false) && mod.GetBool("DLSS", "Apply", false),
             ButtonIcons = Math.Clamp(mod.GetInt("Input", "ButtonIcons", 0), 0, 3),
+            CameraFix = mod.GetBool("Camera", "CameraFix", defaults.CameraFix),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
             WindowThreadLock = mod.GetBool("Compat", "WindowThreadLock", defaults.WindowThreadLock),
@@ -98,6 +102,7 @@ public sealed record PatchSettings
         mod.SetInt("DLSS", "Jitter", Dlss ? 1 : 0);
         mod.SetBool("DLSS", "Apply", Dlss);
         mod.SetInt("Input", "ButtonIcons", Math.Clamp(ButtonIcons, 0, 3));
+        mod.SetBool("Camera", "CameraFix", CameraFix);
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Compat", "WindowThreadLock", WindowThreadLock);

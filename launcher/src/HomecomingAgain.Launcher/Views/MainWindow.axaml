@@ -104,6 +104,8 @@
               </ItemsControl>
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[ButtonIconsHint]}" />
+            <CheckBox Content="{Binding L[CameraFix]}" IsChecked="{Binding CameraFix}" />
+            <TextBlock Classes="hint" Text="{Binding L[CameraFixHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
             <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />

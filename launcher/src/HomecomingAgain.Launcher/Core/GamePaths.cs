@@ -20,6 +20,10 @@ public sealed record GamePaths(string GameDirectory)
     public string GameSettings => Path.Combine(GameDirectory, "Engine", "vars_pc.cfg");
     public string GameSettingsBackup => GameSettings + ".hca-backup";
 
+    /// <summary>Commandes du clavier et de la manette du jeu (voir <see cref="ControllerBinds"/>).</summary>
+    public string GameBinds => Path.Combine(GameDirectory, "Engine", "binds_pc_mjs.cfg");
+    public string GameBindsBackup => GameBinds + ".hca-backup";
+
     public string ModDataDirectory => Path.Combine(BinDirectory, "HomecomingAgain");
     public string LogsDirectory => Path.Combine(ModDataDirectory, "logs");
     public string CrashDumpsDirectory => Path.Combine(ModDataDirectory, "crashdumps");

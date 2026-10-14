@@ -29,6 +29,10 @@ bool PatchImport(HMODULE module, const char* dllName, const char* functionName, 
 // (DllMain : le moteur est chargé mais pas démarré).
 bool WriteCode(void* address, const void* bytes, size_t size) noexcept;
 
+// Remplace les `length` octets (5 à 16) d'instructions en `site` par un saut (jmp rel32) vers `target`, complété de
+// nop. Mêmes précautions que WriteCode.
+bool WriteJump(void* site, const void* target, size_t length) noexcept;
+
 // Comme PatchImportRaw, pour un import par numéro d'ordre (ex. XINPUT1_3.dll, que le moteur de Silent Hill
 // importe par les ordinaux 2, 3 et 4, soit XInputGetState, XInputSetState et XInputGetCapabilities).
 bool PatchImportOrdinalRaw(HMODULE module, const char* dllName, WORD ordinal, void* replacement,
