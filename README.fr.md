@@ -39,6 +39,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   de la profondeur du moteur et appliqué avant l'interface.
 - **Ombres plus fines** : carte d'ombres en 8192x8192 au lieu de 2048x2048, avec un décalage de pente adapté.
 - **Grain de pellicule réglable** : désactivé, réduit de moitié ou comme à l'origine.
+- **Carte entière au-delà du 720p** : le jeu limitait l'écran de la carte à une zone fixe de 1280x720 ; le mod l'étend
+  à toute l'image (1080p, 1440p, 4K...) en gardant la carte à sa taille et à sa place d'origine.
 - **DLSS (DLAA, expérimental)** : anticrénelage par l'IA de NVIDIA, plus stable et plus net que le SMAA, à la
   résolution d'origine. Cartes NVIDIA RTX uniquement ; l'option du launcher installe aussi DXVK (Direct3D 9 sur
   Vulkan). Le jeu étant 32 bits et le DLSS 64 bits, un petit programme 64 bits (`HomecomingAgain.Dlss.exe`) reçoit les
@@ -79,6 +81,7 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Occlusion ambiante et son intensité |
 | `[Graphics]` | `ShadowResolution=8192` | Taille de la carte d'ombres (2048 d'origine, 4096 ou 8192) |
 | `[Graphics]` | `FilmGrain=100` | Grain de pellicule en % (0 = aucun) |
+| `[Graphics]` | `FullScreenUiClip=1` | Carte entière au-delà du 720p (0 = d'origine) |
 | `[Audio]` | `ChannelFix=1` | Son corrigé (0 = son d'origine) |
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
 | `[Movies]` | `SkipLogos=1` | Logos de démarrage accélérés (0 = d'origine) |

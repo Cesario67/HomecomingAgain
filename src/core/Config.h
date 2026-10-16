@@ -35,6 +35,8 @@ struct Config {
     bool ssaoDebug = false;
     // Intensité du grain de pellicule du jeu en % (100 = jeu d'origine, 0 = aucun), voir graphics/FilmGrain.h.
     int filmGrain = 100;
+    // Zone 1280x720 fixe du jeu (carte) étendue à toute l'image (voir graphics/UiClip.h).
+    bool fullScreenUiClip = true;
     // Jeu exécuté par D3D9On12 (Direct3D 12), préparation du DLSS, expérimental (voir graphics/D3D9On12.h).
     bool d3d9On12 = false;
 

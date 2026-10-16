@@ -37,6 +37,8 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
   engine's depth and applied before the interface.
 - **Sharper shadows**: 8192x8192 shadow map instead of 2048x2048, with the slope bias scaled to match.
 - **Adjustable film grain**: off, halved or as in the original.
+- **Map no longer cut off above 720p**: the game clipped the map screen to a fixed 1280x720 area; the mod extends it to
+  the whole picture (1080p, 1440p, 4K...) while keeping the map at its original size and place.
 - **DLSS (DLAA, experimental)**: NVIDIA AI anti-aliasing, more stable and sharper than SMAA, at native resolution.
   NVIDIA RTX cards only; the launcher option also installs DXVK (Direct3D 9 on Vulkan). As the game is 32-bit and DLSS
   is 64-bit, a small 64-bit program (`HomecomingAgain.Dlss.exe`) receives the game's images, applies DLSS and hands
@@ -74,6 +76,7 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Ambient occlusion and its strength |
 | `[Graphics]` | `ShadowResolution=8192` | Shadow map size (2048 originally, 4096 or 8192) |
 | `[Graphics]` | `FilmGrain=100` | Film grain in % (0 = none) |
+| `[Graphics]` | `FullScreenUiClip=1` | Map no longer cut off above 720p (0 = original) |
 | `[Audio]` | `ChannelFix=1` | Fixed sound (0 = original sound) |
 | `[Movies]` | `SkipKey=46` | Key to skip cutscenes (46 = Delete, 0 = none) |
 | `[Movies]` | `SkipLogos=1` | Fast-forward the startup logos (0 = original) |

@@ -34,6 +34,8 @@ constexpr size_t kEndSceneIndex = 42;
 constexpr size_t kClearIndex = 43;
 constexpr size_t kSetTransformIndex = 44;
 constexpr size_t kSetViewportIndex = 47;
+constexpr size_t kSetRenderStateIndex = 57;
+constexpr size_t kSetScissorRectIndex = 75;
 constexpr size_t kSetTextureIndex = 65;
 constexpr size_t kDrawPrimitiveIndex = 81;
 constexpr size_t kDrawIndexedPrimitiveIndex = 82;
@@ -58,6 +60,8 @@ using SceneFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*);
 using ClearFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, DWORD, const D3DRECT*, DWORD, D3DCOLOR, float, DWORD);
 using SetTransformFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, D3DTRANSFORMSTATETYPE, const D3DMATRIX*);
 using SetViewportFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const D3DVIEWPORT9*);
+using SetScissorRectFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const RECT*);
+using SetRenderStateFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, D3DRENDERSTATETYPE, DWORD);
 using SetTextureFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, DWORD, IDirect3DBaseTexture9*);
 using DrawPrimitiveFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, D3DPRIMITIVETYPE, UINT, UINT);
 using DrawIndexedPrimitiveFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, D3DPRIMITIVETYPE, INT, UINT, UINT, UINT,
@@ -80,6 +84,8 @@ SceneFn g_endScene = nullptr;
 ClearFn g_clear = nullptr;
 SetTransformFn g_setTransform = nullptr;
 SetViewportFn g_setViewport = nullptr;
+SetScissorRectFn g_setScissorRect = nullptr;
+SetRenderStateFn g_setRenderState = nullptr;
 SetTextureFn g_setTexture = nullptr;
 DrawPrimitiveFn g_drawPrimitive = nullptr;
 DrawIndexedPrimitiveFn g_drawIndexedPrimitive = nullptr;
@@ -303,6 +309,20 @@ HRESULT STDMETHODCALLTYPE HookSetTransform(IDirect3DDevice9* device, D3DTRANSFOR
     return g_setTransform(device, state, matrix);
 }
 
+HRESULT STDMETHODCALLTYPE HookSetScissorRect(IDirect3DDevice9* device, const RECT* rect) {
+    if (Recording() && rect != nullptr) {
+        Record("SetScissorRect {} {} {} {}", rect->left, rect->top, rect->right, rect->bottom);
+    }
+    return g_setScissorRect(device, rect);
+}
+
+HRESULT STDMETHODCALLTYPE HookSetRenderState(IDirect3DDevice9* device, D3DRENDERSTATETYPE state, DWORD value) {
+    if (Recording() && state == D3DRS_SCISSORTESTENABLE) {
+        Record("SetRenderState SCISSORTESTENABLE {}", value);
+    }
+    return g_setRenderState(device, state, value);
+}
+
 HRESULT STDMETHODCALLTYPE HookSetViewport(IDirect3DDevice9* device, const D3DVIEWPORT9* viewport) {
     if (Recording() && viewport != nullptr) {
         Record("SetViewport {} {} {}x{} z {}..{}", viewport->X, viewport->Y, viewport->Width, viewport->Height,
@@ -418,6 +438,8 @@ void Install(IDirect3DDevice9* device) {
     ok &= hooking::PatchVtable(device, kClearIndex, &HookClear, &g_clear);
     ok &= hooking::PatchVtable(device, kSetTransformIndex, &HookSetTransform, &g_setTransform);
     ok &= hooking::PatchVtable(device, kSetViewportIndex, &HookSetViewport, &g_setViewport);
+    ok &= hooking::PatchVtable(device, kSetScissorRectIndex, &HookSetScissorRect, &g_setScissorRect);
+    ok &= hooking::PatchVtable(device, kSetRenderStateIndex, &HookSetRenderState, &g_setRenderState);
     ok &= hooking::PatchVtable(device, kSetTextureIndex, &HookSetTexture, &g_setTexture);
     ok &= hooking::PatchVtable(device, kDrawPrimitiveIndex, &HookDrawPrimitive, &g_drawPrimitive);
     ok &= hooking::PatchVtable(device, kDrawIndexedPrimitiveIndex, &HookDrawIndexedPrimitive, &g_drawIndexedPrimitive);

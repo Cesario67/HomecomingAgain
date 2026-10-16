@@ -20,6 +20,7 @@
 #include "graphics/CameraTracker.h"
 #include "graphics/DepthEncoding.h"
 #include "graphics/Jitter.h"
+#include "graphics/UiClip.h"
 #include "graphics/SceneEnd.h"
 #include "crash/HangClock.h"
 #include "input/ButtonIcons.h"
@@ -361,6 +362,41 @@ void TestDepthEncoding() {
     Check(!ParseEncoding(98, zero, 1, untouched), "facteur nul refusé");
 }
 
+void TestUiClip() {
+    using hca::graphics::uiclip::ExpandLegacyRect;
+    long w = 1280;
+    long h = 720;
+    const bool expanded = ExpandLegacyRect(0, 0, w, h, 1920, 1080) && w == 1920 && h == 1080;
+    long w720 = 1280;
+    long h720 = 720;
+    long wOther = 1024;
+    long hOther = 1024;
+    long wShifted = 1280;
+    long hShifted = 720;
+    Check(expanded && !ExpandLegacyRect(0, 0, w720, h720, 1280, 720) && !ExpandLegacyRect(0, 0, wOther, hOther, 1920, 1080) &&
+              !ExpandLegacyRect(10, 0, wShifted, hShifted, 1920, 1080) && w720 == 1280 && wOther == 1024,
+          "carte : zone 1280x720 étendue à la cible, autres zones intactes");
+    // Matrice relevée sur la carte (16/10/2026) et un sommet : même pixel en 1280x720 d'origine et en 1920x1080 compensé.
+    const float original[16] = {0.84375f, 0, 0, 25, 0, 1.1325e-07f, 1.5f, -25, 0, -1.5f, 1.1325e-07f, 49.001f, 0, -1.5f, 1.1325e-07f, 50};
+    float compensated[16];
+    std::memcpy(compensated, original, sizeof(compensated));
+    hca::graphics::uiclip::CompensateProjection(compensated, 1280.0f / 1920.0f, 720.0f / 1080.0f);
+    const float vertex[4] = {12.0f, -7.0f, 3.0f, 1.0f};
+    const auto pixel = [&vertex](const float* m, float width, float height, float& px, float& py) {
+        float clip[4];
+        for (int r = 0; r < 4; ++r) {
+            clip[r] = m[r * 4] * vertex[0] + m[r * 4 + 1] * vertex[1] + m[r * 4 + 2] * vertex[2] + m[r * 4 + 3] * vertex[3];
+        }
+        px = (clip[0] / clip[3] + 1.0f) * 0.5f * width;
+        py = (1.0f - clip[1] / clip[3]) * 0.5f * height;
+    };
+    float x720 = 0, y720 = 0, x1080 = 0, y1080 = 0;
+    pixel(original, 1280, 720, x720, y720);
+    pixel(compensated, 1920, 1080, x1080, y1080);
+    Check(std::fabs(x720 - x1080) < 0.01f && std::fabs(y720 - y1080) < 0.01f && std::fabs(x720 - 640.0f) > 1.0f,
+          "carte : même pixel après extension de la zone (projection compensée)");
+}
+
 void TestJitter() {
     using namespace hca::graphics::jitter;
     Check(Halton(1, 2) == 0.5f && Halton(2, 2) == 0.25f && Halton(3, 2) == 0.75f &&
@@ -456,6 +492,7 @@ int main() {
     TestButtonIcons();
     TestDepthEncoding();
     TestJitter();
+    TestUiClip();
     TestCameraTuning();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
