@@ -339,6 +339,11 @@ void TestButtonIcons() {
               ReplacementIconName("shv_buttonpccontrol12", 1) == nullptr && ReplacementIconName("pc_1flash_64", 1) == nullptr &&
               ReplacementIconName(nullptr, 1) == nullptr,
           "autres textures et type PC laissés tels quels");
+    using hca::input::ExtraCommandIconName;
+    Check(same(ExtraCommandIconName(0x44, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x44, 2), "shv_buttonps3stickr") &&
+              ExtraCommandIconName(0x44, 0) == nullptr && ExtraCommandIconName(0x36, 1) == nullptr &&
+              same(ExtraCommandIconName(0x13, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x14, 2), "shv_buttonps3stickr"),
+          "icône du stick droit pour le zoom de la carte (axes et R3), rien pour le type PC ni les autres commandes");
 }
 
 void TestDepthEncoding() {

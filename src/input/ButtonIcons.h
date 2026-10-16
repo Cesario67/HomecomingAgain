@@ -2,6 +2,8 @@
 
 #include <windows.h>
 
+#include <cstdint>
+
 namespace hca::input {
 
 // Icônes de boutons affichées par l'interface (désassemblage des 13 et 14/10/2026, g_SilentHill.sgl Steam build 6.30).
@@ -34,6 +36,9 @@ const char* FaceIconName(int type, int button) noexcept;
 // Fonction pure (testée) : icône à afficher à la place de la texture PC `name` pour le type 1 ou 2 ; nullptr si
 // `name` n'est pas une icône A, B, X, Y du PC ou si le type est 0.
 const char* ReplacementIconName(const char* name, int type) noexcept;
+// Fonction pure (testée) : icône d'une commande que la table manette du jeu ne couvre pas, pour le type 1 (Xbox 360)
+// ou 2 (PS3) ; nullptr sinon. Stick droit : axes 0x13 et 0x14 (invite « Zoom » de la carte) et clic R3 (0x44).
+const char* ExtraCommandIconName(std::uint32_t command, int type) noexcept;
 // Met à jour le type d'icônes selon le réglage et la manette (appelé à chaque Present).
 void RefreshButtonIcons() noexcept;
 

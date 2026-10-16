@@ -173,6 +173,62 @@ bool InstallInlineIconHooks() {
            RedirectCall(kInlineRelease, reinterpret_cast<const void*>(&InlineReleaseKey));
 }
 
+// Nom d'icône d'une commande (0x10986360, thiscall, deux arguments : numéro de commande, variante animée), via le
+// relais 0x10016C4D (jmp). Sa table manette ne couvre que les commandes 4 à 0x37 : le stick droit n'y a aucune icône.
+// L'invite « Zoom » de la carte demande COMMAND_CAMERA_X (0x13, journal du 16/10/2026) ; on y zoome par
+// COMMAND_RIGHT_THUMBSTICK_BUTTON (0x44, R3, désassemblage de 0x10928A9E) et on la déplace par 0x13 et 0x14, d'où
+// « Zoom » sans bouton. Les listes d'icônes des textes contiennent pourtant shv_buttonstickx360_r et shv_buttonps3stickr (relevé
+// du 16/10/2026) : le mod renvoie ce nom quand le jeu n'en trouve aucun et que la manette est le mode actif.
+constexpr std::uintptr_t kIconNameRelay = 0x10016C4D;
+constexpr std::uintptr_t kIconName = 0x10986360;
+using IconNameFunction = const char*(__thiscall*)(void* self, std::uint32_t command, std::uint32_t animated);
+
+// Mode d'entrée lu par 0x10986360 avant de choisir une icône de manette : octet +0x178 de [[[0x111D2460]+0x38]+8]
+// non nul, et bit 0 du mot +0x220 de l'objet renvoyé par 0x104F7170 ([0x11597320] si son mot +0x14 a le bit 0x8000)
+// à 0. Lecture protégée : structures connues seulement par le désassemblage.
+bool EnginePadMode() noexcept {
+    __try {
+        const auto root = *reinterpret_cast<const std::uintptr_t*>(0x111D2460);
+        const auto inner = *reinterpret_cast<const std::uintptr_t*>(root + 0x38);
+        const auto state = *reinterpret_cast<const std::uintptr_t*>(inner + 8);
+        if (*reinterpret_cast<const std::uint8_t*>(state + 0x178) == 0) {
+            return false;
+        }
+        const auto object = *reinterpret_cast<const std::uintptr_t*>(0x11597320);
+        if (object != 0 && (*reinterpret_cast<const std::uint32_t*>(object + 0x14) & 0x8000) != 0) {
+            return (*reinterpret_cast<const std::uint32_t*>(object + 0x220) & 1) == 0;
+        }
+        return true;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        return false;
+    }
+}
+
+const char* __fastcall IconNameHook(void* self, void* /*edx*/, std::uint32_t command, std::uint32_t animated) {
+    const char* name = reinterpret_cast<IconNameFunction>(kIconName)(self, command, animated);
+    if (name == nullptr) {
+        const char* extra = ExtraCommandIconName(command & 0xFF, g_iconType.load(std::memory_order_relaxed));
+        if (extra != nullptr && EnginePadMode()) {
+            return extra;
+        }
+    }
+    return name;
+}
+
+bool InstallIconNameHook() {
+    std::uint8_t expected[5] = {0xE9};
+    const auto rel = static_cast<std::int32_t>(kIconName - (kIconNameRelay + 5));
+    std::memcpy(expected + 1, &rel, 4);
+    if (std::memcmp(reinterpret_cast<const void*>(kIconNameRelay), expected, 5) != 0) {
+        return false;
+    }
+    std::uint8_t jump[5] = {0xE9};
+    const auto target = static_cast<std::int32_t>(reinterpret_cast<std::intptr_t>(&IconNameHook) -
+                                                  static_cast<std::intptr_t>(kIconNameRelay + 5));
+    std::memcpy(jump + 1, &target, 4);
+    return hooking::WriteCode(reinterpret_cast<void*>(kIconNameRelay), jump, 5);
+}
+
 bool InstallTextureHook() {
     std::uint8_t expected[5] = {0xE9};
     const auto rel = static_cast<std::int32_t>(kSetTexture - (kSetTextureRelay + 5));
@@ -194,6 +250,25 @@ const char* FaceIconName(int type, int button) noexcept {
         return kNames[0][0];
     }
     return kNames[type][button];
+}
+
+const char* ExtraCommandIconName(std::uint32_t command, int type) noexcept {
+    // Stick droit : COMMAND_CAMERA_X (0x13) et COMMAND_CAMERA_Y (0x14), déplacement de la carte zoomée, et
+    // COMMAND_RIGHT_THUMBSTICK_BUTTON (0x44), zoom. L'invite « Zoom » de la carte demande 0x13 (journal du 16/10/2026).
+    constexpr std::uint32_t kCameraX = 0x13;
+    constexpr std::uint32_t kCameraY = 0x14;
+    constexpr std::uint32_t kRightThumbstickButton = 0x44;
+    if (command != kCameraX && command != kCameraY && command != kRightThumbstickButton) {
+        return nullptr;
+    }
+    switch (type) {
+        case 1:
+            return "shv_buttonstickx360_r";
+        case 2:
+            return "shv_buttonps3stickr";
+        default:
+            return nullptr;
+    }
 }
 
 const char* ReplacementIconName(const char* name, int type) noexcept {
@@ -260,9 +335,10 @@ void InstallButtonIcons(HMODULE engine) {
     g_textureHooked = InstallTextureHook();
     RefreshButtonIcons();
     const bool inline_ = g_textureHooked && InstallInlineIconHooks();
-    log::Info("Icônes de boutons : textures A, B, X, Y {}, icônes dans les textes {}",
+    const bool zoom = g_textureHooked && InstallIconNameHook();
+    log::Info("Icônes de boutons : textures A, B, X, Y {}, icônes dans les textes {}, icône R3 (zoom de la carte) {}",
               g_textureHooked ? "remplacées à l'affichage" : "non modifiées (code différent)",
-              inline_ ? "remplacées" : "non modifiées (code différent)");
+              inline_ ? "remplacées" : "non modifiées (code différent)", zoom ? "ajoutée" : "non ajoutée");
     log::Info("Icônes de boutons : {} ({})", setting == kSettingAuto ? "auto, Xbox 360 si une manette est branchée"
                                              : setting == kSettingXbox ? "Xbox 360"
                                                                        : "PS3",
