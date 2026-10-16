@@ -24,6 +24,7 @@
 #include "graphics/SceneEnd.h"
 #include "crash/HangClock.h"
 #include "input/ButtonIcons.h"
+#include "input/ControllerNames.h"
 #include "input/MenuBridge.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
@@ -320,6 +321,22 @@ void TestMenuPadKeys() {
           "menu détecté après 5 s sans scène 3D seulement");
 }
 
+void TestControllerNames() {
+    using hca::input::ControllerInputLabel;
+    const auto is = [](const char* a, const char* b) { return a != nullptr && std::string(a) == b; };
+    // Correspondance vérifiée par désassemblage (0x10A40A63) : 6 = LB, 16 = LT, 12 = croix haut ; axe 1 = stick gauche vertical.
+    Check(is(ControllerInputLabel(false, 0, 1, true), "A") && is(ControllerInputLabel(false, 6, 1, true), "LB") &&
+              is(ControllerInputLabel(false, 16, 1, false), "LT") && is(ControllerInputLabel(false, 12, 1, true), "Croix haut") &&
+              is(ControllerInputLabel(false, 7, 2, false), "R1") && is(ControllerInputLabel(true, 1, 1, false), "Left stick (vertical)"),
+          "noms des boutons et des axes de la manette");
+    Check(ControllerInputLabel(false, 0, 0, true) == nullptr && ControllerInputLabel(false, 4, 1, true) == nullptr &&
+              ControllerInputLabel(true, 2, 1, true) == nullptr,
+          "noms d'origine gardés en mode PC, boutons 4 et 5 et axes Z");
+    using hca::input::ManifestIsFrench;
+    Check(ManifestIsFrench("		\"language\"		\"french\"") && !ManifestIsFrench("\"language\" \"english\"") && !ManifestIsFrench(""),
+          "langue lue dans le manifeste Steam");
+}
+
 void TestButtonIcons() {
     using hca::input::IconTypeFor;
     Check(IconTypeFor(0, true) == 1 && IconTypeFor(0, false) == 0, "icônes auto : Xbox 360 avec manette, PC sans");
@@ -495,6 +512,7 @@ int main() {
     TestSceneEnd();
     TestMenuPadKeys();
     TestButtonIcons();
+    TestControllerNames();
     TestDepthEncoding();
     TestJitter();
     TestUiClip();

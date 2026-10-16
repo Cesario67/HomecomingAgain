@@ -9,6 +9,7 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "input/ControllerNames.h"
 #include "input/MenuBridge.h"
 
 namespace hca::input {
@@ -50,6 +51,7 @@ constexpr const char* kNames[3][kFaceSlots] = {
 
 std::atomic<int> g_iconType{0};
 bool g_textureHooked = false;
+bool g_namesApplied = false;  // noms de l'écran des commandes appliqués au moins une fois
 
 // Remplaçante : mêmes conventions que l'original (aucun argument, résultat dans eax, ecx inutilisé).
 int ControllerType() {
@@ -293,7 +295,11 @@ void RefreshButtonIcons() noexcept {
     if (!g_textureHooked) {
         return;
     }
-    g_iconType.store(IconTypeFor(GetConfig().buttonIcons, PadConnected()), std::memory_order_relaxed);
+    const int type = IconTypeFor(GetConfig().buttonIcons, PadConnected());
+    if (g_iconType.exchange(type, std::memory_order_relaxed) != type || !g_namesApplied) {
+        g_namesApplied = true;
+        ApplyControllerNames(type);
+    }
 }
 
 int IconTypeFor(int setting, bool padConnected) noexcept {
@@ -332,6 +338,7 @@ void InstallButtonIcons(HMODULE engine) {
     std::memcpy(jump + 1, &offset, sizeof(offset));
     const bool ok = hooking::WriteCode(function, jump, sizeof(jump));
 
+    InstallControllerNames(engine);
     g_textureHooked = InstallTextureHook();
     RefreshButtonIcons();
     const bool inline_ = g_textureHooked && InstallInlineIconHooks();
