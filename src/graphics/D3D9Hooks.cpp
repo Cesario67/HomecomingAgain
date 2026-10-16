@@ -27,6 +27,7 @@
 #include "graphics/InternalDraw.h"
 #include "graphics/MotionVectors.h"
 #include "graphics/SceneHooks.h"
+#include "graphics/UiClip.h"
 #include "graphics/Ssao.h"
 #include "graphics/Smaa.h"
 
@@ -179,6 +180,7 @@ void PatchDevice(IDirect3DDevice9* device) {
         }
     }
     scene::Install(device);
+    uiclip::Install(device);
     if (GetConfig().frameCapture) {
         capture::Install(device);
     }

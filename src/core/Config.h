@@ -35,6 +35,8 @@ struct Config {
     bool ssaoDebug = false;
     // Intensité du grain de pellicule du jeu en % (100 = jeu d'origine, 0 = aucun), voir graphics/FilmGrain.h.
     int filmGrain = 100;
+    // Zone 1280x720 fixe du jeu (carte) étendue à toute l'image (voir graphics/UiClip.h).
+    bool fullScreenUiClip = true;
     // Jeu exécuté par D3D9On12 (Direct3D 12), préparation du DLSS, expérimental (voir graphics/D3D9On12.h).
     bool d3d9On12 = false;
 
@@ -113,7 +115,7 @@ struct Config {
 
 
     // [Debug]
-    int logKeepCount = 10;
+    int logKeepCount = 30;
     // Relevé d'images pour préparer le DLSS (voir graphics/FrameCapture.h). Touche : code de touche virtuelle
     // Windows (0x7A = F11).
     bool frameCapture = false;

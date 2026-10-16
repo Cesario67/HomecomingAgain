@@ -18,7 +18,7 @@ std::atomic<WORD> g_buttons{0};
 std::atomic<SHORT> g_stickX{0};
 std::atomic<SHORT> g_stickY{0};
 std::atomic<bool> g_connected{false};
-std::atomic<int> g_framesSinceScene{kMenuFrames + 1};
+std::atomic<std::uint64_t> g_lastSceneMs{0};
 std::atomic<bool> g_loggedMenu{false};
 // Directions du stick déjà enfoncées (lecture du clavier, un seul thread du moteur).
 KeySet g_stickHeld{};
@@ -64,15 +64,15 @@ bool PadConnected() noexcept {
     return g_connected.load();
 }
 
+bool MenuActive(std::uint64_t nowMs, std::uint64_t lastSceneMs) noexcept {
+    return lastSceneMs == 0 || nowMs < lastSceneMs || nowMs - lastSceneMs > kMenuDelayMs;
+}
+
 void OnSceneDrawn() noexcept {
-    g_framesSinceScene.store(0);
+    g_lastSceneMs.store(GetTickCount64());
 }
 
 void OnPresent() noexcept {
-    const int frames = g_framesSinceScene.load();
-    if (frames <= kMenuFrames) {
-        g_framesSinceScene.store(frames + 1);
-    }
     const bool menu = InMenu();
     if (menu != g_loggedMenu.exchange(menu)) {
         log::Info("Manette : {}", menu ? "menu ou chargement (croix, stick, A et B traduits en touches du clavier)"
@@ -81,7 +81,7 @@ void OnPresent() noexcept {
 }
 
 bool InMenu() noexcept {
-    return g_framesSinceScene.load() > kMenuFrames;
+    return MenuActive(GetTickCount64(), g_lastSceneMs.load());
 }
 
 KeySet CurrentKeys() noexcept {
