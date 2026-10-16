@@ -27,12 +27,4 @@ int EnginePadFlag() noexcept {
     }
 }
 
-bool MenuFromEngineState(int engineState, bool sceneSaysMenu) noexcept {
-    if (engineState < 0) {
-        return sceneSaysMenu;
-    }
-    // Bit 0 : « en jeu », comme le moteur le teste avant de choisir une icône (test byte ptr [eax+220h],1).
-    return (engineState & 1) == 0;
-}
-
 }  // namespace hca::input

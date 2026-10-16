@@ -26,7 +26,6 @@
 #include "input/ButtonIcons.h"
 #include "input/ControllerNames.h"
 #include "input/MenuBridge.h"
-#include "input/EngineUiState.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -320,10 +319,6 @@ void TestMenuPadKeys() {
     // Menu avant toute scène 3D, puis seulement après 5 s sans scène : un décrochage d'une seconde en jeu ne suffit pas.
     Check(MenuActive(1000, 0) && !MenuActive(11000, 10000) && !MenuActive(15000, 10000) && MenuActive(15001, 10000),
           "menu détecté après 5 s sans scène 3D seulement");
-    // État du moteur prioritaire : 1 = en jeu (pas de traduction même si la scène 3D n'est plus détectée), 0 et 2 = menus.
-    Check(!hca::input::MenuFromEngineState(1, true) && hca::input::MenuFromEngineState(2, false) && hca::input::MenuFromEngineState(0, false) &&
-              hca::input::MenuFromEngineState(-1, true) && !hca::input::MenuFromEngineState(-1, false),
-          "menu d'après l'état du moteur, scène 3D seulement s'il est illisible");
 }
 
 void TestControllerNames() {
