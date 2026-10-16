@@ -6,6 +6,7 @@
 
 #include "core/Config.h"
 #include "core/Log.h"
+#include "input/EngineUiState.h"
 
 namespace hca::input {
 
@@ -81,7 +82,9 @@ void OnPresent() noexcept {
 }
 
 bool InMenu() noexcept {
-    return MenuActive(GetTickCount64(), g_lastSceneMs.load());
+    // État du moteur d'abord : la détection par la scène 3D décroche parfois en pleine partie (constaté le 16/10/2026 :
+    // « menu » 26 s après le chargement, en jouant ; A devenait Entrée, « Start » au clavier).
+    return MenuFromEngineState(EngineUiState(), MenuActive(GetTickCount64(), g_lastSceneMs.load()));
 }
 
 KeySet CurrentKeys() noexcept {

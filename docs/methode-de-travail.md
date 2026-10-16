@@ -22,6 +22,37 @@ que deux sessions travaillent de la même façon, et sans se gêner.
   la date, la version. Écrire **vérifié** (désassemblage, journal, test en jeu) ou **hypothèse**, jamais une
   hypothèse présentée comme un fait.
 
+### Démarche : mesurer avant de corriger
+
+Chaque défaut se traite dans cet ordre : observer, mesurer, trouver le code, corriger, vérifier. Ne pas empiler les
+suppositions : quand une piste ne marche pas, revenir à la mesure (exemples réels de cette branche ci-dessous).
+
+1. **Reproduire et capturer** : captures d'écran du jeu (une par seconde pour une séquence, assemblées en planche),
+   heures précises, journal du mod.
+2. **Mesurer avec un diagnostic temporaire** plutôt que deviner :
+   - journal ciblé, une ligne par changement (jamais à chaque image), marqué `DIAGNOSTIC TEMPORAIRE` dans le code
+     et retiré une fois la cause trouvée (ex. : fichiers ouverts et octets lus au démarrage, pauses `SleepEx` par
+     appelant, noms d'icônes demandés, entrées manette et clavier) ;
+   - relevé d'image F11 (`[Debug] FrameCapture=1`, `graphics/FrameCapture.cpp`) : tous les appels Direct3D d'une
+     image, dont `SetViewport` et `SetScissorRect`, et les shaders (`.bin`) ;
+   - désassemblage des shaders relevés : `fxc /dumpbin fichier.bin` (Windows SDK) donne les registres
+     (`mWorldViewProj` en c0..c3, etc.).
+3. **Remonter au code** : chaîne -> références -> fonction ; relais `jmp` ; tables de données (`.data`, pointeurs
+   vers des noms) ; tables d'aiguillage (`jmp [table+reg*4]`, lire les octets bruts) ; appelants (`grep "call  X"`).
+   Vérifier qu'une table ou une fonction n'a pas d'autre utilisateur avant de la modifier.
+4. **Corriger au plus près** de la cause, avec les octets vérifiés (section 3), et un réglage pour désactiver.
+5. **Vérifier en jeu**, puis le noter dans le commit (« vérifié en jeu ») ou dire clairement ce qui ne l'est pas.
+
+Leçons de cette branche :
+- logos de démarrage : accélérer l'horloge du jeu n'a rien fait ; la mesure (fichiers lus, pauses par appelant) a
+  montré une boucle à pas fixe, d'où le bon correctif (`compat/StartupLogos`) ;
+- carte coupée : étendre la zone d'affichage agrandissait la carte ; il fallait aussi compenser la projection
+  (`graphics/UiClip`) ;
+- icônes : renvoyer un autre nom ne suffit pas quand le jeu cherche le nom dans une liste préparée au chargement ;
+  remplacer l'image ou utiliser un nom déjà présent dans la liste (journal des noms) ;
+- pauses intempestives : la première hypothèse (traduction manette vers clavier) était démentie par le journal ;
+  le dire, et mesurer davantage (`input/InputLog`).
+
 ## 3. Écrire un correctif du moteur
 
 Modèle : `src/input/ButtonIcons.cpp`, `src/patches/FrameRateCap.cpp`.
@@ -66,6 +97,17 @@ Modèle : `src/input/ButtonIcons.cpp`, `src/patches/FrameRateCap.cpp`.
   (Get-FileHash build\x86-release\version.dll).Hash -eq (Get-FileHash "$bin\version.dll").Hash
   ```
 - Lancer le jeu (sur demande) : `Start-Process "steam://rungameid/19000"`.
+- **Mode test autonome** (seulement si l'utilisateur l'a accordé ; il peut le laisser actif jusqu'à « stop ») :
+  - fermer le jeu par `WM_CLOSE` à sa fenêtre (`PostMessage`, fermeture propre en 1 s ; Alt+F4 simulé ne marche pas) ;
+  - touches : `keybd_event` avec le code de touche Windows **et** le code clavier, appui de **80 ms** (300 ms fait
+    descendre de deux crans ; `SendInput` en code clavier seul est ignoré), jeu au premier plan avant chaque touche
+    (`SetForegroundWindow` encadré d'un appui Alt) ;
+  - charger la partie : lancer, attendre 12 s (logos accélérés), Entrée, flèche bas, Entrée, 4 s, Entrée, 30 s ; le
+    jeu arrive parfois sur Pause : Entrée sur « Reprendre » ;
+  - vérifier chaque étape par une capture d'écran (`CopyFromScreen`, jeu au premier plan), et arrêter les appuis dès
+    que l'écran visé est atteint (des Entrée en trop traversent les menus) ;
+  - ne jamais valider une ligne de l'écran des commandes ni un réglage : regarder seulement.
+- Si l'utilisateur est en train de jouer, demander avant de fermer le jeu, même en mode test.
 - Donner à l'utilisateur des étapes de test **numérotées et précises** (où aller, quoi faire, quoi regarder), et ce
   qu'il doit répondre (« c'est fait »).
 - Lire le journal : `Bin\HomecomingAgain\logs\HomecomingAgain_*.log` (le plus récent). Lignes utiles : `ERROR`,

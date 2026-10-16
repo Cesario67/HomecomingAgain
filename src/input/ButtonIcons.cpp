@@ -10,6 +10,7 @@
 #include "core/Hooking.h"
 #include "core/Log.h"
 #include "input/ControllerNames.h"
+#include "input/EngineUiState.h"
 #include "input/MenuBridge.h"
 
 namespace hca::input {
@@ -187,23 +188,10 @@ using IconNameFunction = const char*(__thiscall*)(void* self, std::uint32_t comm
 
 // Mode d'entrée lu par 0x10986360 avant de choisir une icône de manette : octet +0x178 de [[[0x111D2460]+0x38]+8]
 // non nul, et bit 0 du mot +0x220 de l'objet renvoyé par 0x104F7170 ([0x11597320] si son mot +0x14 a le bit 0x8000)
-// à 0. Lecture protégée : structures connues seulement par le désassemblage.
+// à 0 (voir input/EngineUiState.h).
 bool EnginePadMode() noexcept {
-    __try {
-        const auto root = *reinterpret_cast<const std::uintptr_t*>(0x111D2460);
-        const auto inner = *reinterpret_cast<const std::uintptr_t*>(root + 0x38);
-        const auto state = *reinterpret_cast<const std::uintptr_t*>(inner + 8);
-        if (*reinterpret_cast<const std::uint8_t*>(state + 0x178) == 0) {
-            return false;
-        }
-        const auto object = *reinterpret_cast<const std::uintptr_t*>(0x11597320);
-        if (object != 0 && (*reinterpret_cast<const std::uint32_t*>(object + 0x14) & 0x8000) != 0) {
-            return (*reinterpret_cast<const std::uint32_t*>(object + 0x220) & 1) == 0;
-        }
-        return true;
-    } __except (EXCEPTION_EXECUTE_HANDLER) {
-        return false;
-    }
+    const int state = EngineUiState();
+    return EnginePadFlag() > 0 && (state < 0 || (state & 1) == 0);
 }
 
 const char* __fastcall IconNameHook(void* self, void* /*edx*/, std::uint32_t command, std::uint32_t animated) {

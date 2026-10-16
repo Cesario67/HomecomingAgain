@@ -42,9 +42,10 @@ Reprise de DPStabilityFix, adaptée (espace de noms `hca`, projet `HomecomingAga
 
 ## État
 
-Le socle compile (premier build propre le 09/10/2026) ; le proxy `version.dll` et les hooks sur le moteur ont été
-écrits ensuite et **ne sont pas encore compilés**. Rien n'a été lancé en jeu : le code ne fait que journaliser.
-Prochaine étape et plan : `docs/a-faire.md`.
+Version 0.9.0 publiée (préversion, 14/10/2026). Le mod est installé et testé en jeu à chaque modification : cadence,
+sans bordure, son, SMAA, SSAO, ombres 8192, DLSS, manette (menus, icônes, noms des boutons, zoom de la carte), carte
+entière au-delà du 720p, logos accélérés. Plan et points en attente : `docs/a-faire.md`. Les fonctionnalités et
+réglages sont décrits dans les README.
 
 ## Commandes
 
@@ -109,14 +110,21 @@ Prochaine étape et plan : `docs/a-faire.md`.
   session) : rétro-ingénierie, correctifs vérifiés par octets, tests (et preuve qu'ils détectent le défaut),
   installation et tests en jeu, commits, PR et release. En particulier : d'autres sessions peuvent travailler en
   même temps dans ce dossier, donc **committer en nommant ses fichiers un par un, jamais `git add -A`**.
+- **Mesurer avant de corriger** : capture, journal de diagnostic temporaire (une ligne par changement, marqué
+  `DIAGNOSTIC TEMPORAIRE`, retiré une fois la cause trouvée), relevé d'image F11, désassemblage des shaders
+  (`fxc /dumpbin`). Quand une hypothèse est démentie par une mesure, le dire et repartir de la mesure.
+- **Mode test autonome** : avec l'accord de l'utilisateur (à demander ; il peut le laisser actif jusqu'à « stop »),
+  Claude ferme le jeu (`WM_CLOSE`), installe, relance et charge la partie au clavier, et vérifie par captures
+  d'écran (procédure dans `docs/methode-de-travail.md`, section 5). Si l'utilisateur joue, demander avant de fermer.
 
 - L'utilisateur a de solides bases en **C#**, pas en C++ : expliquer les concepts C++ et Win32 nouveaux
   avec des équivalents C# quand c'est pertinent (pointeurs de fonction / délégués, RAII / `IDisposable`,
   `HANDLE` / `SafeHandle`, etc.).
 - Ne jamais lancer de build (`msbuild`, `cmake --build`...) ni le jeu de ta propre initiative :
-  toujours demander confirmation avant.
-- Claude ne peut pas jouer : les tests en jeu sont faits par l'utilisateur, qui remonte journaux et
-  minidumps. Préciser à chaque itération exactement quoi tester et quoi rapporter.
+  toujours demander confirmation avant (le jeu : sauf en mode test accordé, voir plus haut).
+- Claude ne joue pas : les tests de jeu proprement dits (combats, exploration, manette) sont faits par l'utilisateur,
+  qui remonte journaux et minidumps. Préciser à chaque itération exactement quoi tester et quoi rapporter. En mode
+  test, Claude peut lancer le jeu, charger la partie, ouvrir des menus et vérifier par captures d'écran.
 - Les commandes `git` (y compris commit/push) sont autorisées.
 - Toujours travailler sur la branche **`dev`** (commits et push sur `dev`, jamais directement sur `main`).
 - Ne pas utiliser de tiret cadratin (« — ») dans les livrables écrits : commentaires de code,
