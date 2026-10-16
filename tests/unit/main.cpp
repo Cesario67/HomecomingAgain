@@ -314,6 +314,9 @@ void TestMenuPadKeys() {
     keys = KeysForPad(0, -20000, 0, fresh);
     Check(keys[kKeyLeft] && !keys[kKeyRight] && !KeysForPad(0, 14000, 0, fresh)[kKeyRight],
           "stick à gauche, et à droite sous le seuil d'appui");
+    // Menu avant toute scène 3D, puis seulement après 5 s sans scène : un décrochage d'une seconde en jeu ne suffit pas.
+    Check(MenuActive(1000, 0) && !MenuActive(11000, 10000) && !MenuActive(15000, 10000) && MenuActive(15001, 10000),
+          "menu détecté après 5 s sans scène 3D seulement");
 }
 
 void TestButtonIcons() {

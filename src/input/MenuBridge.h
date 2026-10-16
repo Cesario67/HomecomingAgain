@@ -36,9 +36,15 @@ void OnPadState(WORD buttons, SHORT stickX, SHORT stickY) noexcept;
 void OnPadDisconnected() noexcept;
 // Première manette branchée (dernière lecture du moteur) ; sert aussi aux icônes de boutons (input/ButtonIcons.h).
 bool PadConnected() noexcept;
-// Détection du menu : appelés par les hooks Direct3D, à chaque fin de scène 3D et à chaque Present. Plus de
-// kMenuFrames images sans scène 3D : menu, chargement ou vidéo (hypothèse à confirmer par le journal).
-constexpr int kMenuFrames = 30;
+// Détection du menu : appelés par les hooks Direct3D, à chaque fin de scène 3D et à chaque Present. Menu (traduction
+// active) avant la première scène 3D, ou après kMenuDelayMs sans scène 3D : menu principal, long chargement.
+// Le délai était d'une demi-seconde (30 images) : signalé le 16/10/2026, A ou B mettaient parfois le jeu en pause en
+// pleine partie. Hypothèse : la détection de la scène décroche par moments en jeu ; A et B devenaient alors Entrée et
+// Échap, qui sont « Start » et « pause » au clavier (binds_pc_mjs.cfg : COMMAND_UI_START KEY_RETURN,
+// COMMAND_GAME_START KEY_ESCAPE). Avec 5 s, un décrochage passager ne suffit plus.
+constexpr std::uint64_t kMenuDelayMs = 5000;
+// Fonction pure (testée par tests/unit) : `lastSceneMs` = 0 si aucune scène 3D n'a encore été dessinée.
+bool MenuActive(std::uint64_t nowMs, std::uint64_t lastSceneMs) noexcept;
 void OnSceneDrawn() noexcept;
 void OnPresent() noexcept;
 bool InMenu() noexcept;

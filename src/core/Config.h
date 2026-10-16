@@ -113,7 +113,7 @@ struct Config {
 
 
     // [Debug]
-    int logKeepCount = 10;
+    int logKeepCount = 30;
     // Relevé d'images pour préparer le DLSS (voir graphics/FrameCapture.h). Touche : code de touche virtuelle
     // Windows (0x7A = F11).
     bool frameCapture = false;
