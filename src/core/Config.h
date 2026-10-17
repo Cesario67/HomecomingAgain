@@ -98,8 +98,9 @@ struct Config {
     bool skipLogos = true;
 
     // [Input]
-    // Dans les menus, croix, stick gauche, A et B traduits en touches du clavier (input/MenuBridge.h).
-    bool menuPad = true;
+    // Dans les menus, croix, stick gauche et Start traduits en touches du clavier (input/MenuBridge.h). Désactivé par
+    // défaut : le jeu gère lui-même la manette dans ses menus (vérifié le 17/10/2026).
+    bool menuPad = false;
     // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
     int buttonIcons = 0;
 

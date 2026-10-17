@@ -53,6 +53,29 @@ Leçons de cette branche :
 - pauses intempestives : la première hypothèse (traduction manette vers clavier) était démentie par le journal ;
   le dire, et mesurer davantage (`input/InputLog`).
 
+### Touches et icônes de la manette : où chercher (vérifié, Steam build 6.30)
+
+- **Bouton physique -> numéro « Button N »** : conversion de l'état XInput en `0x10A40A63` et suivantes (`test` de
+  chaque bit de `wButtons`, puis rangement dans un tableau dont le Button 0 est à l'octet 6). A, B, X, Y = 0 à 3 ;
+  LB, RB = 6, 7 ; Start, Back = 8, 9 ; clics des sticks = 10, 11 ; croix = 12 à 15 ; gâchettes = 16, 17.
+- **Commande -> bouton** : `Engine\binds_pc_mjs.cfg` (`setbind 1 COMMAND_... CONTROLLER 0 BUTTON_N`), lisible sans
+  désassembler. Écran Commandes > Manette du jeu pour confirmer.
+- **Nom d'une commande -> numéro** : fonction en `0x10985B20` (`push "COMMAND_..."`, comparaison, `mov al, n`).
+  Connus : PUNCH 4, KICK 5, JUMP 6, STALK 7, USE 9, CAMERA_X 0x13, CAMERA 0x22, SHOWHUD 0x25, UI_SELECT 0x2E,
+  UI_BACK 0x31, UI_X 0x36, RIGHT_THUMBSTICK_BUTTON 0x44. Pour un numéro inconnu, un journal temporaire des
+  commandes demandées (`input/InputLog`) le donne directement.
+- **Commande -> icône affichée** : `0x10986360` (relais `0x10016C4D`, intercepté par `input/ButtonIcons`). Deux tables
+  d'aiguillage indexées par (commande - 4) : manette en `0x1098656C`, clavier en `0x109865B0` ; lire leurs octets
+  bruts pour savoir quel nom chaque commande reçoit. Une commande hors table n'a aucune icône.
+- **Icône insérée dans un texte** : le nom renvoyé est cherché dans la liste d'icônes de l'élément de texte, préparée
+  au chargement (`0x10907130`) ; un nom absent de la liste ne s'affiche pas. Les noms présents (A, B, X, Y, LB, RB,
+  LT, RT, sticks, en Xbox et PS3) ont été relevés par journal : ne renvoyer que ceux-là, ou remplacer l'image.
+- **Texture d'un élément d'interface** : changement par nom en `0x1050E5C0` (relais `0x10054DCC`).
+- **Noms des boutons de l'écran des commandes** : tables de pointeurs dans `.data` (`0x111C04C0` axes,
+  `0x111C0568` boutons), lues seulement par `0x100E95D0` (`input/ControllerNames`).
+- **Mode manette du moteur** : octet `+0x178` de `[[[0x111D2460]+0x38]+8]` et bit 0 de l'état d'interface
+  (`input/EngineUiState`). Attention : cet état vaut 2 en jeu comme dans les menus, il ne sert pas à détecter un menu.
+
 ## 3. Écrire un correctif du moteur
 
 Modèle : `src/input/ButtonIcons.cpp`, `src/patches/FrameRateCap.cpp`.

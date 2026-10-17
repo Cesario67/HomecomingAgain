@@ -50,7 +50,9 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **Xbox or PlayStation button icons**: menus, the inventory, the controls screen and in-game prompts (Open,
   Save...) show A, B, X, Y (or cross, circle, square, triangle) instead of the digits 1 to 4 of the PC version. The
   icons come from the game's own data. By default, Xbox icons while a controller is plugged in, PC icons otherwise.
-- **Main menu with a controller**: D-pad and left stick move through the menus, A and Start confirm, B goes back.
+- **Real button names** on the controls screen (LB, LT, D-pad up...) instead of "Button 6", and the right stick icon
+  next to "Zoom" on the map.
+- **No more accidental pauses**: A and B are left to the game, which handles the controller in its own menus.
 
 ### Comfort
 
@@ -81,7 +83,7 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Movies]` | `SkipKey=46` | Key to skip cutscenes (46 = Delete, 0 = none) |
 | `[Movies]` | `SkipLogos=1` | Fast-forward the startup logos (0 = original) |
 | `[Input]` | `ButtonIcons=0` | Button icons: 0 = auto (Xbox if a controller is plugged in), 1 = PC (original), 2 = Xbox, 3 = PlayStation |
-| `[Input]` | `MenuPad=1` | Controller in menus (D-pad, left stick, A, B, Start) |
+| `[Input]` | `MenuPad=0` | Translate the controller into keyboard keys in menus (D-pad, left stick, Start); off by default, the game handles the controller itself |
 | `[Camera]` | `CameraFix=0` | Controller camera fix (based on Emertels' Camera Fix): the character turns with the right stick, proportional vertical response, separate aim sensitivity. Speeds `HorizontalSpeed`, `VerticalSpeed`, `AimHorizontalSpeed`, `AimVerticalSpeed` (0.25 to 3.0). The launcher also frees the right stick in `Engine\binds_pc_mjs.cfg` |
 | `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA): all three at 1 to enable it, with DXVK (done by the launcher) |
 

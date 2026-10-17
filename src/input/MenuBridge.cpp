@@ -40,8 +40,9 @@ KeySet KeysForPad(WORD buttons, SHORT stickX, SHORT stickY, KeySet& stickHeld) n
     keys[kKeyDown] = (buttons & XINPUT_GAMEPAD_DPAD_DOWN) != 0;
     keys[kKeyLeft] = (buttons & XINPUT_GAMEPAD_DPAD_LEFT) != 0;
     keys[kKeyRight] = (buttons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0;
-    keys[kKeyReturn] = (buttons & (XINPUT_GAMEPAD_A | XINPUT_GAMEPAD_START)) != 0;
-    keys[kKeyEscape] = (buttons & XINPUT_GAMEPAD_B) != 0;
+    // A et B ne sont plus traduits (Entrée, Échap) : la détection des menus par la scène 3D se trompe pendant les
+    // écrans sans décor (constaté le 17/10/2026) et B ouvrait alors la pause. Start reste Entrée.
+    keys[kKeyReturn] = (buttons & XINPUT_GAMEPAD_START) != 0;
     // Axe Y de XInput : positif vers le haut.
     StickAxis(stickY, kKeyDown, kKeyUp, stickHeld, keys);
     StickAxis(stickX, kKeyLeft, kKeyRight, stickHeld, keys);
