@@ -344,13 +344,13 @@ void TestButtonIcons() {
           "icônes forcées : PC, Xbox 360, PS3, valeur inconnue = PC");
     using hca::input::FaceIconName;
     Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
-              std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(1, 6)) == "shv_x360xflash" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
+              std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(1, 6)) == "shv_buttonxbox360_x_32" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
           "noms des icônes A, B, X, Y selon le type");
     using hca::input::ReplacementIconName;
     const auto same = [](const char* a, const char* b) { return a != nullptr && std::string(a) == b; };
     Check(same(ReplacementIconName("shv_buttonpccontrol1", 1), "shv_buttonxbox360_a_32") &&
               same(ReplacementIconName("shv_buttonpccontrol4_64", 2), "shv_buttonps3_triangle_32") &&
-              same(ReplacementIconName("pc_3flash", 1), "shv_x360xflash"),
+              same(ReplacementIconName("pc_3flash", 1), "shv_buttonxbox360_x_32"),
           "texture PC remplacée par l'icône Xbox 360 ou PS3");
     Check(ReplacementIconName("shv_buttonpccontrol1", 0) == nullptr && ReplacementIconName("shv_buttonactionpc", 1) == nullptr &&
               ReplacementIconName("shv_buttonpccontrol12", 1) == nullptr && ReplacementIconName("pc_1flash_64", 1) == nullptr &&
@@ -359,6 +359,7 @@ void TestButtonIcons() {
     using hca::input::ExtraCommandIconName;
     Check(same(ExtraCommandIconName(0x44, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x44, 2), "shv_buttonps3stickr") &&
               ExtraCommandIconName(0x44, 0) == nullptr && ExtraCommandIconName(0x36, 1) == nullptr &&
+              same(ExtraCommandIconName(8, 1), "shv_buttonxboxlb") && same(ExtraCommandIconName(8, 2), "shv_buttonps3l1") && ExtraCommandIconName(8, 0) == nullptr &&
               same(ExtraCommandIconName(0x13, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x14, 2), "shv_buttonps3stickr"),
           "icône du stick droit pour le zoom de la carte (axes et R3), rien pour le type PC ni les autres commandes");
 }
