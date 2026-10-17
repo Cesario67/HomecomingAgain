@@ -81,6 +81,8 @@ void OnPresent() noexcept {
 }
 
 bool InMenu() noexcept {
+    // Seulement d'après la scène 3D. L'état d'interface du moteur (input/EngineUiState.h) ne convient pas : il vaut 2
+    // en pleine partie comme dans les menus (journal du 16/10/2026), et A devenait Entrée, « Start », à chaque appui.
     return MenuActive(GetTickCount64(), g_lastSceneMs.load());
 }
 
