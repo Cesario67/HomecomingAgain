@@ -300,11 +300,11 @@ void TestSceneEnd() {
 void TestMenuPadKeys() {
     using namespace hca::input;
     KeySet held{};
-    // Croix bas + A : flèche bas et Entrée ; B : Échap.
-    KeySet keys = KeysForPad(0x0002 | 0x1000, 0, 0, held);
-    Check(keys[kKeyDown] && keys[kKeyReturn] && !keys[kKeyUp] && !keys[kKeyEscape], "croix et A traduits en touches");
-    keys = KeysForPad(0x2000, 0, 0, held);
-    Check(keys[kKeyEscape] && !keys[kKeyReturn], "B traduit en Échap");
+    // Croix bas + Start : flèche bas et Entrée ; A et B ne sont plus traduits.
+    KeySet keys = KeysForPad(0x0002 | 0x0010, 0, 0, held);
+    Check(keys[kKeyDown] && keys[kKeyReturn] && !keys[kKeyUp] && !keys[kKeyEscape], "croix et Start traduits en touches");
+    keys = KeysForPad(0x1000 | 0x2000, 0, 0, held);
+    Check(!keys[kKeyEscape] && !keys[kKeyReturn], "A et B non traduits");
     // Stick : enfoncé au-delà de la moitié, relâché seulement sous un tiers (pas de rebond autour du seuil).
     keys = KeysForPad(0, 0, 20000, held);
     const bool pressed = keys[kKeyUp];
