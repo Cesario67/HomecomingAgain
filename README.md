@@ -50,7 +50,9 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **Xbox or PlayStation button icons**: menus, the inventory, the controls screen and in-game prompts (Open,
   Save...) show A, B, X, Y (or cross, circle, square, triangle) instead of the digits 1 to 4 of the PC version. The
   icons come from the game's own data. By default, Xbox icons while a controller is plugged in, PC icons otherwise.
-- **Main menu with a controller**: D-pad and left stick move through the menus, A and Start confirm, B goes back.
+- **Real button names** on the controls screen (LB, LT, D-pad up...) instead of "Button 6", and the right stick icon
+  next to "Zoom" on the map.
+- **No more accidental pauses**: A and B are left to the game, which handles the controller in its own menus.
 
 ### Comfort
 

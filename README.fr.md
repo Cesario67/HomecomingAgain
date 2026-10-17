@@ -53,8 +53,9 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   (Ouvrir, Sauvegarder...) affichent A, B, X, Y (ou croix, rond, carré, triangle) au lieu des chiffres 1 à 4 de la
   version PC. Les icônes viennent des données du jeu lui-même. Par défaut, icônes Xbox quand une manette est
   branchée, icônes PC sinon.
-- **Menu principal à la manette** : la croix et le stick gauche déplacent la sélection, A et Start valident, B
-  revient en arrière.
+- **Vrais noms des boutons** sur l'écran des commandes (LB, LT, Croix haut...) au lieu de « Button 6 », et icône
+  du stick droit à côté de « Zoom » sur la carte.
+- **Plus de pauses intempestives** : A et B sont laissés au jeu, qui gère lui-même la manette dans ses menus.
 
 ### Confort
 
