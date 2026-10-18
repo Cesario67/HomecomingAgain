@@ -54,7 +54,19 @@ if ($LASTEXITCODE -ne 0) {
 # Symboles natifs de SkiaSharp/HarfBuzz : rien à livrer.
 Get-ChildItem $package -Filter '*.pdb' | Remove-Item -Force
 
+# Même launcher pour Linux (jeu dans Proton) : un seul fichier HomecomingAgain, qui embarque les mêmes fichiers
+# du mod (la DLL reste celle de Windows, chargée par Wine).
+$packageLinux = Join-Path $root "build\$Preset\package-linux"
+& $dotnet publish (Join-Path $root 'launcher\src\HomecomingAgain.Launcher\HomecomingAgain.Launcher.csproj') `
+    -c $configuration -r linux-x64 --self-contained -p:DebugType=none "-p:PayloadDir=$package" -o $packageLinux `
+    --nologo -v quiet
+if ($LASTEXITCODE -ne 0) {
+    throw "Échec de la publication du launcher Linux (code $LASTEXITCODE)."
+}
+Get-ChildItem $packageLinux -Filter '*.pdb' | Remove-Item -Force
+
 Write-Host ''
 Write-Host "DLL      : $root\build\$Preset\version.dll"
 Write-Host "DLSS     : $root\build\helper\HomecomingAgain.Dlss.exe"
 Write-Host "Paquet   : $root\build\$Preset\package"
+Write-Host "Linux    : $packageLinux"
