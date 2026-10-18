@@ -385,6 +385,30 @@ void TestDepthEncoding() {
     Check(!ParseEncoding(98, zero, 1, untouched), "facteur nul refusé");
 }
 
+void TestUiClipItem() {
+    using hca::graphics::uiclip::LooksStraightDown;
+    // Carte (relevés du 16/10/2026) : caméra verticale, compensée.
+    const float map[16] = {0.84375f, 0, 0, 25, 0, 1.1325e-07f, 1.5f, -25, 0, -1.5f, 1.1325e-07f, 49.001f, 0, -1.5f, 1.1325e-07f, 50};
+    const float mapTurned[16] = {7.8227e-08f, 4.2468e-08f, 0.5625f, 51.832f, -1, 1.05e-14f, 1.3907e-07f, -55.303f,
+                                 -0.0f, -1, 7.5499e-08f, 49.062f, -0.0f, -1, 7.5498e-08f, 50.062f};
+    // Couteau examiné (relevé F11 du 18/10/2026) : caméra de biais, pas compensée.
+    const float knife[16] = {0.65572f, 0.53026f, -0.02779f, 5.0617f, -0.0f, 0.078504f, 1.4979f, -6.6194f,
+                             0.94399f, -1.1641f, 0.06101f, 15.123f, 0.94398f, -1.1641f, 0.061009f, 16.123f};
+    Check(LooksStraightDown(map) && LooksStraightDown(mapTurned), "carte : caméra verticale reconnue");
+    Check(!LooksStraightDown(knife), "objet examiné : caméra de biais, projection non compensée");
+    // Le point que le jeu croit au centre de l'image 1920x1080 (x/w = 0,5, y/w = -0,5 dans sa zone 1280x720) revient
+    // au centre après recentrage.
+    float aimed[16] = {1, 0, 0, 0.5f, 0, 1, 0, -0.5f, 0, 0, 1, 0, 0.3f, 0, 0, 1};
+    hca::graphics::uiclip::RecenterProjection(aimed, 1280.0f / 1920.0f, 720.0f / 1080.0f);
+    const float atOrigin[4] = {aimed[3], aimed[7], aimed[11], aimed[15]};
+    Check(std::fabs(atOrigin[0] / atOrigin[3]) < 1e-5f && std::fabs(atOrigin[1] / atOrigin[3]) < 1e-5f,
+          "objet examiné : point visé ramené au centre de l'image");
+    Check(aimed[0] == 1.0f && aimed[1] == 0.0f && aimed[5] == 1.0f && aimed[4] == 0.0f,
+          "objet examiné : objet déplacé, orientation et perspective inchangées");
+    const float upward[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50};
+    Check(!LooksStraightDown(upward), "caméra vers le haut : pas la carte");
+}
+
 void TestUiClip() {
     using hca::graphics::uiclip::ExpandLegacyRect;
     long w = 1280;
@@ -550,6 +574,7 @@ int main() {
     TestDepthEncoding();
     TestJitter();
     TestUiClip();
+    TestUiClipItem();
     TestCameraTuning();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
