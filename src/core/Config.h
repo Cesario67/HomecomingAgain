@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "patches/CameraTuning.h"
+
 namespace hca {
 
 // Reflet de HomecomingAgain.ini. Les valeurs par défaut s'appliquent si le fichier ou une clé manque.
@@ -98,8 +100,9 @@ struct Config {
     bool skipLogos = true;
 
     // [Input]
-    // Dans les menus, croix, stick gauche, A et B traduits en touches du clavier (input/MenuBridge.h).
-    bool menuPad = true;
+    // Dans les menus, croix, stick gauche et Start traduits en touches du clavier (input/MenuBridge.h). Désactivé par
+    // défaut : le jeu gère lui-même la manette dans ses menus (vérifié le 17/10/2026).
+    bool menuPad = false;
     // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
     int buttonIcons = 0;
 
@@ -112,6 +115,10 @@ struct Config {
     float cameraVerticalSpeed = 1.0f;
     float cameraAimHorizontalSpeed = 1.0f;
     float cameraAimVerticalSpeed = 1.0f;
+    // Follow (Camera Fix, le personnage tourne) ou Orbit (la caméra tourne seule autour de lui, expérimental).
+    patches::camera::CameraMode cameraMode = patches::camera::CameraMode::Follow;
+    // En orbite : le personnage se tourne vers la caméra quand il marche (Camera) ou vers la direction du stick (Stick).
+    patches::camera::OrbitMove cameraOrbitMove = patches::camera::OrbitMove::Camera;
 
 
     // [Debug]

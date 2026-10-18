@@ -48,6 +48,15 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
 - Fait (14/10/2026) : correctif de caméra au stick droit porté du Camera Fix d'Emertels (MIT), en mémoire
   (`patches/CameraFix`), désactivé par défaut, activé par le launcher avec les touches du stick droit. Validé en jeu
   à la manette par l'utilisateur. Reste : vérifier que la souris ne passe pas par ces sites.
+- Fait (18/10/2026) : caméra orbitale expérimentale (`[Camera] Mode=Orbit`, désactivée par défaut) : le stick droit
+  tourne la caméra autour du personnage ; en marche, il se tourne vers la caméra (`OrbitMove=Camera`) ou vers la
+  direction du stick (`OrbitMove=Stick`). Validé en jeu à la manette (`OrbitMove=Camera`).
+- Idée (option à ajouter) : suspendre l'orbite pendant la garde au couteau (L2, `COMMAND_STALK`), caméra remise
+  derrière le personnage et stick droit qui le tourne. Aujourd'hui l'orbite reste active pendant la garde ; seule la
+  visée aux armes à feu (caméra « Precision ») rend la main au jeu. Repérer la gâchette par la manette (XInput).
+- À savoir : chaque emplacement de sauvegarde (`shv_save.bin`) contient ses propres touches, qui passent devant
+  `binds_pc_mjs.cfg` (voir `docs/analyse-shh-exe.md`). Une sauvegarde aux touches changées peut donc aussi annuler
+  les touches libérées par le correctif de caméra. Piste : option pour toujours utiliser `binds_pc_mjs.cfg`.
 - Manettes non XInput (PlayStation) : conversion comme `ControllerMapping` de DPStabilityFix.
 - Clavier / souris : touches reconfigurables via `binds_pc_mjs.cfg` (le fichier d'origine est déjà un format texte).
 

@@ -206,3 +206,42 @@ l'image, `[ebp+0Ch]+0x20` = commande X de la caméra, `+0xAE8`/`+0xAEC` du perso
 `[0x1158982C]+8` vers le nom de la caméra active (« Precision » en visée). Le choix de branche du tangage
 (`[ecx+178h]` et bit 0 de `[eax+220h]`) n'est pas identifié : on ne sait pas si la souris passe par l'une d'elles, d'où
 la condition « stick droit incliné » de `patches/CameraFix.cpp`.
+
+## Caméra orbitale et déplacement (17 et 18/10/2026)
+
+**Vérifié** (désassemblage de `0x108DABF0`, Steam build 6.30) : le cap de la caméra de navigation (`[esi+11Ch]`) est
+tiré vers celui du personnage par un ressort (`0x108DB27A` à `0x108DB39E` : écart au cap `atan2` du personnage,
+vitesse `[esi+120h]`, durée `[esp+24h]`) ; la position de la caméra est ensuite calculée à partir de son propre cap.
+Le mode orbite (`patches/CameraFix`, `[Camera] Mode=Orbit`) remplace ce cap par le sien au site `0x108DB3D6`.
+
+**Vérifié** (désassemblage de `0x10384E70`, entrée d'un personnage, `esi` = entrée, propriétaire `[esi+28h]`) : à
+chaque image, l'entrée est remise à 0 (`0x10384EC7` et suivants), puis, avec une manette, recopiée depuis le
+périphérique `[propriétaire+994h]` : `+0xAD8` avant et `+0xADC` côté (stick gauche, `+1C0h`/`+1C4h`), `+0xAE8` et
+`+0xAEC` (stick droit, `+1B8h`/`+1BCh`). Après le site `0x103851E0`, le moteur calcule l'inclinaison (`+0xAE4`) et
+un angle signé (`+0xAE0`) entre le stick et un vecteur (`+3F0h` d'un objet `[propriétaire+3E8h]`, multiplié par une
+matrice 3x3 `+3A0h` ou `+400h` selon l'octet `+95h`, basculé par le code de visée en `0x10711BE0`, avec
+`0x1002A720` = `0x100A36A0`, produit vecteur ligne x matrice).
+
+**Mesuré en jeu** (journal temporaire du 18/10/2026, retiré) : ce vecteur reste à 90° quel que soit l'angle de la
+caméra ou du personnage ; le stick gauche déplace le personnage par rapport à lui-même et seul le stick droit le
+tourne, aussi par `+0xAE8` (son cap suivait celui de la caméra tant que `+0xAE8` n'était pas mis à 0). Le
+propriétaire `[entrée+28h]` est bien la transformation suivie par la caméra moins `0x1A0`.
+
+## Sauvegardes : `shv_save.bin` (18/10/2026)
+
+**Vérifié** : le moteur appelle `SHGetFolderPathA` en `0x10807258` avec CSIDL `0x2E` (documents publics) : les
+sauvegardes sont dans `C:\Users\Public\Documents\Silent Hill Homecoming\shv_save.bin`, un seul fichier de 3 385 344
+octets, lu même pour une nouvelle partie. Structure relevée en comparant deux fichiers (format non documenté) :
+
+- 5 emplacements de `0xA501B` octets à partir de 0. Chacun porte à `+0x14` la date (année sur 2 octets, puis mois,
+  jour, heure, minute, seconde) et à `+0x1B` le nom du niveau (`m01_nightmare`, `m04_sgtown2`...).
+- Les 0x14 premiers octets du fichier forment un en-tête : 4 octets de contrôle (le jeu signale une sauvegarde
+  corrompue s'ils ne correspondent plus, mais lit le fichier quand même), `0x0E`, puis deux champs (`+8`, `+0xC`).
+  Mis à 0, une nouvelle partie reprend les touches par défaut (test en jeu) : ils désignent sans doute le dernier
+  emplacement dont les réglages s'appliquent (**hypothèse**).
+- Chaque emplacement contient **ses propres touches**, par enregistrements (numéro de commande, puis boutons). Vérifié
+  sur une sauvegarde d'origine contre `binds_pc_mjs.cfg` : `PUNCH` (4) = bouton 2, `STALK` (7) = bouton 16,
+  `UI_X` (0x36) = bouton 2, `UI_BACK` (0x31) = bouton 1. Ces touches passent devant `binds_pc_mjs.cfg` au chargement :
+  une sauvegarde téléchargée aux touches changées à la main inversait O et carré, Start et la caméra.
+- Après les 5 emplacements, 6009 octets communs, presque tous à 0 (3 octets à 1 dans une sauvegarde avancée : sans
+  effet sur les touches, testé).

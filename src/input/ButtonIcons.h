@@ -37,7 +37,8 @@ const char* FaceIconName(int type, int button) noexcept;
 // `name` n'est pas une icône A, B, X, Y du PC ou si le type est 0.
 const char* ReplacementIconName(const char* name, int type) noexcept;
 // Fonction pure (testée) : icône d'une commande que la table manette du jeu ne couvre pas, pour le type 1 (Xbox 360)
-// ou 2 (PS3) ; nullptr sinon. Stick droit : axes 0x13 et 0x14 (invite « Zoom » de la carte) et clic R3 (0x44).
+// ou 2 (PS3), ou mal choisie par elle ; nullptr sinon. Stick droit : axes 0x13 et 0x14 (invite « Zoom » de la carte) et
+// clic R3 (0x44) ; LB / L1 : commande 8 (invite « Inventaire »).
 const char* ExtraCommandIconName(std::uint32_t command, int type) noexcept;
 // Met à jour le type d'icônes selon le réglage et la manette (appelé à chaque Present).
 void RefreshButtonIcons() noexcept;

@@ -42,8 +42,8 @@ Reprise de DPStabilityFix, adaptée (espace de noms `hca`, projet `HomecomingAga
 
 ## État
 
-Version 0.9.0 publiée (préversion, 14/10/2026). Le mod est installé et testé en jeu à chaque modification : cadence,
-sans bordure, son, SMAA, SSAO, ombres 8192, DLSS, manette (menus, icônes, noms des boutons, zoom de la carte), carte
+Version 0.9.2 publiée (préversion, 18/10/2026). Le mod est installé et testé en jeu à chaque modification : cadence,
+sans bordure, son, SMAA, SSAO, ombres 8192, DLSS, manette (menus, icônes, noms des boutons, zoom de la carte, caméra orbitale), carte
 entière au-delà du 720p, logos accélérés. Plan et points en attente : `docs/a-faire.md`. Les fonctionnalités et
 réglages sont décrits dans les README.
 
@@ -113,6 +113,8 @@ réglages sont décrits dans les README.
 - **Mesurer avant de corriger** : capture, journal de diagnostic temporaire (une ligne par changement, marqué
   `DIAGNOSTIC TEMPORAIRE`, retiré une fois la cause trouvée), relevé d'image F11, désassemblage des shaders
   (`fxc /dumpbin`). Quand une hypothèse est démentie par une mesure, le dire et repartir de la mesure.
+  Pour les touches et icônes de la manette (bouton physique, commande, icône, noms affichés), les adresses vérifiées
+  et la technique sont dans `docs/methode-de-travail.md`, section « Touches et icônes de la manette ».
 - **Mode test autonome** : avec l'accord de l'utilisateur (à demander ; il peut le laisser actif jusqu'à « stop »),
   Claude ferme le jeu (`WM_CLOSE`), installe, relance et charge la partie au clavier, et vérifie par captures
   d'écran (procédure dans `docs/methode-de-travail.md`, section 5). Si l'utilisateur joue, demander avant de fermer.

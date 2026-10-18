@@ -41,13 +41,17 @@ constexpr int kSettingXbox = 2;
 constexpr int kSettingPs3 = 3;
 
 constexpr int kFaceSlots = 8;
+// Variantes animées (4 à 7) : les textures animées Xbox 360 et PS3 (shv_aflash...) ne s'affichent pas dans la version PC
+// (invite à marteler de l'introduction vide, journal du 17/10/2026). Même demandées dès le chargement de l'interface
+// (clé 0x1000E3F9, acquisition 0x100093D6), 1 seule sur 8 a été obtenue : elles ne sont pas chargeables ainsi. Les
+// icônes fixes, visibles partout, les remplacent (on perd le grossissement du « 1 » animé d'origine).
 constexpr const char* kNames[3][kFaceSlots] = {
     {"shv_buttonpccontrol1", "shv_buttonpccontrol2", "shv_buttonpccontrol3", "shv_buttonpccontrol4", "pc_1flash",
      "pc_2flash", "pc_3flash", "pc_4flash"},
     {"shv_buttonxbox360_a_32", "shv_buttonxbox360_b_32", "shv_buttonxbox360_x_32", "shv_buttonxbox360_y_32",
-     "shv_aflash", "shv_bflash", "shv_x360xflash", "shv_yflash"},
+     "shv_buttonxbox360_a_32", "shv_buttonxbox360_b_32", "shv_buttonxbox360_x_32", "shv_buttonxbox360_y_32"},
     {"shv_buttonps3_x_32", "shv_buttonps3_circle_32", "shv_buttonps3_square_32", "shv_buttonps3_triangle_32",
-     "shv_xflash", "shv_circleflash", "shv_squareflash", "shv_triangleflash"},
+     "shv_buttonps3_x_32", "shv_buttonps3_circle_32", "shv_buttonps3_square_32", "shv_buttonps3_triangle_32"},
 };
 
 std::atomic<int> g_iconType{0};
@@ -196,11 +200,9 @@ bool EnginePadMode() noexcept {
 
 const char* __fastcall IconNameHook(void* self, void* /*edx*/, std::uint32_t command, std::uint32_t animated) {
     const char* name = reinterpret_cast<IconNameFunction>(kIconName)(self, command, animated);
-    if (name == nullptr) {
-        const char* extra = ExtraCommandIconName(command & 0xFF, g_iconType.load(std::memory_order_relaxed));
-        if (extra != nullptr && EnginePadMode()) {
-            return extra;
-        }
+    const char* extra = ExtraCommandIconName(command & 0xFF, g_iconType.load(std::memory_order_relaxed));
+    if (extra != nullptr && EnginePadMode()) {
+        return extra;
     }
     return name;
 }
@@ -248,17 +250,22 @@ const char* ExtraCommandIconName(std::uint32_t command, int type) noexcept {
     constexpr std::uint32_t kCameraX = 0x13;
     constexpr std::uint32_t kCameraY = 0x14;
     constexpr std::uint32_t kRightThumbstickButton = 0x44;
-    if (command != kCameraX && command != kCameraY && command != kRightThumbstickButton) {
+    // Commande 8 : la table manette du moteur lui donne l'icône d'action du clavier (shv_buttonactionpc, case 2 de
+    // 0x10986360, seule commande concernée d'après les octets de la table en 0x1098656C), d'où « Inventory » avec
+    // une icône de clavier en mode manette (signalé le 17/10/2026). L'inventaire est lié à Button 6, LB (écran des
+    // commandes, et conversion XInput en 0x10A40AB0).
+    constexpr std::uint32_t kInventory = 8;
+    if (type != 1 && type != 2) {
         return nullptr;
     }
-    switch (type) {
-        case 1:
-            return "shv_buttonstickx360_r";
-        case 2:
-            return "shv_buttonps3stickr";
-        default:
-            return nullptr;
+    const bool xbox = type == 1;
+    if (command == kCameraX || command == kCameraY || command == kRightThumbstickButton) {
+        return xbox ? "shv_buttonstickx360_r" : "shv_buttonps3stickr";
     }
+    if (command == kInventory) {
+        return xbox ? "shv_buttonxboxlb" : "shv_buttonps3l1";
+    }
+    return nullptr;
 }
 
 const char* ReplacementIconName(const char* name, int type) noexcept {

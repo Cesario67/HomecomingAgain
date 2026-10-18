@@ -53,8 +53,9 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   (Ouvrir, Sauvegarder...) affichent A, B, X, Y (ou croix, rond, carré, triangle) au lieu des chiffres 1 à 4 de la
   version PC. Les icônes viennent des données du jeu lui-même. Par défaut, icônes Xbox quand une manette est
   branchée, icônes PC sinon.
-- **Menu principal à la manette** : la croix et le stick gauche déplacent la sélection, A et Start valident, B
-  revient en arrière.
+- **Vrais noms des boutons** sur l'écran des commandes (LB, LT, Croix haut...) au lieu de « Button 6 », et icône
+  du stick droit à côté de « Zoom » sur la carte.
+- **Plus de pauses intempestives** : A et B sont laissés au jeu, qui gère lui-même la manette dans ses menus.
 
 ### Confort
 
@@ -86,8 +87,10 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
 | `[Movies]` | `SkipLogos=1` | Logos de démarrage accélérés (0 = d'origine) |
 | `[Input]` | `ButtonIcons=0` | Icônes de boutons : 0 = auto (Xbox si une manette est branchée), 1 = PC (d'origine), 2 = Xbox, 3 = PlayStation |
-| `[Input]` | `MenuPad=1` | Manette dans les menus (croix, stick gauche, A, B, Start) |
+| `[Input]` | `MenuPad=0` | Traduire la manette en touches du clavier dans les menus (croix, stick gauche, Start) ; désactivé par défaut, le jeu gère la manette lui-même |
 | `[Camera]` | `CameraFix=0` | Correctif de caméra à la manette (d'après le Camera Fix d'Emertels) : le personnage tourne avec le stick droit, réponse verticale proportionnelle, sensibilité de visée séparée. Vitesses `HorizontalSpeed`, `VerticalSpeed`, `AimHorizontalSpeed`, `AimVerticalSpeed` (0,25 à 3,0). Le launcher libère aussi le stick droit dans `Engine\binds_pc_mjs.cfg` |
+| `[Camera]` | `Mode=Follow` | Avec `CameraFix=1` : `Follow` = le personnage tourne et la caméra le suit ; `Orbit` (expérimental) = le stick droit tourne la caméra autour du personnage, qui ne bouge pas |
+| `[Camera]` | `OrbitMove=Camera` | Avec `Mode=Orbit`, en marche : `Camera` = le personnage se tourne vers la caméra (stick gauche d'origine : avant, arrière, pas de côté) ; `Stick` = il se tourne vers la direction du stick gauche à l'écran |
 | `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA) : les trois à 1 pour l'activer, avec DXVK (fait par le launcher) |
 
 ## Limites connues

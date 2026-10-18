@@ -300,11 +300,11 @@ void TestSceneEnd() {
 void TestMenuPadKeys() {
     using namespace hca::input;
     KeySet held{};
-    // Croix bas + A : flèche bas et Entrée ; B : Échap.
-    KeySet keys = KeysForPad(0x0002 | 0x1000, 0, 0, held);
-    Check(keys[kKeyDown] && keys[kKeyReturn] && !keys[kKeyUp] && !keys[kKeyEscape], "croix et A traduits en touches");
-    keys = KeysForPad(0x2000, 0, 0, held);
-    Check(keys[kKeyEscape] && !keys[kKeyReturn], "B traduit en Échap");
+    // Croix bas + Start : flèche bas et Entrée ; A et B ne sont plus traduits.
+    KeySet keys = KeysForPad(0x0002 | 0x0010, 0, 0, held);
+    Check(keys[kKeyDown] && keys[kKeyReturn] && !keys[kKeyUp] && !keys[kKeyEscape], "croix et Start traduits en touches");
+    keys = KeysForPad(0x1000 | 0x2000, 0, 0, held);
+    Check(!keys[kKeyEscape] && !keys[kKeyReturn], "A et B non traduits");
     // Stick : enfoncé au-delà de la moitié, relâché seulement sous un tiers (pas de rebond autour du seuil).
     keys = KeysForPad(0, 0, 20000, held);
     const bool pressed = keys[kKeyUp];
@@ -344,13 +344,13 @@ void TestButtonIcons() {
           "icônes forcées : PC, Xbox 360, PS3, valeur inconnue = PC");
     using hca::input::FaceIconName;
     Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
-              std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(1, 6)) == "shv_x360xflash" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
+              std::string(FaceIconName(0, 1)) == "shv_buttonpccontrol2" && std::string(FaceIconName(1, 6)) == "shv_buttonxbox360_x_32" && std::string(FaceIconName(7, 9)) == "shv_buttonpccontrol1",
           "noms des icônes A, B, X, Y selon le type");
     using hca::input::ReplacementIconName;
     const auto same = [](const char* a, const char* b) { return a != nullptr && std::string(a) == b; };
     Check(same(ReplacementIconName("shv_buttonpccontrol1", 1), "shv_buttonxbox360_a_32") &&
               same(ReplacementIconName("shv_buttonpccontrol4_64", 2), "shv_buttonps3_triangle_32") &&
-              same(ReplacementIconName("pc_3flash", 1), "shv_x360xflash"),
+              same(ReplacementIconName("pc_3flash", 1), "shv_buttonxbox360_x_32"),
           "texture PC remplacée par l'icône Xbox 360 ou PS3");
     Check(ReplacementIconName("shv_buttonpccontrol1", 0) == nullptr && ReplacementIconName("shv_buttonactionpc", 1) == nullptr &&
               ReplacementIconName("shv_buttonpccontrol12", 1) == nullptr && ReplacementIconName("pc_1flash_64", 1) == nullptr &&
@@ -359,6 +359,7 @@ void TestButtonIcons() {
     using hca::input::ExtraCommandIconName;
     Check(same(ExtraCommandIconName(0x44, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x44, 2), "shv_buttonps3stickr") &&
               ExtraCommandIconName(0x44, 0) == nullptr && ExtraCommandIconName(0x36, 1) == nullptr &&
+              same(ExtraCommandIconName(8, 1), "shv_buttonxboxlb") && same(ExtraCommandIconName(8, 2), "shv_buttonps3l1") && ExtraCommandIconName(8, 0) == nullptr &&
               same(ExtraCommandIconName(0x13, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x14, 2), "shv_buttonps3stickr"),
           "icône du stick droit pour le zoom de la carte (axes et R3), rien pour le type PC ni les autres commandes");
 }
@@ -480,6 +481,39 @@ void TestCameraTuning() {
     Check(IsPrecisionCameraName("Precision") && !IsPrecisionCameraName("PrecisionX") &&
               !IsPrecisionCameraName("Navigation") && !IsPrecisionCameraName("Prec") && !IsPrecisionCameraName(nullptr),
           "caméra de visée reconnue par son nom exact");
+    Check(ParseCameraMode(L"Orbit") == CameraMode::Orbit && ParseCameraMode(L"orbit") == CameraMode::Orbit &&
+              ParseCameraMode(L"Follow") == CameraMode::Follow && ParseCameraMode(L"") == CameraMode::Follow &&
+              ParseCameraMode(L"Orbite") == CameraMode::Follow && ParseCameraMode(nullptr) == CameraMode::Follow,
+          "mode de caméra : Orbit reconnu, Follow par défaut");
+    Check(std::fabs(WrapHeading(7.0f) - 0.7168147f) < 1e-5f && std::fabs(WrapHeading(-0.5f) - 5.7831855f) < 1e-5f &&
+              WrapHeading(1.0f) == 1.0f && WrapHeading(std::nanf("")) == 0.0f,
+          "cap ramené dans [0 ; 2π[");
+    Check(OrbitYaw(1.0f, 0.04f, 1.0f, 1.5f) == 1.0f && std::fabs(OrbitYaw(1.0f, 1.0f, 0.5f, 1.5f) - 0.25f) < 1e-6f &&
+              std::fabs(OrbitYaw(0.1f, 1.0f, 0.2f, 1.5f) - 6.0831853f) < 1e-5f &&
+              std::fabs(OrbitYaw(1.0f, -1.0f, 0.5f, 1.5f) - 1.75f) < 1e-6f,
+          "orbite : zone morte, sens du mode Follow, passage par zéro");
+    Check(OrbitNeedsReset(0, 1000) && !OrbitNeedsReset(1000, 1400) && OrbitNeedsReset(1000, 1600) &&
+              OrbitNeedsReset(2000, 1000),
+          "orbite : repart du cap du moteur après une interruption de plus de 500 ms");
+    Check(std::fabs(SignedAngle(3.5f) + 2.7831853f) < 1e-5f && std::fabs(SignedAngle(-0.5f) + 0.5f) < 1e-6f &&
+              std::fabs(SignedAngle(0.5f) - 0.5f) < 1e-6f,
+          "angle signé dans [-π ; π[");
+    Check(ParseOrbitMove(L"Stick") == OrbitMove::Stick && ParseOrbitMove(L"stick") == OrbitMove::Stick &&
+              ParseOrbitMove(L"Camera") == OrbitMove::Camera && ParseOrbitMove(L"") == OrbitMove::Camera &&
+              ParseOrbitMove(nullptr) == OrbitMove::Camera,
+          "déplacement en orbite : Stick reconnu, Camera par défaut");
+    Check(StickMagnitude(0.6f, 0.8f) == 1.0f && std::fabs(StickMagnitude(0.3f, 0.4f) - 0.5f) < 1e-6f &&
+              StickMagnitude(std::nanf(""), 0.0f) == 0.0f,
+          "inclinaison du stick bornée à 1");
+    Check(std::fabs(CameraRelativeHeading(1.0f, 0.0f, 1.0f) - 1.0f) < 1e-6f &&
+              std::fabs(CameraRelativeHeading(0.0f, 1.0f, 2.0f) - (2.0f - 1.5707963f)) < 1e-5f &&
+              std::fabs(CameraRelativeHeading(-1.0f, 0.0f, 0.5f) - (0.5f + 3.1415927f)) < 1e-5f,
+          "direction voulue : avant = cap de la caméra, droite = même sens que l'orbite, arrière = demi-tour");
+    Check(TurnStep(0.05f, 0.1f) == 0.05f && TurnStep(2.0f, 0.1f) == 0.1f && TurnStep(-2.0f, 0.1f) == -0.1f,
+          "rotation par image bornée");
+    Check(ForwardAfterTurn(0.8f, 0.0f) == 0.8f && std::fabs(ForwardAfterTurn(1.0f, 1.0471976f) - 0.5f) < 1e-5f &&
+              ForwardAfterTurn(1.0f, 2.5f) == 0.0f && ForwardAfterTurn(1.0f, -2.5f) == 0.0f,
+          "marche avant réduite tant qu'il ne regarde pas la direction, nulle au-delà d'un quart de tour");
 }
 
 }  // namespace
