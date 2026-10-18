@@ -27,6 +27,14 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool SkipLogos { get; set; } = true;
 
+    /// <summary>Mode dieu ([Cheats] God).</summary>
+    [ObservableProperty]
+    public partial bool God { get; set; }
+
+    /// <summary>Munitions illimitées ([Cheats] UnlimitedAmmo).</summary>
+    [ObservableProperty]
+    public partial bool UnlimitedAmmo { get; set; }
+
     [ObservableProperty]
     public partial bool WindowThreadLock { get; set; } = true;
 
@@ -60,6 +68,8 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
                             ?? AddCustomFrameRate(settings.TargetFps);
         PreciseTimer = settings.PreciseTimer;
         SkipLogos = settings.SkipLogos;
+        God = settings.God;
+        UnlimitedAmmo = settings.UnlimitedAmmo;
         WindowThreadLock = settings.WindowThreadLock;
         D3DMultithreaded = settings.D3DMultithreaded;
         CrashDumps = settings.CrashDumps;
@@ -73,6 +83,8 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
         TargetFps = SelectedFrameRate.Value,
         PreciseTimer = PreciseTimer,
         SkipLogos = SkipLogos,
+        God = God,
+        UnlimitedAmmo = UnlimitedAmmo,
         WindowThreadLock = WindowThreadLock,
         D3DMultithreaded = D3DMultithreaded,
         CrashDumps = CrashDumps,

@@ -96,6 +96,24 @@ public static class Translations
                                    "A, B, X, Y button icons in menus, the inventory, the controls screen and in-game prompts " +
                                    "(Open, Save...). The original game shows the digits 1 to 4."),
             ["CameraFix"] = ("Correctif de caméra (stick droit)", "Camera fix (right stick)"),
+            ["PlayStationPad"] = ("Manette PlayStation sans Steam Input (DualShock 4, DualSense)",
+                                   "PlayStation controller without Steam Input (DualShock 4, DualSense)"),
+            ["PlayStationPadHint"] = ("Le jeu ne connaît que les manettes Xbox : sans manette Xbox branchée, la manette " +
+                                       "PlayStation lui est présentée comme une manette Xbox, avec les icônes PlayStation " +
+                                       "en mode auto. Inutile si Steam Input est activé pour le jeu.",
+                                       "The game only knows Xbox controllers: with no Xbox controller plugged in, the " +
+                                       "PlayStation controller is presented to it as an Xbox one, with PlayStation icons " +
+                                       "in auto mode. Not needed if Steam Input is enabled for the game."),
+            ["CameraOrbit"] = ("Caméra orbitale (expérimental)", "Orbit camera (experimental)"),
+            ["OrbitMove"] = ("En marche, le personnage se tourne", "When walking, the character turns"),
+            ["OrbitMoveCamera"] = ("vers la caméra", "towards the camera"),
+            ["OrbitMoveStick"] = ("vers la direction du stick gauche", "towards the left stick direction"),
+            ["CameraOrbitHint"] = ("Exige le correctif de caméra. Le stick droit fait tourner la caméra seule autour du " +
+                                     "personnage, sans la ramener derrière lui. La visée aux armes à feu garde la caméra " +
+                                     "du jeu.",
+                                     "Requires the camera fix. The right stick turns the camera alone around the " +
+                                     "character, without bringing it back behind him. Aiming with firearms keeps the " +
+                                     "game's camera."),
             ["CameraFixHint"] = ("Le personnage tourne avec la caméra, le stick vertical répond de façon proportionnelle, et " +
                                  "la visée a sa propre sensibilité (vitesses dans la section [Camera] de HomecomingAgain.ini). " +
                                  "Le stick droit ne tourne plus le personnage dans Engine\\binds_pc_mjs.cfg (copie de " +
@@ -158,6 +176,13 @@ public static class Translations
                                  "5 s environ au lieu de 23. Le jeu a déjà fini de charger pendant ces logos.",
                                  "Konami, Double Helix and the legal screen play fast-forwarded: the title screen appears " +
                                  "in about 5 s instead of 23. The game has already finished loading during these logos."),
+            ["SecCheats"] = ("Triches", "Cheats"),
+            ["God"] = ("Mode dieu (le joueur ne perd plus de vie)", "God mode (the player loses no health)"),
+            ["UnlimitedAmmo"] = ("Munitions illimitées", "Unlimited ammo"),
+            ["CheatsHint"] = ("Variables de débogage du moteur, réactivées par le mod. Le mode dieu évite aussi de " +
+                               "consommer des munitions.",
+                               "The engine's debug variables, re-enabled by the mod. God mode also stops ammo " +
+                               "consumption."),
             ["SecCompatibility"] = ("Compatibilité", "Compatibility"),
             ["WindowThreadLock"] = ("Fenêtre réactive pendant les chargements (overlay Steam)",
                                     "Responsive window during loading (Steam overlay)"),
@@ -205,9 +230,12 @@ public static class Translations
             ["SecDiagnosticTools"] = ("Diagnostic", "Diagnostics"),
             ["OpenLatestLog"] = ("Ouvrir le dernier journal", "Open the latest log"),
             ["OpenModFolder"] = ("Ouvrir le dossier du mod", "Open the mod folder"),
-            ["CrashReportHint"] = ("En cas de problème, envoyez le dernier journal et, s'il y en a, le fichier de " +
-                                   "crashdumps correspondant.",
-                                   "If something goes wrong, send the latest log and, if any, the matching crashdumps file."),
+            ["CreateBugReport"] = ("Créer un rapport de bogue", "Create a bug report"),
+            ["CrashReportHint"] = ("En cas de problème, créez un rapport de bogue et envoyez le zip : il contient le " +
+                                   "dernier journal, le dernier minidump s'il y en a un, et vos réglages.",
+                                   "If something goes wrong, create a bug report and send the zip: it holds the latest " +
+                                   "log, the latest minidump if any, and your settings."),
+            ["BugReportCreated"] = ("Rapport créé : {0}", "Report created: {0}"),
             ["NoLogYet"] = ("Pas encore de journal : lancez le jeu une fois.", "No log yet: start the game once."),
             ["LogOpened"] = ("Journal ouvert : {0}", "Log opened: {0}"),
 

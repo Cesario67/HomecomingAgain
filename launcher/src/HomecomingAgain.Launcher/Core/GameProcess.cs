@@ -62,4 +62,10 @@ public static class GameProcess
     {
         Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
     }
+
+    /// <summary>Ouvre l'Explorateur sur le dossier du fichier, avec le fichier sélectionné.</summary>
+    public static void Reveal(string path)
+    {
+        Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true })?.Dispose();
+    }
 }
