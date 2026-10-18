@@ -98,6 +98,20 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool CameraFix { get; set; }
 
+    /// <summary>Caméra orbitale ([Camera] Mode=Orbit), expérimentale.</summary>
+    [ObservableProperty]
+    public partial bool CameraOrbit { get; set; }
+
+    /// <summary>En orbite : vers où se tourne le personnage en marche ([Camera] OrbitMove).</summary>
+    public IReadOnlyList<Choice<bool>> OrbitMoves { get; } =
+    [
+        Choice<bool>.Localized(false, "OrbitMoveCamera"),
+        Choice<bool>.Localized(true, "OrbitMoveStick"),
+    ];
+
+    [ObservableProperty]
+    public partial Choice<bool> SelectedOrbitMove { get; set; }
+
     [ObservableProperty]
     public partial bool HighQualityShaders { get; set; }
 
@@ -116,12 +130,13 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedShadowResolution = ShadowResolutions[^1];
         SelectedFilmGrain = FilmGrainLevels[^1];
         SelectedButtonIcons = ButtonIconSets[0];
+        SelectedOrbitMove = OrbitMoves[0];
         Loc.Instance.LanguageChanged += RefreshLabels;
     }
 
     private void RefreshLabels()
     {
-        foreach (ChoiceBase choice in DisplayModes.Cast<ChoiceBase>().Concat(AnisotropyLevels).Concat(SsaoStrengths).Concat(ShadowResolutions).Concat(FilmGrainLevels).Concat(ButtonIconSets))
+        foreach (ChoiceBase choice in DisplayModes.Cast<ChoiceBase>().Concat(AnisotropyLevels).Concat(SsaoStrengths).Concat(ShadowResolutions).Concat(FilmGrainLevels).Concat(ButtonIconSets).Concat(OrbitMoves))
         {
             choice.RefreshLabel();
         }
@@ -142,6 +157,8 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedFilmGrain = FilmGrainLevels.LastOrDefault(choice => choice.Value <= settings.FilmGrain) ?? FilmGrainLevels[0];
         SelectedButtonIcons = ButtonIconSets.FirstOrDefault(choice => choice.Value == settings.ButtonIcons) ?? ButtonIconSets[0];
         CameraFix = settings.CameraFix;
+        CameraOrbit = settings.CameraOrbit;
+        SelectedOrbitMove = OrbitMoves.First(choice => choice.Value == settings.OrbitMoveStick);
         HighQualityShaders = settings.HighQualityShaders;
         FullResolutionTextures = settings.FullResolutionTextures;
     }
@@ -160,6 +177,8 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         FilmGrain = SelectedFilmGrain.Value,
         ButtonIcons = SelectedButtonIcons.Value,
         CameraFix = CameraFix,
+        CameraOrbit = CameraOrbit,
+        OrbitMoveStick = SelectedOrbitMove.Value,
         HighQualityShaders = HighQualityShaders,
         FullResolutionTextures = FullResolutionTextures,
     };

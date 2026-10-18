@@ -45,6 +45,29 @@ public sealed class SettingsTests
         Assert.Equal(8192, settings.ShadowResolution);
         Assert.True(settings.WindowThreadLock && settings.D3DMultithreaded && settings.HangDetection);
         Assert.True(settings.SkipLogos);
+        Assert.False(settings.CameraOrbit || settings.OrbitMoveStick);
+    }
+
+    [Theory]
+    [InlineData("Orbit", "Stick", true, true)]
+    [InlineData("orbit", "stick", true, true)]
+    [InlineData("Follow", "Camera", false, false)]
+    [InlineData("autre", "autre", false, false)]
+    public void ReadsCameraModeLikeTheDll(string mode, string move, bool orbit, bool stick)
+    {
+        IniDocument mod = IniDocument.Parse($"[Camera]\nMode={mode}\nOrbitMove={move}");
+        PatchSettings settings = PatchSettings.Read(mod, KeyValueDocument.Parse(OriginalGameSettings));
+        Assert.Equal((orbit, stick), (settings.CameraOrbit, settings.OrbitMoveStick));
+    }
+
+    [Fact]
+    public void WritesCameraModeAsText()
+    {
+        IniDocument mod = IniDocument.Parse("");
+        (new PatchSettings() with { CameraOrbit = true, OrbitMoveStick = true }).WriteMod(mod);
+        Assert.Equal(("Orbit", "Stick"), (mod.Get("Camera", "Mode"), mod.Get("Camera", "OrbitMove")));
+        (new PatchSettings()).WriteMod(mod);
+        Assert.Equal(("Follow", "Camera"), (mod.Get("Camera", "Mode"), mod.Get("Camera", "OrbitMove")));
     }
 
     [Theory]
@@ -73,7 +96,7 @@ public sealed class SettingsTests
             FullResolutionTextures = true, Smaa = false, Anisotropy = 4, TargetFps = 144, PreciseTimer = false,
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
-            FilmGrain = 0, SkipLogos = false,
+            FilmGrain = 0, SkipLogos = false, CameraFix = true, CameraOrbit = true, OrbitMoveStick = true,
         };
         IniDocument mod = IniDocument.Parse("");
         KeyValueDocument game = KeyValueDocument.Parse(OriginalGameSettings);

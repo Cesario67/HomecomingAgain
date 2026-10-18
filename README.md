@@ -53,6 +53,8 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **Real button names** on the controls screen (LB, LT, D-pad up...) instead of "Button 6", and the right stick icon
   next to "Zoom" on the map.
 - **No more accidental pauses**: A and B are left to the game, which handles the controller in its own menus.
+- **Orbit camera** (experimental): with the camera fix, the right stick turns the camera alone around the character.
+  Enabled in the launcher (Graphics tab), with a choice of walking direction (towards the camera or the left stick).
 
 ### Comfort
 

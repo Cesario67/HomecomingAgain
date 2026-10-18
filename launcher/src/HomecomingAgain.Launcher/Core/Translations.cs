@@ -96,6 +96,16 @@ public static class Translations
                                    "A, B, X, Y button icons in menus, the inventory, the controls screen and in-game prompts " +
                                    "(Open, Save...). The original game shows the digits 1 to 4."),
             ["CameraFix"] = ("Correctif de caméra (stick droit)", "Camera fix (right stick)"),
+            ["CameraOrbit"] = ("Caméra orbitale (expérimental)", "Orbit camera (experimental)"),
+            ["OrbitMove"] = ("En marche, le personnage se tourne", "When walking, the character turns"),
+            ["OrbitMoveCamera"] = ("vers la caméra", "towards the camera"),
+            ["OrbitMoveStick"] = ("vers la direction du stick gauche", "towards the left stick direction"),
+            ["CameraOrbitHint"] = ("Exige le correctif de caméra. Le stick droit fait tourner la caméra seule autour du " +
+                                     "personnage, sans la ramener derrière lui. La visée aux armes à feu garde la caméra " +
+                                     "du jeu.",
+                                     "Requires the camera fix. The right stick turns the camera alone around the " +
+                                     "character, without bringing it back behind him. Aiming with firearms keeps the " +
+                                     "game's camera."),
             ["CameraFixHint"] = ("Le personnage tourne avec la caméra, le stick vertical répond de façon proportionnelle, et " +
                                  "la visée a sa propre sensibilité (vitesses dans la section [Camera] de HomecomingAgain.ini). " +
                                  "Le stick droit ne tourne plus le personnage dans Engine\\binds_pc_mjs.cfg (copie de " +

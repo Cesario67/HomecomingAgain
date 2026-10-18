@@ -39,6 +39,11 @@ public sealed record PatchSettings
 
     // --- Caméra à la manette ([Camera] CameraFix, plus les commandes du stick droit, voir ControllerBinds).
     public bool CameraFix { get; init; }
+    // Caméra orbitale ([Camera] Mode=Orbit, sinon Follow), effective seulement avec CameraFix.
+    public bool CameraOrbit { get; init; }
+    // En orbite, le personnage en marche se tourne vers la direction du stick ([Camera] OrbitMove=Stick) ou vers la
+    // caméra (OrbitMove=Camera, défaut).
+    public bool OrbitMoveStick { get; init; }
 
     // --- Cadence ([Frames])
     public int TargetFps { get; init; } = 60;
@@ -81,6 +86,9 @@ public sealed record PatchSettings
             Dlss = mod.GetBool("DLSS", "ShareFrames", false) && mod.GetBool("DLSS", "Apply", false),
             ButtonIcons = Math.Clamp(mod.GetInt("Input", "ButtonIcons", 0), 0, 3),
             CameraFix = mod.GetBool("Camera", "CameraFix", defaults.CameraFix),
+            // Mêmes règles que la DLL (patches/CameraTuning.cpp) : toute autre valeur = défaut.
+            CameraOrbit = string.Equals(mod.Get("Camera", "Mode"), "Orbit", StringComparison.OrdinalIgnoreCase),
+            OrbitMoveStick = string.Equals(mod.Get("Camera", "OrbitMove"), "Stick", StringComparison.OrdinalIgnoreCase),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
             SkipLogos = mod.GetBool("Movies", "SkipLogos", defaults.SkipLogos),
@@ -107,6 +115,8 @@ public sealed record PatchSettings
         mod.SetBool("DLSS", "Apply", Dlss);
         mod.SetInt("Input", "ButtonIcons", Math.Clamp(ButtonIcons, 0, 3));
         mod.SetBool("Camera", "CameraFix", CameraFix);
+        mod.Set("Camera", "Mode", CameraOrbit ? "Orbit" : "Follow");
+        mod.Set("Camera", "OrbitMove", OrbitMoveStick ? "Stick" : "Camera");
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Movies", "SkipLogos", SkipLogos);

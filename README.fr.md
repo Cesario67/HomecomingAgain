@@ -56,6 +56,9 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Vrais noms des boutons** sur l'écran des commandes (LB, LT, Croix haut...) au lieu de « Button 6 », et icône
   du stick droit à côté de « Zoom » sur la carte.
 - **Plus de pauses intempestives** : A et B sont laissés au jeu, qui gère lui-même la manette dans ses menus.
+- **Caméra orbitale** (expérimental) : avec le correctif de caméra, le stick droit fait tourner la caméra seule autour
+  du personnage. À cocher dans le launcher (onglet Graphismes), avec le choix de la direction en marche (vers la
+  caméra ou vers le stick gauche).
 
 ### Confort
 
