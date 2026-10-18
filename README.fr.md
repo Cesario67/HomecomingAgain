@@ -61,6 +61,9 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Manette PlayStation sans Steam Input** (DualShock 4, DualSense, en test) : le jeu ne connaît que les manettes
   Xbox ; sans manette Xbox branchée, la manette PlayStation lui est présentée comme une manette Xbox, avec les icônes
   PlayStation en mode auto (`[Input] PlayStationPad`, activé par défaut).
+- **Caméra orbitale** (expérimental) : avec le correctif de caméra, le stick droit fait tourner la caméra seule autour
+  du personnage. À cocher dans le launcher (onglet Graphismes), avec le choix de la direction en marche (vers la
+  caméra ou vers le stick gauche).
 
 ### Confort
 

@@ -108,6 +108,13 @@
             <TextBlock Classes="hint" Text="{Binding L[PlayStationPadHint]}" />
             <CheckBox Content="{Binding L[CameraFix]}" IsChecked="{Binding CameraFix}" />
             <TextBlock Classes="hint" Text="{Binding L[CameraFixHint]}" />
+            <CheckBox Content="{Binding L[CameraOrbit]}" IsChecked="{Binding CameraOrbit}" IsEnabled="{Binding CameraFix}" />
+            <Grid ColumnDefinitions="220,*" IsEnabled="{Binding CameraOrbit}" IsVisible="{Binding CameraFix}">
+              <TextBlock Text="{Binding L[OrbitMove]}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding OrbitMoves}" SelectedItem="{Binding SelectedOrbitMove}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[CameraOrbitHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
             <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />

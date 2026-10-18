@@ -58,6 +58,8 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **PlayStation controller without Steam Input** (DualShock 4, DualSense, being tested): the game only knows Xbox
   controllers; with no Xbox controller plugged in, the PlayStation controller is presented to it as an Xbox one, with
   PlayStation icons in auto mode (`[Input] PlayStationPad`, on by default).
+- **Orbit camera** (experimental): with the camera fix, the right stick turns the camera alone around the character.
+  Enabled in the launcher (Graphics tab), with a choice of walking direction (towards the camera or the left stick).
 
 ### Comfort
 
