@@ -158,6 +158,13 @@ public static class Translations
                                  "5 s environ au lieu de 23. Le jeu a déjà fini de charger pendant ces logos.",
                                  "Konami, Double Helix and the legal screen play fast-forwarded: the title screen appears " +
                                  "in about 5 s instead of 23. The game has already finished loading during these logos."),
+            ["SecCheats"] = ("Triches", "Cheats"),
+            ["God"] = ("Mode dieu (le joueur ne perd plus de vie)", "God mode (the player loses no health)"),
+            ["UnlimitedAmmo"] = ("Munitions illimitées", "Unlimited ammo"),
+            ["CheatsHint"] = ("Variables de débogage du moteur, réactivées par le mod. Le mode dieu évite aussi de " +
+                               "consommer des munitions.",
+                               "The engine's debug variables, re-enabled by the mod. God mode also stops ammo " +
+                               "consumption."),
             ["SecCompatibility"] = ("Compatibilité", "Compatibility"),
             ["WindowThreadLock"] = ("Fenêtre réactive pendant les chargements (overlay Steam)",
                                     "Responsive window during loading (Steam overlay)"),

@@ -134,6 +134,11 @@
             <CheckBox Content="{Binding L[SkipLogos]}" IsChecked="{Binding SkipLogos}" />
             <TextBlock Classes="hint" Text="{Binding L[SkipLogosHint]}" />
 
+            <TextBlock Classes="section" Text="{Binding L[SecCheats]}" />
+            <CheckBox Content="{Binding L[God]}" IsChecked="{Binding God}" />
+            <CheckBox Content="{Binding L[UnlimitedAmmo]}" IsChecked="{Binding UnlimitedAmmo}" />
+            <TextBlock Classes="hint" Text="{Binding L[CheatsHint]}" />
+
             <TextBlock Classes="section" Text="{Binding L[SecCompatibility]}" />
             <CheckBox Content="{Binding L[WindowThreadLock]}" IsChecked="{Binding WindowThreadLock}" />
             <CheckBox Content="{Binding L[D3DMultithreaded]}" IsChecked="{Binding D3DMultithreaded}" />
