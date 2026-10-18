@@ -123,6 +123,7 @@ add_library(HomecomingAgain SHARED
     src/graphics/Smaa.cpp
     src/patches/CameraFix.cpp
     src/patches/CameraTuning.cpp
+    src/patches/Cheats.cpp
     src/patches/FrameRateCap.cpp
     src/proxy/VersionProxy.cpp
     src/proxy/version.def

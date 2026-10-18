@@ -120,6 +120,11 @@ struct Config {
     // En orbite : le personnage se tourne vers la caméra quand il marche (Camera) ou vers la direction du stick (Stick).
     patches::camera::OrbitMove cameraOrbitMove = patches::camera::OrbitMove::Camera;
 
+    // [Cheats]
+    // Mode dieu et munitions illimitées, par les variables de débogage du moteur (voir patches/Cheats.h).
+    bool cheatGod = false;
+    bool cheatUnlimitedAmmo = false;
+
 
     // [Debug]
     int logKeepCount = 30;
