@@ -105,6 +105,9 @@ struct Config {
     bool menuPad = false;
     // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
     int buttonIcons = 0;
+    // Manette PlayStation (DualShock 4, DualSense) présentée comme une manette Xbox 360 quand aucune manette XInput
+    // n'est branchée (input/SonyPad.h).
+    bool playStationPad = true;
 
     // [Camera]
     // Correctif de caméra à la manette, porté du Camera Fix d'Emertels (voir patches/CameraFix.h). Désactivé par

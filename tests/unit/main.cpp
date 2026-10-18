@@ -26,6 +26,7 @@
 #include "input/ButtonIcons.h"
 #include "input/ControllerNames.h"
 #include "input/MenuBridge.h"
+#include "input/SonyPad.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
@@ -339,8 +340,11 @@ void TestControllerNames() {
 
 void TestButtonIcons() {
     using hca::input::IconTypeFor;
-    Check(IconTypeFor(0, true) == 1 && IconTypeFor(0, false) == 0, "icônes auto : Xbox 360 avec manette, PC sans");
-    Check(IconTypeFor(1, true) == 0 && IconTypeFor(2, false) == 1 && IconTypeFor(3, true) == 2 && IconTypeFor(9, true) == 0,
+    Check(IconTypeFor(0, true, false) == 1 && IconTypeFor(0, false, false) == 0, "icônes auto : Xbox 360 avec manette, PC sans");
+    Check(IconTypeFor(0, true, true) == 2, "icônes auto : PS3 avec une manette PlayStation");
+    Check(IconTypeFor(2, true, true) == 1, "icônes forcées Xbox 360 même avec une manette PlayStation");
+    Check(IconTypeFor(1, true, false) == 0 && IconTypeFor(2, false, false) == 1 && IconTypeFor(3, true, false) == 2 &&
+              IconTypeFor(9, true, false) == 0,
           "icônes forcées : PC, Xbox 360, PS3, valeur inconnue = PC");
     using hca::input::FaceIconName;
     Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
@@ -518,6 +522,54 @@ void TestCameraTuning() {
 
 }  // namespace
 
+void TestSonyPad() {
+    using hca::input::SonyToXInput;
+    const hca::input::AxisRanges ranges = {0, 65535, 0, 65535, 0, 65535, 0, 65535, 0, 65535, 0, 65535};
+    JOYINFOEX raw{};
+    raw.dwXpos = raw.dwYpos = raw.dwZpos = raw.dwRpos = 32768;
+    raw.dwPOV = 0xFFFF;
+    XINPUT_GAMEPAD pad = SonyToXInput(raw, ranges);
+    Check(pad.sThumbLX == 0 && pad.sThumbRX == 0 && pad.wButtons == 0 && pad.bLeftTrigger == 0,
+          "PlayStation : sticks au centre, rien d'appuyé");
+
+    // Stick gauche en haut à gauche, stick droit en bas à droite (WinMM : haut = 0).
+    raw.dwXpos = 0;
+    raw.dwYpos = 0;
+    raw.dwZpos = 65535;
+    raw.dwRpos = 65535;
+    pad = SonyToXInput(raw, ranges);
+    Check(pad.sThumbLX == -32768 && pad.sThumbLY == 32767 && pad.sThumbRX == 32767 && pad.sThumbRY == -32768,
+          "PlayStation : sens des sticks (vertical inversé)");
+
+    // L2 sur V, R2 sur U ; plages non standard ramenées sur 0 à 255.
+    const hca::input::AxisRanges narrow = {0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255};
+    raw = JOYINFOEX{};
+    raw.dwVpos = 255;
+    raw.dwUpos = 0;
+    raw.dwPOV = 0xFFFF;
+    pad = SonyToXInput(raw, narrow);
+    Check(pad.bLeftTrigger == 255 && pad.bRightTrigger == 0, "PlayStation : L2 sur V, R2 sur U");
+
+    // Croix = A, Rond = B, Carré = X, Triangle = Y, Create = Back, Options = Start.
+    raw.dwButtons = (1u << 1) | (1u << 2) | (1u << 0) | (1u << 3) | (1u << 8) | (1u << 9);
+    pad = SonyToXInput(raw, narrow);
+    Check(pad.wButtons == (XINPUT_GAMEPAD_A | XINPUT_GAMEPAD_B | XINPUT_GAMEPAD_X | XINPUT_GAMEPAD_Y |
+                           XINPUT_GAMEPAD_BACK | XINPUT_GAMEPAD_START),
+          "PlayStation : boutons de face, Create et Options");
+    raw.dwButtons = 1u << 1;
+    Check(SonyToXInput(raw, narrow).wButtons == XINPUT_GAMEPAD_A, "PlayStation : Croix seule = A seul");
+
+    // Croix directionnelle : haut, diagonale bas-gauche, centre.
+    raw.dwButtons = 0;
+    raw.dwPOV = 0;
+    Check(SonyToXInput(raw, narrow).wButtons == XINPUT_GAMEPAD_DPAD_UP, "PlayStation : croix vers le haut");
+    raw.dwPOV = 22500;
+    Check(SonyToXInput(raw, narrow).wButtons == (XINPUT_GAMEPAD_DPAD_DOWN | XINPUT_GAMEPAD_DPAD_LEFT),
+          "PlayStation : diagonale bas-gauche");
+    raw.dwPOV = 0xFFFF;
+    Check(SonyToXInput(raw, narrow).wButtons == 0, "PlayStation : croix au repos");
+}
+
 void TestHangClock() {
     using hca::crash::HangElapsed;
     // Dernière image à 100, jamais en arrière-plan : 400 ticks sans image.
@@ -551,6 +603,7 @@ int main() {
     TestJitter();
     TestUiClip();
     TestCameraTuning();
+    TestSonyPad();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }
