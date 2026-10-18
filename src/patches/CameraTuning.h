@@ -63,4 +63,56 @@ float HeadingFromForward(float forwardX, float forwardZ) noexcept;
 // Nom de la caméra de visée du moteur : exactement « Precision ».
 bool IsPrecisionCameraName(const char* name) noexcept;
 
+// Mode du stick droit horizontal ([Camera] Mode) : Follow = le personnage tourne et la caméra le suit (Camera Fix),
+// Orbit = la caméra tourne seule autour du personnage, sans le ressort qui la ramène derrière lui (expérimental).
+enum class CameraMode { Follow, Orbit };
+
+// « Orbit » (sans tenir compte de la casse) donne Orbit ; toute autre valeur, ou rien, donne Follow.
+CameraMode ParseCameraMode(const wchar_t* text) noexcept;
+
+// Angle ramené dans [0 ; 2π[.
+float WrapHeading(float radians) noexcept;
+
+// Cap de la caméra en mode orbite après une image : inchangé si le stick est dans la zone morte, sinon tourné dans le
+// même sens qu'en mode Follow (cap - X x durée x vitesse).
+float OrbitYaw(float yaw, float stickX, float elapsedSeconds, float yawRadiansPerSecond) noexcept;
+
+// Au-delà de cette durée sans mise à jour de la caméra de navigation (cinématique, porte, chargement, autre caméra),
+// l'orbite repart du cap du moteur, derrière le personnage.
+inline constexpr unsigned kOrbitResetMs = 500;
+
+bool OrbitNeedsReset(unsigned long long lastUpdateMs, unsigned long long nowMs) noexcept;
+
+// Déplacement par rapport à la caméra (mode orbite). Le moteur déplace le personnage par rapport à lui-même (stick
+// gauche : +0xAD8 avant, +0xADC côté, fonction 0x10384E70, vérifié) et ne le tourne qu'au stick droit : en orbite, le
+// mod le tourne vers la direction demandée à l'écran et ne donne au moteur que la marche avant.
+//
+// [Camera] OrbitMove : Camera = en marche, le personnage se tourne vers le cap de la caméra et le stick gauche garde
+// son effet d'origine (avant, arrière, pas de côté) ; Stick = il se tourne vers la direction du stick à l'écran et ne
+// reçoit que la marche avant (à la manière de Silent Hill 2 Remake).
+enum class OrbitMove { Camera, Stick };
+
+// « Stick » (sans tenir compte de la casse) donne Stick ; toute autre valeur, ou rien, donne Camera.
+OrbitMove ParseOrbitMove(const wchar_t* text) noexcept;
+
+// Vitesse maximale de rotation du personnage vers la direction voulue (environ 340 degrés par seconde).
+inline constexpr float kTurnRadiansPerSecond = 6.0f;
+
+// Angle ramené dans [-π ; π[.
+float SignedAngle(float radians) noexcept;
+
+// Inclinaison du stick gauche, bornée à 1.
+float StickMagnitude(float forward, float side) noexcept;
+
+// Cap voulu dans le monde : celui de la caméra pour le stick vers le haut, tourné du même sens que l'orbite pour le
+// stick sur le côté (côté positif = droite : hypothèse, à confirmer en jeu).
+float CameraRelativeHeading(float forward, float side, float cameraYaw) noexcept;
+
+// Rotation de cette image, bornée à `maxStep` dans les deux sens.
+float TurnStep(float error, float maxStep) noexcept;
+
+// Marche avant donnée au moteur : pleine si le personnage regarde la direction voulue, réduite sinon, nulle au-delà
+// d'un quart de tour (il pivote d'abord).
+float ForwardAfterTurn(float magnitude, float remainingError) noexcept;
+
 }  // namespace hca::patches::camera

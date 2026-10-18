@@ -57,6 +57,18 @@ using RotateActorFn = void(__cdecl*)(void* actor, float degrees);
 float g_yawRadiansPerSecond = camera::kHorizontalReference;
 float g_aimInputGain = camera::kAimInputGain;
 
+// Mode orbite ([Camera] Mode=Orbit) : cap propre de la caméra de navigation, indépendant du personnage.
+bool g_orbitMode = false;
+float g_orbitYaw = 0.0f;
+unsigned long long g_orbitLastMs = 0;
+// Personnage suivi par la caméra de navigation (transformation - 0x1A0, comme pour la fonction de rotation).
+std::uintptr_t g_orbitActor = 0;
+// Déplacement par rapport à la caméra : cap voulu, calculé par l'entrée du personnage et appliqué par le hook du cap
+// (qui connaît la durée de l'image) ; remis à false une fois appliqué.
+bool g_moveActive = false;
+float g_moveHeading = 0.0f;
+camera::OrbitMove g_orbitMove = camera::OrbitMove::Camera;
+
 bool Matches(const Site& site) {
     return std::memcmp(reinterpret_cast<const void*>(site.address), site.original, site.length) == 0;
 }
@@ -103,6 +115,89 @@ bool IsPrecisionCameraActive() {
     return camera::IsPrecisionCameraName(Read<const char*>(active + 0x248));
 }
 
+// L'entrée appartient-elle au personnage suivi par la caméra ? Propriétaire = [entrée+0x28] (fonction 0x10384E70,
+// vérifié) ; qu'il soit le même objet que transformation - 0x1A0 a été vérifié par un journal temporaire en jeu le
+// 18/10/2026 (toujours vrai pour le personnage joué).
+bool IsOrbitActorInput(const std::uint8_t* input) {
+    return g_orbitActor != 0 && Read<std::uintptr_t>(reinterpret_cast<std::uintptr_t>(input) + 0x28) == g_orbitActor;
+}
+
+float ActorHeading(const std::uint8_t* transform) {
+    float forwardX;
+    float forwardZ;
+    std::memcpy(&forwardX, transform + 0x20, sizeof(forwardX));
+    std::memcpy(&forwardZ, transform + 0x28, sizeof(forwardZ));
+    return camera::HeadingFromForward(forwardX, forwardZ);
+}
+
+// Mode orbite : le stick tourne le cap de la caméra seul ; le moteur ne le ramène plus derrière le personnage (vitesse
+// de suivi +0x120 remise à 0, cap calculé par le moteur ignoré). Après une interruption (autre caméra, cinématique),
+// l'orbite repart du cap du moteur.
+float OrbitStep(std::uint8_t* cameraComponent, const std::uint8_t* commands, float elapsed, float nativeYaw) {
+    const unsigned long long now = GetTickCount64();
+    // Seule une vraie interruption remet l'orbite derrière le personnage. Un changement de composant caméra n'en est
+    // pas une : le 18/10/2026, après le chargement d'une sauvegarde, le cap de la caméra restait égal à celui du
+    // personnage (orbite remise à zéro à chaque image, hypothèse : deux composants mis à jour tour à tour).
+    if (camera::OrbitNeedsReset(g_orbitLastMs, now)) {
+        g_orbitYaw = camera::WrapHeading(nativeYaw);
+    }
+    g_orbitLastMs = now;
+    float stickX = 0.0f;
+    if (g_cameraPadActive != 0) {
+        std::memcpy(&stickX, commands + 0x20, sizeof(stickX));
+    }
+    g_orbitYaw = camera::OrbitYaw(g_orbitYaw, stickX, elapsed, g_yawRadiansPerSecond);
+    std::memset(cameraComponent + 0x120, 0, 4);
+    return g_orbitYaw;
+}
+
+// Entrée du personnage suivi, mode orbite hors visée : le stick gauche (+0xAD8 avant, +0xADC côté) est lu comme une
+// direction à l'écran. Le cap voulu est gardé pour le hook du cap, et le moteur ne reçoit que la marche avant, réduite
+// tant que le personnage ne regarde pas encore cette direction.
+void ConvertMoveInput(std::uint8_t* input) {
+    g_moveActive = false;
+    float forward;
+    float side;
+    std::memcpy(&forward, input + 0xAD8, sizeof(forward));
+    std::memcpy(&side, input + 0xADC, sizeof(side));
+    const float magnitude = camera::StickMagnitude(forward, side);
+    if (magnitude <= camera::kStickDeadzone || camera::OrbitNeedsReset(g_orbitLastMs, GetTickCount64())) {
+        return;
+    }
+    g_moveActive = true;
+    if (g_orbitMove == camera::OrbitMove::Camera) {
+        // Le personnage se tourne vers la caméra ; le stick garde son effet d'origine, par rapport à lui.
+        g_moveHeading = g_orbitYaw;
+        return;
+    }
+    g_moveActive = false;
+    const auto* transform = reinterpret_cast<const std::uint8_t*>(g_orbitActor + 0x1A0);
+    g_moveHeading = camera::CameraRelativeHeading(forward, side, g_orbitYaw);
+    const float error = camera::SignedAngle(g_moveHeading - ActorHeading(transform));
+    const float walk = camera::ForwardAfterTurn(magnitude, error);
+    const float none = 0.0f;
+    std::memcpy(input + 0xAD8, &walk, sizeof(walk));
+    std::memcpy(input + 0xADC, &none, sizeof(none));
+    g_moveActive = true;
+}
+
+// Hook du cap, mode orbite : tourne le personnage vers le cap voulu, au plus kTurnRadiansPerSecond. La fonction de
+// rotation augmente le cap pour un angle positif : déduit du mode Follow, où -X degrés tournent le personnage du même
+// côté que l'orbite (cap - X), sens validé en jeu dans les deux modes.
+void TurnTowardMove(std::uint8_t* transform, float elapsed) {
+    if (!g_moveActive) {
+        return;
+    }
+    g_moveActive = false;
+    const float error = camera::SignedAngle(g_moveHeading - ActorHeading(transform));
+    const float step = camera::TurnStep(error, camera::kTurnRadiansPerSecond * elapsed);
+    if (step == 0.0f) {
+        return;
+    }
+    reinterpret_cast<RotateActorFn>(kRotateActor)(transform - 0x1A0, step * 57.29578f);
+    std::memcpy(transform + 0x440, transform + 0x20, 16);
+}
+
 }  // namespace
 
 // Appelées par les relais : jamais d'exception, et toute faute de lecture laisse le comportement du moteur.
@@ -110,7 +205,20 @@ extern "C" void __cdecl HcaCameraYaw(std::uint8_t* cameraComponent, std::uint8_t
                                      const std::uint8_t* commands, const float* elapsed, float nativeYaw,
                                      float* result) noexcept {
     *result = nativeYaw;
-    if (g_cameraPadActive == 0 || cameraComponent == nullptr || transform == nullptr || commands == nullptr) {
+    if (cameraComponent == nullptr || transform == nullptr || commands == nullptr) {
+        return;
+    }
+    if (g_orbitMode) {
+        __try {
+            *result = OrbitStep(cameraComponent, commands, *elapsed, nativeYaw);
+            g_orbitActor = reinterpret_cast<std::uintptr_t>(transform) - 0x1A0;
+            TurnTowardMove(transform, *elapsed);
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            *result = nativeYaw;
+        }
+        return;
+    }
+    if (g_cameraPadActive == 0) {
         return;
     }
     __try {
@@ -138,11 +246,21 @@ extern "C" void __cdecl HcaCameraYaw(std::uint8_t* cameraComponent, std::uint8_t
 
 extern "C" void __cdecl HcaCameraAimInput(std::uint8_t* actor) noexcept {
     g_cameraAimActive = 0;
-    if (g_cameraPadActive == 0 || actor == nullptr) {
+    if (actor == nullptr) {
         return;
     }
     __try {
-        if (!IsPrecisionCameraActive()) {
+        const bool precision = IsPrecisionCameraActive();
+        // Mode orbite, hors visée : le moteur tourne aussi le personnage avec le stick droit, recopié ici en +0xAE8
+        // (relevé du 18/10/2026 : son cap suivait celui de la caméra). Mis à 0 pour le seul personnage suivi par la
+        // caméra ; les autres personnages et la visée gardent leur entrée.
+        if (g_orbitMode && !precision && IsOrbitActorInput(actor)) {
+            std::memset(actor + 0xAE8, 0, 4);
+            ConvertMoveInput(actor);
+        } else {
+            g_moveActive = false;
+        }
+        if (g_cameraPadActive == 0 || !precision) {
             return;
         }
         g_cameraAimActive = 1;
@@ -315,6 +433,8 @@ void ApplyCameraFix(HMODULE engineModule) {
     g_aimInputGain = gains.aimInputGain;
     g_cameraAimOutputX = gains.aimOutputX;
     g_cameraAimOutputY = gains.aimOutputY;
+    g_orbitMode = config.cameraMode == camera::CameraMode::Orbit;
+    g_orbitMove = config.cameraOrbitMove;
 
     const struct {
         const Site* site;
@@ -334,8 +454,8 @@ void ApplyCameraFix(HMODULE engineModule) {
             return;
         }
     }
-    log::Info("Correctif de caméra appliqué : horizontal {:.2f}, vertical {:.2f}, visée {:.2f} / {:.2f}",
-              camera::ClampSpeed(config.cameraHorizontalSpeed), camera::ClampSpeed(config.cameraVerticalSpeed),
+    log::Info("Correctif de caméra appliqué (mode {}) : horizontal {:.2f}, vertical {:.2f}, visée {:.2f} / {:.2f}",
+              !g_orbitMode ? "suivi" : g_orbitMove == camera::OrbitMove::Stick ? "orbite, marche vers le stick" : "orbite, marche vers la caméra", camera::ClampSpeed(config.cameraHorizontalSpeed), camera::ClampSpeed(config.cameraVerticalSpeed),
               camera::ClampSpeed(config.cameraAimHorizontalSpeed), camera::ClampSpeed(config.cameraAimVerticalSpeed));
 }
 

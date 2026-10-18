@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "patches/CameraTuning.h"
+
 namespace hca {
 
 // Reflet de HomecomingAgain.ini. Les valeurs par défaut s'appliquent si le fichier ou une clé manque.
@@ -113,6 +115,10 @@ struct Config {
     float cameraVerticalSpeed = 1.0f;
     float cameraAimHorizontalSpeed = 1.0f;
     float cameraAimVerticalSpeed = 1.0f;
+    // Follow (Camera Fix, le personnage tourne) ou Orbit (la caméra tourne seule autour de lui, expérimental).
+    patches::camera::CameraMode cameraMode = patches::camera::CameraMode::Follow;
+    // En orbite : le personnage se tourne vers la caméra quand il marche (Camera) ou vers la direction du stick (Stick).
+    patches::camera::OrbitMove cameraOrbitMove = patches::camera::OrbitMove::Camera;
 
 
     // [Debug]

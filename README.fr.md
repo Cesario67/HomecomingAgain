@@ -89,6 +89,8 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Input]` | `ButtonIcons=0` | Icônes de boutons : 0 = auto (Xbox si une manette est branchée), 1 = PC (d'origine), 2 = Xbox, 3 = PlayStation |
 | `[Input]` | `MenuPad=0` | Traduire la manette en touches du clavier dans les menus (croix, stick gauche, Start) ; désactivé par défaut, le jeu gère la manette lui-même |
 | `[Camera]` | `CameraFix=0` | Correctif de caméra à la manette (d'après le Camera Fix d'Emertels) : le personnage tourne avec le stick droit, réponse verticale proportionnelle, sensibilité de visée séparée. Vitesses `HorizontalSpeed`, `VerticalSpeed`, `AimHorizontalSpeed`, `AimVerticalSpeed` (0,25 à 3,0). Le launcher libère aussi le stick droit dans `Engine\binds_pc_mjs.cfg` |
+| `[Camera]` | `Mode=Follow` | Avec `CameraFix=1` : `Follow` = le personnage tourne et la caméra le suit ; `Orbit` (expérimental) = le stick droit tourne la caméra autour du personnage, qui ne bouge pas |
+| `[Camera]` | `OrbitMove=Camera` | Avec `Mode=Orbit`, en marche : `Camera` = le personnage se tourne vers la caméra (stick gauche d'origine : avant, arrière, pas de côté) ; `Stick` = il se tourne vers la direction du stick gauche à l'écran |
 | `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA) : les trois à 1 pour l'activer, avec DXVK (fait par le launcher) |
 
 ## Limites connues

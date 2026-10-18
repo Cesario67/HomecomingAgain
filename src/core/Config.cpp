@@ -111,6 +111,13 @@ bool LoadConfig(const std::wstring& iniPath) {
         ReadFloat(iniPath, L"Camera", L"AimHorizontalSpeed", defaults.cameraAimHorizontalSpeed, 0.25f, 3.0f);
     config.cameraAimVerticalSpeed =
         ReadFloat(iniPath, L"Camera", L"AimVerticalSpeed", defaults.cameraAimVerticalSpeed, 0.25f, 3.0f);
+    {
+        wchar_t mode[32]{};
+        GetPrivateProfileStringW(L"Camera", L"Mode", L"Follow", mode, 32, iniPath.c_str());
+        config.cameraMode = patches::camera::ParseCameraMode(mode);
+        GetPrivateProfileStringW(L"Camera", L"OrbitMove", L"Camera", mode, 32, iniPath.c_str());
+        config.cameraOrbitMove = patches::camera::ParseOrbitMove(mode);
+    }
 
 
     config.logKeepCount = ReadInt(iniPath, L"Debug", L"LogKeepCount", defaults.logKeepCount, 1, 500);

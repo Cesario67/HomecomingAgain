@@ -27,6 +27,15 @@ namespace hca::patches {
 // - 0x10145F50 : rotation d'un personnage, cdecl (personnage, degrés) (prologue vérifié) ;
 // - 0x1158982C : gestionnaire de caméras, dont on lit le nom de la caméra active.
 //
+// Mode orbite, expérimental ([Camera] Mode=Orbit, 17/10/2026) : au même site 0x108DB3D6, le stick fait tourner le cap
+// de la caméra seul (le personnage n'est plus tourné) et le cap calculé par le moteur, qui ramène la caméra derrière le
+// personnage (ressort de 0x108DB27A à 0x108DB39E, vérifié), est ignoré. Le moteur tourne aussi le personnage avec le
+// stick droit par son entrée (+0xAE8, recopiée en 0x10384F57) : mise à 0 hors visée. Le stick gauche le déplace par
+// rapport à lui-même (vérifié en jeu le 18/10/2026) : en marche, le mod le tourne vers la caméra ([Camera]
+// OrbitMove=Camera, stick d'origine conservé) ou vers la direction du stick à l'écran (OrbitMove=Stick, le moteur ne
+// reçoit alors que la marche avant). Validé en jeu à la manette le 18/10/2026 (OrbitMove=Camera). Pendant la garde
+// au couteau (L2), l'orbite reste active : une option pour la suspendre est notée dans docs/a-faire.md.
+//
 // Désactivé par défaut ([Camera] CameraFix=0) : le comportement change et il faut retirer du stick droit les
 // commandes COMMAND_TURNLEFT et COMMAND_TURNRIGHT (Engine\binds_pc_mjs.cfg), sinon le personnage tourne deux fois.
 // Les effets ne s'appliquent que quand le stick droit de la première manette est incliné, pour laisser la souris

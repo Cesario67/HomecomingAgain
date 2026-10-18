@@ -481,6 +481,39 @@ void TestCameraTuning() {
     Check(IsPrecisionCameraName("Precision") && !IsPrecisionCameraName("PrecisionX") &&
               !IsPrecisionCameraName("Navigation") && !IsPrecisionCameraName("Prec") && !IsPrecisionCameraName(nullptr),
           "caméra de visée reconnue par son nom exact");
+    Check(ParseCameraMode(L"Orbit") == CameraMode::Orbit && ParseCameraMode(L"orbit") == CameraMode::Orbit &&
+              ParseCameraMode(L"Follow") == CameraMode::Follow && ParseCameraMode(L"") == CameraMode::Follow &&
+              ParseCameraMode(L"Orbite") == CameraMode::Follow && ParseCameraMode(nullptr) == CameraMode::Follow,
+          "mode de caméra : Orbit reconnu, Follow par défaut");
+    Check(std::fabs(WrapHeading(7.0f) - 0.7168147f) < 1e-5f && std::fabs(WrapHeading(-0.5f) - 5.7831855f) < 1e-5f &&
+              WrapHeading(1.0f) == 1.0f && WrapHeading(std::nanf("")) == 0.0f,
+          "cap ramené dans [0 ; 2π[");
+    Check(OrbitYaw(1.0f, 0.04f, 1.0f, 1.5f) == 1.0f && std::fabs(OrbitYaw(1.0f, 1.0f, 0.5f, 1.5f) - 0.25f) < 1e-6f &&
+              std::fabs(OrbitYaw(0.1f, 1.0f, 0.2f, 1.5f) - 6.0831853f) < 1e-5f &&
+              std::fabs(OrbitYaw(1.0f, -1.0f, 0.5f, 1.5f) - 1.75f) < 1e-6f,
+          "orbite : zone morte, sens du mode Follow, passage par zéro");
+    Check(OrbitNeedsReset(0, 1000) && !OrbitNeedsReset(1000, 1400) && OrbitNeedsReset(1000, 1600) &&
+              OrbitNeedsReset(2000, 1000),
+          "orbite : repart du cap du moteur après une interruption de plus de 500 ms");
+    Check(std::fabs(SignedAngle(3.5f) + 2.7831853f) < 1e-5f && std::fabs(SignedAngle(-0.5f) + 0.5f) < 1e-6f &&
+              std::fabs(SignedAngle(0.5f) - 0.5f) < 1e-6f,
+          "angle signé dans [-π ; π[");
+    Check(ParseOrbitMove(L"Stick") == OrbitMove::Stick && ParseOrbitMove(L"stick") == OrbitMove::Stick &&
+              ParseOrbitMove(L"Camera") == OrbitMove::Camera && ParseOrbitMove(L"") == OrbitMove::Camera &&
+              ParseOrbitMove(nullptr) == OrbitMove::Camera,
+          "déplacement en orbite : Stick reconnu, Camera par défaut");
+    Check(StickMagnitude(0.6f, 0.8f) == 1.0f && std::fabs(StickMagnitude(0.3f, 0.4f) - 0.5f) < 1e-6f &&
+              StickMagnitude(std::nanf(""), 0.0f) == 0.0f,
+          "inclinaison du stick bornée à 1");
+    Check(std::fabs(CameraRelativeHeading(1.0f, 0.0f, 1.0f) - 1.0f) < 1e-6f &&
+              std::fabs(CameraRelativeHeading(0.0f, 1.0f, 2.0f) - (2.0f - 1.5707963f)) < 1e-5f &&
+              std::fabs(CameraRelativeHeading(-1.0f, 0.0f, 0.5f) - (0.5f + 3.1415927f)) < 1e-5f,
+          "direction voulue : avant = cap de la caméra, droite = même sens que l'orbite, arrière = demi-tour");
+    Check(TurnStep(0.05f, 0.1f) == 0.05f && TurnStep(2.0f, 0.1f) == 0.1f && TurnStep(-2.0f, 0.1f) == -0.1f,
+          "rotation par image bornée");
+    Check(ForwardAfterTurn(0.8f, 0.0f) == 0.8f && std::fabs(ForwardAfterTurn(1.0f, 1.0471976f) - 0.5f) < 1e-5f &&
+              ForwardAfterTurn(1.0f, 2.5f) == 0.0f && ForwardAfterTurn(1.0f, -2.5f) == 0.0f,
+          "marche avant réduite tant qu'il ne regarde pas la direction, nulle au-delà d'un quart de tour");
 }
 
 }  // namespace
