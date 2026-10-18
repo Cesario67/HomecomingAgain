@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <iterator>
+#include <map>
 #include <string>
 
 #include "audio/AudioProbe.h"
@@ -31,6 +32,7 @@
 #include "graphics/ShaderConstantTable.h"
 #include "graphics/ShadowResolution.h"
 #include "patches/CameraTuning.h"
+#include "patches/Cheats.h"
 #include "patches/FrameRateCap.h"
 
 namespace {
@@ -516,6 +518,38 @@ void TestCameraTuning() {
           "marche avant réduite tant qu'il ne regarde pas la direction, nulle au-delà d'un quart de tour");
 }
 
+// Fausse mémoire du moteur pour la chaîne [[[0x111D2460]+0x38]+8] (patches/Cheats.h).
+struct FakeMemory {
+    std::map<std::uintptr_t, std::uintptr_t> cells;
+    bool operator()(std::uintptr_t address, std::uintptr_t& value) const {
+        const auto found = cells.find(address);
+        if (found == cells.end()) {
+            return false;
+        }
+        value = found->second;
+        return true;
+    }
+};
+
+void TestCheatPointers() {
+    using hca::patches::cheats::FollowPointers;
+    FakeMemory memory;
+    memory.cells = {{0x111D2460, 0x2000}, {0x2038, 0x3000}, {0x3008, 0x4000}};
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0x4000, "triches : chaîne de pointeurs complète");
+    Check(FollowPointers(0x111D2460, {}, memory) == 0x2000, "triches : racine seule");
+
+    // Un pointeur nul ne doit pas être suivi, même si l'adresse 0 + offset se lit.
+    memory.cells[0x2038] = 0;
+    memory.cells[0x0008] = 0x5000;
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0, "triches : pointeur nul au milieu");
+
+    memory.cells.erase(0x2038);
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0, "triches : lecture impossible au milieu");
+
+    memory.cells = {{0x111D2460, 0}};
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0, "triches : moteur pas encore initialisé");
+}
+
 }  // namespace
 
 void TestHangClock() {
@@ -551,6 +585,7 @@ int main() {
     TestJitter();
     TestUiClip();
     TestCameraTuning();
+    TestCheatPointers();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

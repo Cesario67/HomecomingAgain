@@ -60,6 +60,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 ### Confort
 
 - **Passer les cinématiques** : la touche Suppr passe les cinématiques en vidéo.
+- **Triches** (expérimental, désactivées par défaut) : mode dieu et munitions illimitées, section `[Cheats]` du
+  fichier `HomecomingAgain.ini` (`God=1`, `UnlimitedAmmo=1`).
 - **Logos de démarrage accélérés** : l'écran titre arrive au bout de 5 s environ au lieu de 23. Les logos (Konami,
   Double Helix, mentions légales) défilent en accéléré ; le jeu a déjà fini de charger pendant qu'ils s'affichent.
 - **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par

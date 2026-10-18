@@ -57,6 +57,8 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 ### Comfort
 
 - **Skip cutscenes**: the Delete key skips video cutscenes.
+- **Cheats** (experimental, off by default): god mode and unlimited ammo, `[Cheats]` section of `HomecomingAgain.ini`
+  (`God=1`, `UnlimitedAmmo=1`).
 - **Faster startup logos**: the title screen appears after about 5 s instead of 23. The logos (Konami, Double Helix,
   legal screen) play fast-forwarded; the game has already finished loading while they show.
 - **Launcher** (`HomecomingAgain.exe`): all settings, install and uninstall, in English (default) and French.
