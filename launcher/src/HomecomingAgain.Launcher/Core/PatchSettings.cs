@@ -49,6 +49,10 @@ public sealed record PatchSettings
     // --- Démarrage ([Movies] SkipLogos)
     public bool SkipLogos { get; init; } = true;
 
+    // --- Triches ([Cheats])
+    public bool God { get; init; }
+    public bool UnlimitedAmmo { get; init; }
+
     // --- Compatibilité ([Compat])
     public bool WindowThreadLock { get; init; } = true;
     public bool D3DMultithreaded { get; init; } = true;
@@ -87,6 +91,8 @@ public sealed record PatchSettings
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
             SkipLogos = mod.GetBool("Movies", "SkipLogos", defaults.SkipLogos),
+            God = mod.GetBool("Cheats", "God", defaults.God),
+            UnlimitedAmmo = mod.GetBool("Cheats", "UnlimitedAmmo", defaults.UnlimitedAmmo),
             WindowThreadLock = mod.GetBool("Compat", "WindowThreadLock", defaults.WindowThreadLock),
             D3DMultithreaded = mod.GetBool("Compat", "D3DMultithreaded", defaults.D3DMultithreaded),
             CrashDumps = mod.GetBool("Crash", "CrashDumps", defaults.CrashDumps),
@@ -114,6 +120,8 @@ public sealed record PatchSettings
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Movies", "SkipLogos", SkipLogos);
+        mod.SetBool("Cheats", "God", God);
+        mod.SetBool("Cheats", "UnlimitedAmmo", UnlimitedAmmo);
         mod.SetBool("Compat", "WindowThreadLock", WindowThreadLock);
         mod.SetBool("Compat", "D3DMultithreaded", D3DMultithreaded);
         mod.SetBool("Crash", "CrashDumps", CrashDumps);

@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <iterator>
+#include <map>
 #include <string>
 
 #include "audio/AudioProbe.h"
@@ -32,6 +33,7 @@
 #include "graphics/ShaderConstantTable.h"
 #include "graphics/ShadowResolution.h"
 #include "patches/CameraTuning.h"
+#include "patches/Cheats.h"
 #include "patches/FrameRateCap.h"
 
 namespace {
@@ -389,6 +391,30 @@ void TestDepthEncoding() {
     Check(!ParseEncoding(98, zero, 1, untouched), "facteur nul refusé");
 }
 
+void TestUiClipItem() {
+    using hca::graphics::uiclip::LooksStraightDown;
+    // Carte (relevés du 16/10/2026) : caméra verticale, compensée.
+    const float map[16] = {0.84375f, 0, 0, 25, 0, 1.1325e-07f, 1.5f, -25, 0, -1.5f, 1.1325e-07f, 49.001f, 0, -1.5f, 1.1325e-07f, 50};
+    const float mapTurned[16] = {7.8227e-08f, 4.2468e-08f, 0.5625f, 51.832f, -1, 1.05e-14f, 1.3907e-07f, -55.303f,
+                                 -0.0f, -1, 7.5499e-08f, 49.062f, -0.0f, -1, 7.5498e-08f, 50.062f};
+    // Couteau examiné (relevé F11 du 18/10/2026) : caméra de biais, pas compensée.
+    const float knife[16] = {0.65572f, 0.53026f, -0.02779f, 5.0617f, -0.0f, 0.078504f, 1.4979f, -6.6194f,
+                             0.94399f, -1.1641f, 0.06101f, 15.123f, 0.94398f, -1.1641f, 0.061009f, 16.123f};
+    Check(LooksStraightDown(map) && LooksStraightDown(mapTurned), "carte : caméra verticale reconnue");
+    Check(!LooksStraightDown(knife), "objet examiné : caméra de biais, projection non compensée");
+    // Le point que le jeu croit au centre de l'image 1920x1080 (x/w = 0,5, y/w = -0,5 dans sa zone 1280x720) revient
+    // au centre après recentrage.
+    float aimed[16] = {1, 0, 0, 0.5f, 0, 1, 0, -0.5f, 0, 0, 1, 0, 0.3f, 0, 0, 1};
+    hca::graphics::uiclip::RecenterProjection(aimed, 1280.0f / 1920.0f, 720.0f / 1080.0f);
+    const float atOrigin[4] = {aimed[3], aimed[7], aimed[11], aimed[15]};
+    Check(std::fabs(atOrigin[0] / atOrigin[3]) < 1e-5f && std::fabs(atOrigin[1] / atOrigin[3]) < 1e-5f,
+          "objet examiné : point visé ramené au centre de l'image");
+    Check(aimed[0] == 1.0f && aimed[1] == 0.0f && aimed[5] == 1.0f && aimed[4] == 0.0f,
+          "objet examiné : objet déplacé, orientation et perspective inchangées");
+    const float upward[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50};
+    Check(!LooksStraightDown(upward), "caméra vers le haut : pas la carte");
+}
+
 void TestUiClip() {
     using hca::graphics::uiclip::ExpandLegacyRect;
     long w = 1280;
@@ -520,6 +546,38 @@ void TestCameraTuning() {
           "marche avant réduite tant qu'il ne regarde pas la direction, nulle au-delà d'un quart de tour");
 }
 
+// Fausse mémoire du moteur pour la chaîne [[[0x111D2460]+0x38]+8] (patches/Cheats.h).
+struct FakeMemory {
+    std::map<std::uintptr_t, std::uintptr_t> cells;
+    bool operator()(std::uintptr_t address, std::uintptr_t& value) const {
+        const auto found = cells.find(address);
+        if (found == cells.end()) {
+            return false;
+        }
+        value = found->second;
+        return true;
+    }
+};
+
+void TestCheatPointers() {
+    using hca::patches::cheats::FollowPointers;
+    FakeMemory memory;
+    memory.cells = {{0x111D2460, 0x2000}, {0x2038, 0x3000}, {0x3008, 0x4000}};
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0x4000, "triches : chaîne de pointeurs complète");
+    Check(FollowPointers(0x111D2460, {}, memory) == 0x2000, "triches : racine seule");
+
+    // Un pointeur nul ne doit pas être suivi, même si l'adresse 0 + offset se lit.
+    memory.cells[0x2038] = 0;
+    memory.cells[0x0008] = 0x5000;
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0, "triches : pointeur nul au milieu");
+
+    memory.cells.erase(0x2038);
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0, "triches : lecture impossible au milieu");
+
+    memory.cells = {{0x111D2460, 0}};
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0, "triches : moteur pas encore initialisé");
+}
+
 }  // namespace
 
 void TestSonyPad() {
@@ -602,8 +660,10 @@ int main() {
     TestDepthEncoding();
     TestJitter();
     TestUiClip();
+    TestUiClipItem();
     TestCameraTuning();
     TestSonyPad();
+    TestCheatPointers();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

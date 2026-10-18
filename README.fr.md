@@ -41,6 +41,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Grain de pellicule réglable** : désactivé, réduit de moitié ou comme à l'origine.
 - **Carte entière au-delà du 720p** : le jeu limitait l'écran de la carte à une zone fixe de 1280x720 ; le mod l'étend
   à toute l'image (1080p, 1440p, 4K...) en gardant la carte à sa taille et à sa place d'origine.
+- **Objets examinés au-delà du 720p** : l'objet qu'on vient de ramasser (couteau, trousse...) était coupé dans le coin
+  de l'écran, ou étiré. Il est maintenant centré, entier et bien proportionné, comme en 720p.
 - **DLSS (DLAA, expérimental)** : anticrénelage par l'IA de NVIDIA, plus stable et plus net que le SMAA, à la
   résolution d'origine. Cartes NVIDIA RTX uniquement ; l'option du launcher installe aussi DXVK (Direct3D 9 sur
   Vulkan). Le jeu étant 32 bits et le DLSS 64 bits, un petit programme 64 bits (`HomecomingAgain.Dlss.exe`) reçoit les
@@ -63,6 +65,9 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 ### Confort
 
 - **Passer les cinématiques** : la touche Suppr passe les cinématiques en vidéo.
+- **Triches** (désactivées par défaut) : mode dieu (le joueur ne perd plus de vie) et munitions illimitées, à
+  cocher dans le launcher (onglet Performances et stabilité) ou dans la section `[Cheats]` de `HomecomingAgain.ini`
+  (`God=1`, `UnlimitedAmmo=1`). Vérifiées en jeu.
 - **Logos de démarrage accélérés** : l'écran titre arrive au bout de 5 s environ au lieu de 23. Les logos (Konami,
   Double Helix, mentions légales) défilent en accéléré ; le jeu a déjà fini de charger pendant qu'ils s'affichent.
 - **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par

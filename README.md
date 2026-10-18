@@ -39,6 +39,8 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **Adjustable film grain**: off, halved or as in the original.
 - **Map no longer cut off above 720p**: the game clipped the map screen to a fixed 1280x720 area; the mod extends it to
   the whole picture (1080p, 1440p, 4K...) while keeping the map at its original size and place.
+- **Examined items above 720p**: the item just picked up (knife, first aid kit...) was cut off in a corner of the
+  screen, or stretched. It is now centred, whole and correctly proportioned, as in 720p.
 - **DLSS (DLAA, experimental)**: NVIDIA AI anti-aliasing, more stable and sharper than SMAA, at native resolution.
   NVIDIA RTX cards only; the launcher option also installs DXVK (Direct3D 9 on Vulkan). As the game is 32-bit and DLSS
   is 64-bit, a small 64-bit program (`HomecomingAgain.Dlss.exe`) receives the game's images, applies DLSS and hands
@@ -60,6 +62,9 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 ### Comfort
 
 - **Skip cutscenes**: the Delete key skips video cutscenes.
+- **Cheats** (off by default): god mode (the player loses no health) and unlimited ammo, as checkboxes in the
+  launcher (Performance and stability tab) or in the `[Cheats]` section of `HomecomingAgain.ini` (`God=1`,
+  `UnlimitedAmmo=1`). Verified in game.
 - **Faster startup logos**: the title screen appears after about 5 s instead of 23. The logos (Konami, Double Helix,
   legal screen) play fast-forwarded; the game has already finished loading while they show.
 - **Launcher** (`HomecomingAgain.exe`): all settings, install and uninstall, in English (default) and French.

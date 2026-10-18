@@ -26,6 +26,7 @@
 #include "framepacing/WaitProfiler.h"
 #include "graphics/D3D9Hooks.h"
 #include "patches/CameraFix.h"
+#include "patches/Cheats.h"
 #include "patches/FrameRateCap.h"
 
 namespace {
@@ -77,6 +78,7 @@ void Startup() {
         hca::graphics::Install(engine);
         hca::patches::ApplyFrameRateCap(engine);
         hca::patches::ApplyCameraFix(engine);
+        hca::patches::InstallCheats(engine);
         hca::compat::InstallWindowThreadLock(engine);
         hca::compat::InstallSkipMovies(engine);
         hca::compat::InstallMovieSkip(engine);
