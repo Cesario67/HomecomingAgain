@@ -245,3 +245,43 @@ octets, lu même pour une nouvelle partie. Structure relevée en comparant deux 
   une sauvegarde téléchargée aux touches changées à la main inversait O et carré, Start et la caméra.
 - Après les 5 emplacements, 6009 octets communs, presque tous à 0 (3 octets à 1 dans une sauvegarde avancée : sans
   effet sur les touches, testé).
+
+## Triches : mode dieu et munitions illimitées (18/10/2026, Steam build 6.30)
+
+Le moteur contient des variables de débogage (chaînes `god` « Toggles god mode for player », `unlimitedammo` « Player
+unlimited ammo », `health`, `maxhealth`). Analyse par références aux chaînes et `dumpbin /disasm`.
+
+**Deux registres de variables (vérifié).** Les deux s'obtiennent par `[[0x111D2460]+0x38]+0x2C`, puis un appel virtuel
+`+0x9C` :
+- booléens stockés (méthode virtuelle `+0x30`, arguments : nom, adresse de l'octet, description, 0, drapeau). Le
+  drapeau vaut 1 pour `noCheat`, `nogamepadCheat`, `woundmanager`, `fps`, `useranges`, toutes présentes dans
+  `Engine\vars_pc.cfg`, et 0 pour `god` et `characterInputDebug`, absentes. **Hypothèse** : 1 = enregistrée dans
+  `vars_pc.cfg`. Que le jeu *lise* une variable à 0 depuis ce fichier n'est pas établi.
+- entiers reliés à une fonction (méthode virtuelle `+0x24`, arguments : nom, objet, description, fonction, 0,
+  bornes 0x80000002 à 0x7FFFFFFF), enregistrés vers 0x101229C7 (`health`), 0x10122A13 (`maxhealth`),
+  0x10122AF7 (`unlimitedammo`). Ce sont des commandes qui agissent sur le joueur quand on les règle, pas des réglages
+  lus au démarrage.
+
+**Mode dieu (vérifié par désassemblage).**
+- Octet à `[[[0x111D2460]+0x38]+8]+0xF5`, enregistré sous le nom `god` en 0x10A28382 (fonction 0x10A27970, appelée par
+  son relais 0x10014A1F depuis 0x10A4EE20 avec `ecx = [[0x111D2460]+0x38]+8`).
+- Lu par `IsGodMode` en 0x10143590 (relais 0x10060109, 14 appels).
+- Écrit par le jeu lui-même : à 1 en 0x102F2CB5, sauvegardé puis mis à 1 en 0x1049A54C et 0x1049A564, restauré en
+  0x1049A886 (invincibilité temporaire scriptée, **hypothèse** sur le rôle), remis à 0 en 0x1012497D (fonction
+  0x10124930, relais 0x1002C4BC, trois appels vers 0x101263B0, 0x101264C4, 0x10126CAA : événement non identifié,
+  **hypothèse** chargement de niveau ou réapparition). Une valeur posée une seule fois peut donc être effacée.
+
+**Munitions illimitées (vérifié par désassemblage).**
+- Fonction de `unlimitedammo` en 0x10319600 (relais 0x1000569B) : `obj = 0x100190B5()` (relais de 0x10143420),
+  puis `obj+0xA11 = (valeur == 1)`.
+- `+0xA11` est aussi enregistré sous « Unlimited Ammo » (0x10322F75, registre 0x11591FF0, à côté de « Invincible? »)
+  et initialisé en 0x1032785D (constructeur, **hypothèse**).
+- Lu par le code des armes en 0x102A523D, 0x102A5A5D, 0x102A6300, 0x102A6626, 0x102A6875, sur le personnage renvoyé
+  par la méthode virtuelle `+0x354` de `[esi+8]`. En 0x102A5A5D, la consommation est sautée si `+0xA11` est non nul
+  **ou** si `IsGodMode()` est vrai : le mode dieu donne aussi des munitions illimitées sur ce chemin.
+
+**Vie (vérifié par désassemblage).** `health` (0x10319550) écrit `(float)valeur` en `joueur+0x164`, `maxhealth`
+(0x10319580) en `+0x164` et `+0x168`, avec `joueur = 0x10022016()` (relais de 0x10143460).
+
+**Piste pour le mod (hypothèse à vérifier en jeu).** Plutôt que `vars_pc.cfg`, écrire l'octet `god` (et `+0xA11` du
+joueur) depuis le mod à chaque image quand l'option est active, après vérification des octets de `IsGodMode`.
