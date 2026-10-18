@@ -17,8 +17,8 @@ namespace hca::patches {
 // - munitions illimitées : octet +0xA11 du personnage renvoyé par 0x10143420 (fonction sans argument, octets vérifiés
 //   au démarrage), celui qu'écrit la variable `unlimitedammo` (0x10319600, octets vérifiés au démarrage), lu par le
 //   code des armes (0x102A523D, 0x102A5A5D...).
-// Ce qui n'est pas vérifié : l'effet en jeu (prendre des coups, vider un chargeur), et que la fonction 0x10143420
-// puisse être appelée depuis Present (hypothèse : le moteur rend depuis son thread principal).
+// Vérifié en jeu le 18/10/2026 : mode dieu et munitions illimitées fonctionnent. Hypothèse restante : que 0x10143420
+// puisse toujours être appelée sans risque depuis Present (le moteur rendrait depuis son thread principal).
 
 namespace cheats {
 

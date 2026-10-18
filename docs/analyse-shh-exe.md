@@ -283,5 +283,5 @@ unlimited ammo », `health`, `maxhealth`). Analyse par références aux chaînes
 **Vie (vérifié par désassemblage).** `health` (0x10319550) écrit `(float)valeur` en `joueur+0x164`, `maxhealth`
 (0x10319580) en `+0x164` et `+0x168`, avec `joueur = 0x10022016()` (relais de 0x10143460).
 
-**Piste pour le mod (hypothèse à vérifier en jeu).** Plutôt que `vars_pc.cfg`, écrire l'octet `god` (et `+0xA11` du
+**Option du mod (vérifié en jeu le 18/10/2026, `[Cheats] God=1`, `UnlimitedAmmo=1`).** Plutôt que `vars_pc.cfg`, écrire l'octet `god` (et `+0xA11` du
 joueur) depuis le mod à chaque image quand l'option est active, après vérification des octets de `IsGodMode`.
