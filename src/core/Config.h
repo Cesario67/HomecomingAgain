@@ -105,6 +105,9 @@ struct Config {
     bool menuPad = false;
     // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
     int buttonIcons = 0;
+    // Manette PlayStation (DualShock 4, DualSense) présentée comme une manette Xbox 360 quand aucune manette XInput
+    // n'est branchée (input/SonyPad.h).
+    bool playStationPad = true;
 
     // [Camera]
     // Correctif de caméra à la manette, porté du Camera Fix d'Emertels (voir patches/CameraFix.h). Désactivé par
@@ -119,6 +122,11 @@ struct Config {
     patches::camera::CameraMode cameraMode = patches::camera::CameraMode::Follow;
     // En orbite : le personnage se tourne vers la caméra quand il marche (Camera) ou vers la direction du stick (Stick).
     patches::camera::OrbitMove cameraOrbitMove = patches::camera::OrbitMove::Camera;
+
+    // [Cheats]
+    // Mode dieu et munitions illimitées, par les variables de débogage du moteur (voir patches/Cheats.h).
+    bool cheatGod = false;
+    bool cheatUnlimitedAmmo = false;
 
 
     // [Debug]

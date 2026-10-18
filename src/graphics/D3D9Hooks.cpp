@@ -30,6 +30,7 @@
 #include "graphics/UiClip.h"
 #include "graphics/Ssao.h"
 #include "graphics/Smaa.h"
+#include "patches/Cheats.h"
 
 namespace hca::graphics {
 
@@ -84,6 +85,7 @@ HRESULT STDMETHODCALLTYPE HookPresent(IDirect3DDevice9* device, const RECT* sour
     jitter::OnPresent();
     input::OnPresent();
     input::RefreshButtonIcons();
+    patches::ApplyCheatsEachFrame();
     if (GetConfig().backBufferDump) {
         InternalDrawScope internal;
         dump::OnPresent(device);
