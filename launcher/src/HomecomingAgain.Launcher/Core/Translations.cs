@@ -96,6 +96,14 @@ public static class Translations
                                    "A, B, X, Y button icons in menus, the inventory, the controls screen and in-game prompts " +
                                    "(Open, Save...). The original game shows the digits 1 to 4."),
             ["CameraFix"] = ("Correctif de caméra (stick droit)", "Camera fix (right stick)"),
+            ["PlayStationPad"] = ("Manette PlayStation sans Steam Input (DualShock 4, DualSense)",
+                                   "PlayStation controller without Steam Input (DualShock 4, DualSense)"),
+            ["PlayStationPadHint"] = ("Le jeu ne connaît que les manettes Xbox : sans manette Xbox branchée, la manette " +
+                                       "PlayStation lui est présentée comme une manette Xbox, avec les icônes PlayStation " +
+                                       "en mode auto. Inutile si Steam Input est activé pour le jeu.",
+                                       "The game only knows Xbox controllers: with no Xbox controller plugged in, the " +
+                                       "PlayStation controller is presented to it as an Xbox one, with PlayStation icons " +
+                                       "in auto mode. Not needed if Steam Input is enabled for the game."),
             ["CameraOrbit"] = ("Caméra orbitale (expérimental)", "Orbit camera (experimental)"),
             ["OrbitMove"] = ("En marche, le personnage se tourne", "When walking, the character turns"),
             ["OrbitMoveCamera"] = ("vers la caméra", "towards the camera"),
@@ -168,6 +176,13 @@ public static class Translations
                                  "5 s environ au lieu de 23. Le jeu a déjà fini de charger pendant ces logos.",
                                  "Konami, Double Helix and the legal screen play fast-forwarded: the title screen appears " +
                                  "in about 5 s instead of 23. The game has already finished loading during these logos."),
+            ["SecCheats"] = ("Triches", "Cheats"),
+            ["God"] = ("Mode dieu (le joueur ne perd plus de vie)", "God mode (the player loses no health)"),
+            ["UnlimitedAmmo"] = ("Munitions illimitées", "Unlimited ammo"),
+            ["CheatsHint"] = ("Variables de débogage du moteur, réactivées par le mod. Le mode dieu évite aussi de " +
+                               "consommer des munitions.",
+                               "The engine's debug variables, re-enabled by the mod. God mode also stops ammo " +
+                               "consumption."),
             ["SecCompatibility"] = ("Compatibilité", "Compatibility"),
             ["WindowThreadLock"] = ("Fenêtre réactive pendant les chargements (overlay Steam)",
                                     "Responsive window during loading (Steam overlay)"),

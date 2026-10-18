@@ -1,6 +1,7 @@
 #include "graphics/UiClip.h"
 
 #include <atomic>
+#include <cmath>
 #include <cstring>
 
 #include "core/Config.h"
@@ -96,10 +97,16 @@ HRESULT STDMETHODCALLTYPE HookSetScissorRect(IDirect3DDevice9* device, const REC
 HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device, UINT start, const float* data,
                                                        UINT count) {
     // mWorldViewProj en c0..c3 (shaders de la carte, vérifié le 16/10/2026) : envoyé en un seul appel c0 x4.
+    // La carte (vue de dessus) garde ses pixels 720p ; l'objet examiné, dessiné dans la même zone, est recentré à
+    // l'échelle de toute l'image (voir UiClip.h).
     if (g_active && data != nullptr && start == 0 && count >= 4) {
         float rows[16];
         std::memcpy(rows, data, sizeof(rows));
-        CompensateProjection(rows, g_scaleX, g_scaleY);
+        if (LooksStraightDown(data)) {
+            CompensateProjection(rows, g_scaleX, g_scaleY);
+        } else {
+            RecenterProjection(rows, g_scaleX, g_scaleY);
+        }
         if (count == 4) {
             return g_setVertexShaderConstantF(device, start, rows, count);
         }
@@ -125,6 +132,26 @@ bool ExpandLegacyRect(long x, long y, long& width, long& height, long targetWidt
     width = targetWidth;
     height = targetHeight;
     return true;
+}
+
+bool LooksStraightDown(const float* rows) noexcept {
+    // Ligne w = profondeur devant la caméra. Carte : [0 -1 0 d] (relevé du 16/10/2026, caméra verticale). Objet
+    // examiné : [0.94 -1.16 0.06 d] (relevé du 18/10/2026).
+    const float x = rows[12];
+    const float y = rows[13];
+    const float z = rows[14];
+    return y < 0.0f && std::fabs(x) <= 0.001f * -y && std::fabs(z) <= 0.001f * -y;
+}
+
+void RecenterProjection(float* rows, float scaleX, float scaleY) noexcept {
+    // Relevés F11 du 18/10/2026 (couteau et trousse, 720p natif puis 1080p) : même projection aux deux résolutions
+    // (la matrice 1080p est entière multipliée par 1,5, sans effet), seule la position de l'objet change. En 1080p, il
+    // est placé dans la direction x/w = 1/scaleX - 1, y/w = 1 - 1/scaleY (le centre de la vraie image vu dans la zone
+    // 1280x720, hypothèse sur la cause), donc vu de biais. On le déplace en 3D sur l'axe de la caméra : seule la
+    // colonne de position change (déplacement de l'objet), pas son orientation ni la perspective.
+    const float depth = rows[15];
+    rows[3] -= (1.0f / scaleX - 1.0f) * depth;
+    rows[7] += (1.0f / scaleY - 1.0f) * depth;
 }
 
 void CompensateProjection(float* rows, float scaleX, float scaleY) noexcept {

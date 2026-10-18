@@ -45,6 +45,8 @@ public sealed class SettingsTests
         Assert.Equal(8192, settings.ShadowResolution);
         Assert.True(settings.WindowThreadLock && settings.D3DMultithreaded && settings.HangDetection);
         Assert.True(settings.SkipLogos);
+        Assert.False(settings.God || settings.UnlimitedAmmo);
+        Assert.True(settings.PlayStationPad);
         Assert.False(settings.CameraOrbit || settings.OrbitMoveStick);
     }
 
@@ -96,7 +98,8 @@ public sealed class SettingsTests
             FullResolutionTextures = true, Smaa = false, Anisotropy = 4, TargetFps = 144, PreciseTimer = false,
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
-            FilmGrain = 0, SkipLogos = false, CameraFix = true, CameraOrbit = true, OrbitMoveStick = true,
+            FilmGrain = 0, SkipLogos = false, God = true, UnlimitedAmmo = true, PlayStationPad = false, CameraFix = true,
+            CameraOrbit = true, OrbitMoveStick = true,
         };
         IniDocument mod = IniDocument.Parse("");
         KeyValueDocument game = KeyValueDocument.Parse(OriginalGameSettings);

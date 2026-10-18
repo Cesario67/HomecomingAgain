@@ -98,6 +98,9 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool CameraFix { get; set; }
 
+    /// <summary>Manette PlayStation présentée comme une manette Xbox ([Input] PlayStationPad).</summary>
+    [ObservableProperty]
+    public partial bool PlayStationPad { get; set; } = true;
     /// <summary>Caméra orbitale ([Camera] Mode=Orbit), expérimentale.</summary>
     [ObservableProperty]
     public partial bool CameraOrbit { get; set; }
@@ -157,6 +160,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedFilmGrain = FilmGrainLevels.LastOrDefault(choice => choice.Value <= settings.FilmGrain) ?? FilmGrainLevels[0];
         SelectedButtonIcons = ButtonIconSets.FirstOrDefault(choice => choice.Value == settings.ButtonIcons) ?? ButtonIconSets[0];
         CameraFix = settings.CameraFix;
+        PlayStationPad = settings.PlayStationPad;
         CameraOrbit = settings.CameraOrbit;
         SelectedOrbitMove = OrbitMoves.First(choice => choice.Value == settings.OrbitMoveStick);
         HighQualityShaders = settings.HighQualityShaders;
@@ -177,6 +181,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         FilmGrain = SelectedFilmGrain.Value,
         ButtonIcons = SelectedButtonIcons.Value,
         CameraFix = CameraFix,
+        PlayStationPad = PlayStationPad,
         CameraOrbit = CameraOrbit,
         OrbitMoveStick = SelectedOrbitMove.Value,
         HighQualityShaders = HighQualityShaders,

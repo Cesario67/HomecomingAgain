@@ -39,6 +39,8 @@ public sealed record PatchSettings
 
     // --- Caméra à la manette ([Camera] CameraFix, plus les commandes du stick droit, voir ControllerBinds).
     public bool CameraFix { get; init; }
+    // Manette PlayStation sans Steam Input ([Input] PlayStationPad).
+    public bool PlayStationPad { get; init; } = true;
     // Caméra orbitale ([Camera] Mode=Orbit, sinon Follow), effective seulement avec CameraFix.
     public bool CameraOrbit { get; init; }
     // En orbite, le personnage en marche se tourne vers la direction du stick ([Camera] OrbitMove=Stick) ou vers la
@@ -51,6 +53,10 @@ public sealed record PatchSettings
 
     // --- Démarrage ([Movies] SkipLogos)
     public bool SkipLogos { get; init; } = true;
+
+    // --- Triches ([Cheats])
+    public bool God { get; init; }
+    public bool UnlimitedAmmo { get; init; }
 
     // --- Compatibilité ([Compat])
     public bool WindowThreadLock { get; init; } = true;
@@ -86,12 +92,15 @@ public sealed record PatchSettings
             Dlss = mod.GetBool("DLSS", "ShareFrames", false) && mod.GetBool("DLSS", "Apply", false),
             ButtonIcons = Math.Clamp(mod.GetInt("Input", "ButtonIcons", 0), 0, 3),
             CameraFix = mod.GetBool("Camera", "CameraFix", defaults.CameraFix),
+            PlayStationPad = mod.GetBool("Input", "PlayStationPad", defaults.PlayStationPad),
             // Mêmes règles que la DLL (patches/CameraTuning.cpp) : toute autre valeur = défaut.
             CameraOrbit = string.Equals(mod.Get("Camera", "Mode"), "Orbit", StringComparison.OrdinalIgnoreCase),
             OrbitMoveStick = string.Equals(mod.Get("Camera", "OrbitMove"), "Stick", StringComparison.OrdinalIgnoreCase),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
             SkipLogos = mod.GetBool("Movies", "SkipLogos", defaults.SkipLogos),
+            God = mod.GetBool("Cheats", "God", defaults.God),
+            UnlimitedAmmo = mod.GetBool("Cheats", "UnlimitedAmmo", defaults.UnlimitedAmmo),
             WindowThreadLock = mod.GetBool("Compat", "WindowThreadLock", defaults.WindowThreadLock),
             D3DMultithreaded = mod.GetBool("Compat", "D3DMultithreaded", defaults.D3DMultithreaded),
             CrashDumps = mod.GetBool("Crash", "CrashDumps", defaults.CrashDumps),
@@ -115,11 +124,14 @@ public sealed record PatchSettings
         mod.SetBool("DLSS", "Apply", Dlss);
         mod.SetInt("Input", "ButtonIcons", Math.Clamp(ButtonIcons, 0, 3));
         mod.SetBool("Camera", "CameraFix", CameraFix);
+        mod.SetBool("Input", "PlayStationPad", PlayStationPad);
         mod.Set("Camera", "Mode", CameraOrbit ? "Orbit" : "Follow");
         mod.Set("Camera", "OrbitMove", OrbitMoveStick ? "Stick" : "Camera");
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Movies", "SkipLogos", SkipLogos);
+        mod.SetBool("Cheats", "God", God);
+        mod.SetBool("Cheats", "UnlimitedAmmo", UnlimitedAmmo);
         mod.SetBool("Compat", "WindowThreadLock", WindowThreadLock);
         mod.SetBool("Compat", "D3DMultithreaded", D3DMultithreaded);
         mod.SetBool("Crash", "CrashDumps", CrashDumps);
