@@ -39,6 +39,8 @@ public sealed record PatchSettings
 
     // --- Caméra à la manette ([Camera] CameraFix, plus les commandes du stick droit, voir ControllerBinds).
     public bool CameraFix { get; init; }
+    // Manette PlayStation sans Steam Input ([Input] PlayStationPad).
+    public bool PlayStationPad { get; init; } = true;
 
     // --- Cadence ([Frames])
     public int TargetFps { get; init; } = 60;
@@ -85,6 +87,7 @@ public sealed record PatchSettings
             Dlss = mod.GetBool("DLSS", "ShareFrames", false) && mod.GetBool("DLSS", "Apply", false),
             ButtonIcons = Math.Clamp(mod.GetInt("Input", "ButtonIcons", 0), 0, 3),
             CameraFix = mod.GetBool("Camera", "CameraFix", defaults.CameraFix),
+            PlayStationPad = mod.GetBool("Input", "PlayStationPad", defaults.PlayStationPad),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
             SkipLogos = mod.GetBool("Movies", "SkipLogos", defaults.SkipLogos),
@@ -113,6 +116,7 @@ public sealed record PatchSettings
         mod.SetBool("DLSS", "Apply", Dlss);
         mod.SetInt("Input", "ButtonIcons", Math.Clamp(ButtonIcons, 0, 3));
         mod.SetBool("Camera", "CameraFix", CameraFix);
+        mod.SetBool("Input", "PlayStationPad", PlayStationPad);
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Movies", "SkipLogos", SkipLogos);

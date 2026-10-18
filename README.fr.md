@@ -58,6 +58,9 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Vrais noms des boutons** sur l'écran des commandes (LB, LT, Croix haut...) au lieu de « Button 6 », et icône
   du stick droit à côté de « Zoom » sur la carte.
 - **Plus de pauses intempestives** : A et B sont laissés au jeu, qui gère lui-même la manette dans ses menus.
+- **Manette PlayStation sans Steam Input** (DualShock 4, DualSense, en test) : le jeu ne connaît que les manettes
+  Xbox ; sans manette Xbox branchée, la manette PlayStation lui est présentée comme une manette Xbox, avec les icônes
+  PlayStation en mode auto (`[Input] PlayStationPad`, activé par défaut).
 
 ### Confort
 

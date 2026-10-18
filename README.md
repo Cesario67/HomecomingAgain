@@ -55,6 +55,9 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **Real button names** on the controls screen (LB, LT, D-pad up...) instead of "Button 6", and the right stick icon
   next to "Zoom" on the map.
 - **No more accidental pauses**: A and B are left to the game, which handles the controller in its own menus.
+- **PlayStation controller without Steam Input** (DualShock 4, DualSense, being tested): the game only knows Xbox
+  controllers; with no Xbox controller plugged in, the PlayStation controller is presented to it as an Xbox one, with
+  PlayStation icons in auto mode (`[Input] PlayStationPad`, on by default).
 
 ### Comfort
 

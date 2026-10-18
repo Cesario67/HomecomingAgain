@@ -96,6 +96,14 @@ public static class Translations
                                    "A, B, X, Y button icons in menus, the inventory, the controls screen and in-game prompts " +
                                    "(Open, Save...). The original game shows the digits 1 to 4."),
             ["CameraFix"] = ("Correctif de caméra (stick droit)", "Camera fix (right stick)"),
+            ["PlayStationPad"] = ("Manette PlayStation sans Steam Input (DualShock 4, DualSense)",
+                                   "PlayStation controller without Steam Input (DualShock 4, DualSense)"),
+            ["PlayStationPadHint"] = ("Le jeu ne connaît que les manettes Xbox : sans manette Xbox branchée, la manette " +
+                                       "PlayStation lui est présentée comme une manette Xbox, avec les icônes PlayStation " +
+                                       "en mode auto. Inutile si Steam Input est activé pour le jeu.",
+                                       "The game only knows Xbox controllers: with no Xbox controller plugged in, the " +
+                                       "PlayStation controller is presented to it as an Xbox one, with PlayStation icons " +
+                                       "in auto mode. Not needed if Steam Input is enabled for the game."),
             ["CameraFixHint"] = ("Le personnage tourne avec la caméra, le stick vertical répond de façon proportionnelle, et " +
                                  "la visée a sa propre sensibilité (vitesses dans la section [Camera] de HomecomingAgain.ini). " +
                                  "Le stick droit ne tourne plus le personnage dans Engine\\binds_pc_mjs.cfg (copie de " +
