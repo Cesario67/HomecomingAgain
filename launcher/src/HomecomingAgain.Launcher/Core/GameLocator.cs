@@ -6,7 +6,7 @@ namespace HomecomingAgain.Launcher.Core;
 
 /// <summary>
 /// Retrouve le dossier du jeu : celui du launcher (ou son parent s'il est dans Bin), puis le dernier dossier choisi
-/// (mémorisé dans %APPDATA%\HomecomingAgain\game-directory.txt), puis les bibliothèques Steam.
+/// (mémorisé dans %APPDATA%\HomecomingAgain\game-directory.txt, ~/.config sous Linux), puis les bibliothèques Steam.
 /// </summary>
 public static partial class GameLocator
 {
@@ -28,15 +28,12 @@ public static partial class GameLocator
         {
             return remembered;
         }
-        if (OperatingSystem.IsWindows())
+        foreach (string library in SteamLibraries())
         {
-            foreach (string library in SteamLibraries())
+            string candidate = Path.Combine(library, "steamapps", "common", GameFolderName);
+            if (new GamePaths(candidate).ContainsGame)
             {
-                string candidate = Path.Combine(library, "steamapps", "common", GameFolderName);
-                if (new GamePaths(candidate).ContainsGame)
-                {
-                    return candidate;
-                }
+                return candidate;
             }
         }
         return null;
@@ -51,27 +48,58 @@ public static partial class GameLocator
     private static string? LoadRememberedDirectory() =>
         File.Exists(SettingsFile) ? File.ReadAllText(SettingsFile).Trim() : null;
 
-    // libraryfolders.vdf contient une ligne "path" "D:\\SteamLibrary" par bibliothèque.
+    // libraryfolders.vdf contient une ligne "path" "D:\\SteamLibrary" par bibliothèque ("/home/..." sous Linux).
     [GeneratedRegex("\"path\"\\s+\"([^\"]+)\"")]
     private static partial Regex LibraryPath();
 
-    [SupportedOSPlatform("windows")]
+    /// <summary>Dossiers des bibliothèques listées dans le contenu d'un libraryfolders.vdf.</summary>
+    public static IEnumerable<string> ParseLibraryFolders(string vdf) =>
+        LibraryPath().Matches(vdf).Select(match => match.Groups[1].Value.Replace(@"\\", @"\"));
+
     private static IEnumerable<string> SteamLibraries()
     {
-        if (Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) is not string steam)
+        IEnumerable<string> roots = OperatingSystem.IsWindows() ? WindowsSteamRoots() : LinuxSteamRoots();
+        HashSet<string> seen = new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
+        foreach (string root in roots)
         {
-            yield break;
+            if (!Directory.Exists(root))
+            {
+                continue;
+            }
+            if (seen.Add(Path.TrimEndingDirectorySeparator(root)))
+            {
+                yield return root;
+            }
+            string folders = Path.Combine(root, "steamapps", "libraryfolders.vdf");
+            if (!File.Exists(folders))
+            {
+                continue;
+            }
+            foreach (string library in ParseLibraryFolders(File.ReadAllText(folders)))
+            {
+                if (seen.Add(Path.TrimEndingDirectorySeparator(library)))
+                {
+                    yield return library;
+                }
+            }
         }
-        steam = steam.Replace('/', Path.DirectorySeparatorChar);
-        yield return steam;
-        string folders = Path.Combine(steam, "steamapps", "libraryfolders.vdf");
-        if (!File.Exists(folders))
+    }
+
+    [SupportedOSPlatform("windows")]
+    private static IEnumerable<string> WindowsSteamRoots()
+    {
+        if (Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) is string steam)
         {
-            yield break;
+            yield return steam.Replace('/', Path.DirectorySeparatorChar);
         }
-        foreach (Match match in LibraryPath().Matches(File.ReadAllText(folders)))
-        {
-            yield return match.Groups[1].Value.Replace(@"\\", @"\");
-        }
+    }
+
+    // Emplacements habituels de Steam sous Linux : installation native (et son lien ~/.steam/steam), Flatpak.
+    private static IEnumerable<string> LinuxSteamRoots()
+    {
+        string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        yield return Path.Combine(home, ".local", "share", "Steam");
+        yield return Path.Combine(home, ".steam", "steam");
+        yield return Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam");
     }
 }

@@ -21,6 +21,13 @@ public static class DlssInstaller
     public static bool IsAvailable(string packageDirectory) =>
         new[] { DxvkDll, HelperExe, NvidiaDll }.All(name => File.Exists(Path.Combine(packageDirectory, name)));
 
+    /// <summary>
+    /// L'option peut-elle être proposée ? Pas sous Linux : Proton fournit déjà son propre DXVK (notre d3d9.dll n'y
+    /// serait chargée qu'avec un WINEDLLOVERRIDES de plus), et le programme DLSS a besoin de NVAPI et de NGX, que
+    /// Proton ne fournit qu'avec dxvk-nvapi. Rien de cela n'a été testé.
+    /// </summary>
+    public static bool IsAvailable(string packageDirectory, bool windows) => windows && IsAvailable(packageDirectory);
+
     /// <summary>La d3d9.dll de Bin est-elle celle du paquet (même contenu) ?</summary>
     public static bool IsOurDxvk(string packageDirectory, GamePaths paths)
     {
