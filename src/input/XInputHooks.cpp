@@ -100,6 +100,11 @@ void InstallXInputHooks(HMODULE engine) {
         return;
     }
     const bool get = hooking::PatchImportOrdinal(engine, kXInputDll, kGetStateOrdinal, &HookGetState, &g_getState);
+    // Lecture lancée tout de suite : le moteur peut chercher ses manettes dès son démarrage. CreateThread est permis
+    // sous le verrou du chargeur ; le thread ne charge winmm.dll qu'une fois DllMain terminé.
+    if (config.playStationPad) {
+        StartSonyPadReader();
+    }
     const bool caps = config.playStationPad &&
                       hooking::PatchImportOrdinal(engine, kXInputDll, kGetCapabilitiesOrdinal, &HookGetCapabilities,
                                                   &g_getCapabilities);

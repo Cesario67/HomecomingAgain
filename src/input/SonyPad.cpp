@@ -44,6 +44,12 @@ XINPUT_GAMEPAD g_latest{};
 bool g_present = false;
 std::atomic<bool> g_started{false};
 std::atomic<bool> g_inUse{false};
+// Le moteur ne cherche ses manettes qu'une fois, à son démarrage (journal du 18/10/2026 : XInputGetCapabilities(0)
+// puis XInputGetState(0 à 3) dans la même milliseconde, plus rien ensuite tant que la manette répond). Sa première
+// question attend donc la fin de la première recherche de manette Sony (au plus kFirstScanWaitMs, une seule fois).
+constexpr DWORD kFirstScanWaitMs = 1000;
+HANDLE g_firstScanDone = nullptr;  // événement à réarmement manuel, signalé après la première recherche
+std::atomic<bool> g_firstScanWaited{false};
 
 // Valeur de [minimum, maximum] ramenée sur [0, 65535].
 DWORD Normalize(DWORD value, DWORD minimum, DWORD maximum) noexcept {
@@ -98,6 +104,7 @@ DWORD WINAPI ReaderThread(LPVOID) {
     const auto getCaps = winmm ? reinterpret_cast<JoyGetDevCapsWFn>(GetProcAddress(winmm, "joyGetDevCapsW")) : nullptr;
     const auto getNum = winmm ? reinterpret_cast<JoyGetNumDevsFn>(GetProcAddress(winmm, "joyGetNumDevs")) : nullptr;
     if (getPos == nullptr || getCaps == nullptr || getNum == nullptr) {
+        SetEvent(g_firstScanDone);
         log::Warn("Manette PlayStation : WinMM indisponible, lecture désactivée");
         return 0;
     }
@@ -122,6 +129,7 @@ DWORD WINAPI ReaderThread(LPVOID) {
                     }
                 }
             }
+            SetEvent(g_firstScanDone);  // première recherche terminée, manette trouvée ou non
             if (device == UINT_MAX) {
                 Sleep(kScanIntervalMs);
                 continue;
@@ -170,15 +178,22 @@ void StartSonyPadReader() noexcept {
     if (g_started.exchange(true)) {
         return;
     }
+    g_firstScanDone = CreateEventW(nullptr, TRUE, FALSE, nullptr);
     const HANDLE thread = CreateThread(nullptr, 0, &ReaderThread, nullptr, 0, nullptr);
     if (thread == nullptr) {
         log::Warn("Manette PlayStation : thread de lecture non créé");
+        if (g_firstScanDone != nullptr) {
+            SetEvent(g_firstScanDone);
+        }
         return;
     }
     CloseHandle(thread);
 }
 
 bool ReadSonyPad(XINPUT_GAMEPAD& gamepad) noexcept {
+    if (g_firstScanDone != nullptr && !g_firstScanWaited.exchange(true)) {
+        WaitForSingleObject(g_firstScanDone, kFirstScanWaitMs);
+    }
     AcquireSRWLockShared(&g_lock);
     const bool present = g_present;
     gamepad = g_latest;
