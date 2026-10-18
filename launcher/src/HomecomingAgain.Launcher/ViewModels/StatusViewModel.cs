@@ -74,7 +74,7 @@ public sealed partial class StatusViewModel(MainWindowViewModel main, string pac
     [RelayCommand]
     private void OpenLatestLog() => main.Run(() =>
     {
-        string? latest = DiagnosticReport.Latest(main.Paths!.LogsDirectory, "*.log");
+        string? latest = DiagnosticReport.LatestModLog(main.Paths!);
         if (latest is null)
         {
             return Loc.Get("NoLogYet");

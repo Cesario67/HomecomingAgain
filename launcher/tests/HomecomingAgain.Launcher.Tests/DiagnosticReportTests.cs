@@ -77,6 +77,22 @@ public sealed class DiagnosticReportTests : IDisposable
     }
 
     [Fact]
+    public void ReportSkipsTheDlssLogAsModLogAndEmptyDumps()
+    {
+        // Dossier réel du 18/10/2026 : journal DLSS écrit après celui du mod, minidump raté (0 octet) après un vrai.
+        WriteAt(Path.Combine(_paths.LogsDirectory, "HomecomingAgain_20261018-183905-508.log"), "mod", new DateTime(2026, 10, 18, 18, 39, 0));
+        WriteAt(Path.Combine(_paths.LogsDirectory, "HomecomingAgain.Dlss.log"), "dlss", new DateTime(2026, 10, 18, 19, 0, 0));
+        WriteAt(Path.Combine(_paths.CrashDumpsDirectory, "SHH_20261018-172549-874.dmp"), "dump", new DateTime(2026, 10, 18, 17, 25, 50));
+        WriteAt(Path.Combine(_paths.CrashDumpsDirectory, "SHH_20261018-172553-994.dmp"), "", new DateTime(2026, 10, 18, 17, 25, 53));
+
+        Assert.Equal("HomecomingAgain_20261018-183905-508.log", Path.GetFileName(DiagnosticReport.LatestModLog(_paths)));
+        string zipPath = DiagnosticReport.Create(_paths, new DateTime(2026, 10, 18, 19, 46, 14))!;
+        using ZipArchive zip = ZipFile.OpenRead(zipPath);
+        Assert.Equal(["HomecomingAgain.Dlss.log", "HomecomingAgain_20261018-183905-508.log", "SHH_20261018-172549-874.dmp"],
+                     zip.Entries.Select(entry => entry.Name).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void ReadsALogTheGameStillHasOpen()
     {
         string log = Path.Combine(_paths.LogsDirectory, "HomecomingAgain_1.log");
