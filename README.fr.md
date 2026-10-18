@@ -82,6 +82,9 @@ Le jeu tourne dans Proton, et le mod (une DLL Windows) avec lui. Le launcher exi
 Sans le launcher Linux : copier `version.dll` et `HomecomingAgain.ini` dans `Bin`, et mettre
 `WINEDLLOVERRIDES="version=n,b" %command%` dans les options de lancement.
 
+L'option DLSS est grisée sous Linux : Proton a déjà son propre DXVK, et le DLSS y demande des réglages (dxvk-nvapi,
+substitutions de DLL) pas encore testés.
+
 ## Réglages
 
 Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :

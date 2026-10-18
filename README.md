@@ -77,6 +77,9 @@ The game runs in Proton, and the mod (a Windows DLL) with it. The launcher also 
 Without the Linux launcher: copy `version.dll` and `HomecomingAgain.ini` into `Bin`, and set the launch options to
 `WINEDLLOVERRIDES="version=n,b" %command%`.
 
+The DLSS option is greyed out on Linux: Proton already ships its own DXVK, and DLSS there needs settings
+(dxvk-nvapi, DLL overrides) that have not been tested.
+
 ## Settings
 
 In the launcher, or in `Bin\HomecomingAgain.ini`:

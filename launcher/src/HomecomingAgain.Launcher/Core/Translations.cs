@@ -76,6 +76,10 @@ public static class Translations
                             "NVIDIA AI anti-aliasing, more stable and sharper than SMAA, which it replaces while active. " +
                             "NVIDIA RTX cards only; also installs DXVK (Direct3D 9 on Vulkan). Without a compatible card, " +
                             "the game keeps its normal image."),
+            ["DlssLinux"] = ("Indisponible sous Linux : Proton a déjà son propre DXVK, et le DLSS y demande des réglages " +
+                             "pas encore testés.",
+                             "Unavailable on Linux: Proton already has its own DXVK, and DLSS there needs settings that " +
+                             "have not been tested yet."),
             ["DlssCredit"] = ("NVIDIA DLSS : licence NVIDIA RTX SDKs. DXVK : licence zlib. Ce projet n'est ni soutenu ni " +
                               "approuvé par NVIDIA.",
                               "NVIDIA DLSS: NVIDIA RTX SDKs License. DXVK: zlib license. This project is not sponsored or " +

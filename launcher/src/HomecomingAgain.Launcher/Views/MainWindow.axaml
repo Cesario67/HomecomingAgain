@@ -50,6 +50,7 @@
             <TextBlock Classes="hint" Text="{Binding L[SmaaHint]}" />
             <CheckBox Content="{Binding L[Dlss]}" IsChecked="{Binding Dlss}" IsEnabled="{Binding DlssAvailable}" />
             <TextBlock Classes="hint" Text="{Binding L[DlssHint]}" />
+            <TextBlock Classes="warning" Text="{Binding L[DlssLinux]}" IsVisible="{Binding DlssUnsupportedOnLinux}" />
             <Grid ColumnDefinitions="220,*">
               <TextBlock Text="{Binding L[Anisotropy]}" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"

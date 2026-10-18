@@ -79,6 +79,10 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool DlssAvailable { get; set; }
 
+    /// <summary>Sous Linux (Proton), la case est grisée avec une explication (voir DlssInstaller.IsAvailable).</summary>
+    [ObservableProperty]
+    public partial bool DlssUnsupportedOnLinux { get; set; }
+
     [ObservableProperty]
     public partial Choice<int> SelectedAnisotropy { get; set; }
 

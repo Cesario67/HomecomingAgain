@@ -59,4 +59,24 @@ public sealed class LinuxTests
         Assert.Equal($"\"{Path.Combine("jeu", "Bin", "HomecomingAgain.exe")}\" %command%",
                      GameProcess.SteamLaunchOption(paths, windows: true));
     }
+
+    [Fact]
+    public void DlssIsNotOfferedUnderLinuxEvenWithACompletePackage()
+    {
+        string package = Directory.CreateTempSubdirectory("hca-dlss-linux").FullName;
+        try
+        {
+            foreach (string name in new[] { "d3d9.dll", "HomecomingAgain.Dlss.exe", "nvngx_dlss.dll" })
+            {
+                File.WriteAllText(Path.Combine(package, name), "x");
+            }
+
+            Assert.True(DlssInstaller.IsAvailable(package, windows: true));
+            Assert.False(DlssInstaller.IsAvailable(package, windows: false));
+        }
+        finally
+        {
+            Directory.Delete(package, recursive: true);
+        }
+    }
 }
