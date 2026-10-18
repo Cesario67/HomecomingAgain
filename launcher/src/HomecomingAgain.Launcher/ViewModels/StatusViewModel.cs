@@ -74,15 +74,25 @@ public sealed partial class StatusViewModel(MainWindowViewModel main, string pac
     [RelayCommand]
     private void OpenLatestLog() => main.Run(() =>
     {
-        string? latest = Directory.Exists(main.Paths!.LogsDirectory)
-            ? Directory.GetFiles(main.Paths.LogsDirectory, "*.log").OrderDescending().FirstOrDefault()
-            : null;
+        string? latest = DiagnosticReport.Latest(main.Paths!.LogsDirectory, "*.log");
         if (latest is null)
         {
             return Loc.Get("NoLogYet");
         }
         GameProcess.Open(latest);
         return Loc.Get("LogOpened", Path.GetFileName(latest));
+    });
+
+    [RelayCommand]
+    private void CreateBugReport() => main.Run(() =>
+    {
+        string? zip = DiagnosticReport.Create(main.Paths!, DateTime.Now);
+        if (zip is null)
+        {
+            return Loc.Get("NoLogYet");
+        }
+        GameProcess.Reveal(zip);
+        return Loc.Get("BugReportCreated", Path.GetFileName(zip));
     });
 
     [RelayCommand]

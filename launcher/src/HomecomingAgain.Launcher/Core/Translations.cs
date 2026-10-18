@@ -205,9 +205,12 @@ public static class Translations
             ["SecDiagnosticTools"] = ("Diagnostic", "Diagnostics"),
             ["OpenLatestLog"] = ("Ouvrir le dernier journal", "Open the latest log"),
             ["OpenModFolder"] = ("Ouvrir le dossier du mod", "Open the mod folder"),
-            ["CrashReportHint"] = ("En cas de problème, envoyez le dernier journal et, s'il y en a, le fichier de " +
-                                   "crashdumps correspondant.",
-                                   "If something goes wrong, send the latest log and, if any, the matching crashdumps file."),
+            ["CreateBugReport"] = ("Créer un rapport de bogue", "Create a bug report"),
+            ["CrashReportHint"] = ("En cas de problème, créez un rapport de bogue et envoyez le zip : il contient le " +
+                                   "dernier journal, le dernier minidump s'il y en a un, et vos réglages.",
+                                   "If something goes wrong, create a bug report and send the zip: it holds the latest " +
+                                   "log, the latest minidump if any, and your settings."),
+            ["BugReportCreated"] = ("Rapport créé : {0}", "Report created: {0}"),
             ["NoLogYet"] = ("Pas encore de journal : lancez le jeu une fois.", "No log yet: start the game once."),
             ["LogOpened"] = ("Journal ouvert : {0}", "Log opened: {0}"),
 

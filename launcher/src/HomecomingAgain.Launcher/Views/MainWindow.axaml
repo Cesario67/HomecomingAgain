@@ -175,6 +175,7 @@
 
             <TextBlock Classes="section" Text="{Binding L[SecDiagnosticTools]}" />
             <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="{Binding L[CreateBugReport]}" Command="{Binding CreateBugReportCommand}" />
               <Button Content="{Binding L[OpenLatestLog]}" Command="{Binding OpenLatestLogCommand}" />
               <Button Content="{Binding L[OpenModFolder]}" Command="{Binding OpenModFolderCommand}" />
             </StackPanel>
