@@ -76,6 +76,20 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 Run `HomecomingAgain.exe`, select the game folder, then **Install**. The launcher copies the mod into `Bin`, applies
 the 4 GB patch and keeps a copy of every file it changes. **Uninstall** restores everything.
 
+### Linux and Steam Deck (Proton): experimental, not tested yet
+
+The game runs in Proton, and the mod (a Windows DLL) with it. The launcher also comes as a Linux build:
+1. Download `HomecomingAgain` (Linux build), make it executable (`chmod +x HomecomingAgain`) and run it. It finds the
+   game in the usual Steam libraries (`~/.local/share/Steam`, `~/.steam/steam`, Flatpak).
+2. **Install**, then copy the line from the Installation tab into the game's Steam launch options. It starts with
+   `WINEDLLOVERRIDES="version=n,b"`: without it, Wine uses its own `version.dll` and the mod is not loaded.
+
+Without the Linux launcher: copy `version.dll` and `HomecomingAgain.ini` into `Bin`, and set the launch options to
+`WINEDLLOVERRIDES="version=n,b" %command%`.
+
+The DLSS option is greyed out on Linux: Proton already ships its own DXVK, and DLSS there needs settings
+(dxvk-nvapi, DLL overrides) that have not been tested.
+
 ## Settings
 
 In the launcher, or in `Bin\HomecomingAgain.ini`:

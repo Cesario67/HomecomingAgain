@@ -81,6 +81,21 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 Lancer `HomecomingAgain.exe`, choisir le dossier du jeu, puis **Installer**. Le launcher copie le mod dans `Bin`,
 applique le patch 4 Go et garde une copie des fichiers modifiés. **Désinstaller** remet tout comme avant.
 
+### Linux et Steam Deck (Proton) : expérimental, pas encore testé
+
+Le jeu tourne dans Proton, et le mod (une DLL Windows) avec lui. Le launcher existe aussi en version Linux :
+1. Télécharger `HomecomingAgain` (version Linux), le rendre exécutable (`chmod +x HomecomingAgain`) et le lancer. Il
+   trouve le jeu dans les bibliothèques Steam habituelles (`~/.local/share/Steam`, `~/.steam/steam`, Flatpak).
+2. **Installer**, puis copier la ligne de l'onglet Installation dans les options de lancement Steam du jeu. Elle
+   commence par `WINEDLLOVERRIDES="version=n,b"` : sans cela, Wine utilise sa propre `version.dll` et le mod n'est
+   pas chargé.
+
+Sans le launcher Linux : copier `version.dll` et `HomecomingAgain.ini` dans `Bin`, et mettre
+`WINEDLLOVERRIDES="version=n,b" %command%` dans les options de lancement.
+
+L'option DLSS est grisée sous Linux : Proton a déjà son propre DXVK, et le DLSS y demande des réglages (dxvk-nvapi,
+substitutions de DLL) pas encore testés.
+
 ## Réglages
 
 Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :

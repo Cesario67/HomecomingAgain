@@ -44,11 +44,17 @@ jobs:
         run: |
           Remove-Item Env:Platform -ErrorAction SilentlyContinue
           dotnet publish launcher/src/HomecomingAgain.Launcher/HomecomingAgain.Launcher.csproj -c Release -r win-x64 --self-contained -p:DebugType=none -o build/x86-release/package
+          dotnet publish launcher/src/HomecomingAgain.Launcher/HomecomingAgain.Launcher.csproj -c Release -r linux-x64 --self-contained -p:DebugType=none "-p:PayloadDir=$PWD/build/x86-release/package" -o build/x86-release/package-linux
 
       - uses: actions/upload-artifact@v4
         with:
           name: HomecomingAgain
           path: build/x86-release/package/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HomecomingAgain-linux
+          path: build/x86-release/package-linux/
 
       # Symboles, pour analyser les dumps de plantage qui passent par notre DLL.
       - uses: actions/upload-artifact@v4
