@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace HomecomingAgain.Launcher.Core;
 
 /// <summary>État de l'installation du mod dans un dossier de jeu.</summary>
@@ -30,15 +28,22 @@ public static class ModInstaller
     public static bool IsPackageDirectory(string directory) =>
         ModVersionOf(Path.Combine(directory, GamePaths.ModDllName)) is not null;
 
-    /// <summary>Version de notre version.dll (null si absente ou si c'est une autre DLL, celle de Windows par exemple).</summary>
+    /// <summary>
+    /// Version de notre version.dll (null si absente ou si c'est une autre DLL, celle de Windows par exemple). Lue par
+    /// <see cref="PeVersionInfo"/> et non FileVersionInfo, qui ne lit pas les DLL natives sous Linux.
+    /// </summary>
     public static string? ModVersionOf(string dllPath)
     {
         if (!File.Exists(dllPath))
         {
             return null;
         }
-        FileVersionInfo info = FileVersionInfo.GetVersionInfo(dllPath);
-        return info.FileDescription?.Contains("Homecoming Again", StringComparison.Ordinal) == true ? info.FileVersion : null;
+        IReadOnlyDictionary<string, string> strings = PeVersionInfo.ReadStrings(dllPath);
+        return strings.TryGetValue("FileDescription", out string? description) &&
+               description.Contains("Homecoming Again", StringComparison.Ordinal) &&
+               strings.TryGetValue("FileVersion", out string? version)
+            ? version
+            : null;
     }
 
     /// <summary>Installe ou met à jour la DLL, les réglages absents, les licences et le launcher. Renvoie le compte rendu.</summary>
