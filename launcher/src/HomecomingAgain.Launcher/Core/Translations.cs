@@ -252,6 +252,9 @@ public static class Translations
             ["InstallFileKept"] = ("{0} existant conservé.", "Existing {0} kept."),
             ["InstallFileInstalled"] = ("{0} installé.", "{0} installed."),
             ["InstallLauncherCopied"] = ("Launcher copié dans Bin.", "Launcher copied to Bin."),
+            ["InstallOldLauncherRemoved"] = (
+                "Ancienne copie « Bin/HomecomingAgain » retirée (elle empêchait le mod de démarrer). Si l'option de lancement Steam la citait, recopiez la nouvelle ci-dessous.",
+                "Old copy \"Bin/HomecomingAgain\" removed (it prevented the mod from starting). If your Steam launch options pointed to it, copy the new line below."),
             ["UninstallDllRemoved"] = ("version.dll retirée.", "version.dll removed."),
             ["UninstallDllRestored"] = ("version.dll d'origine remise en place.", "Original version.dll restored."),
             ["UninstallKept"] = ("Réglages et journaux conservés.", "Settings and logs kept."),

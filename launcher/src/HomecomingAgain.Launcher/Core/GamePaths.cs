@@ -28,6 +28,14 @@ public sealed record GamePaths(string GameDirectory)
     public string LogsDirectory => Path.Combine(ModDataDirectory, "logs");
     public string CrashDumpsDirectory => Path.Combine(ModDataDirectory, "crashdumps");
 
+    /// <summary>
+    /// Copie du launcher dans Bin (option de lancement Steam). Sous Linux, jamais « HomecomingAgain » tout court :
+    /// ce nom est celui du dossier du mod (<see cref="ModDataDirectory"/>), et un fichier à sa place empêche le mod
+    /// de démarrer (cas du launcher Linux 0.9.4).
+    /// </summary>
+    public string LauncherCopy(bool windows) =>
+        Path.Combine(BinDirectory, windows ? "HomecomingAgain.exe" : "HomecomingAgain-launcher");
+
     public bool ContainsGame => File.Exists(GameExe);
 
     /// <summary>

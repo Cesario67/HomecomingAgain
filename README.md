@@ -84,6 +84,12 @@ The game runs in Proton, and the mod (a Windows DLL) with it. The launcher also 
 2. **Install**, then copy the line from the Installation tab into the game's Steam launch options. It starts with
    `WINEDLLOVERRIDES="version=n,b"`: without it, Wine uses its own `version.dll` and the mod is not loaded.
 
+**Mod not working after installing with the first 0.9.4 Linux launcher?** That launcher copied itself into `Bin` as
+`HomecomingAgain`, the name of the mod's own folder, which prevented the mod from starting. Install again with the
+current launcher (it removes that file and copies itself as `HomecomingAgain-launcher`), then copy the new launch
+line. Or by hand: rename `Bin/HomecomingAgain` to `HomecomingAgain-launcher` and update the launch options. When the
+mod is running, `Bin/HomecomingAgain/logs` holds its log.
+
 Without the Linux launcher: copy `version.dll` and `HomecomingAgain.ini` into `Bin`, and set the launch options to
 `WINEDLLOVERRIDES="version=n,b" %command%`.
 

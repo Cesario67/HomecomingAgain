@@ -90,6 +90,12 @@ Le jeu tourne dans Proton, et le mod (une DLL Windows) avec lui. Le launcher exi
    commence par `WINEDLLOVERRIDES="version=n,b"` : sans cela, Wine utilise sa propre `version.dll` et le mod n'est
    pas chargé.
 
+**Le mod ne marche pas après une installation avec le premier launcher Linux 0.9.4 ?** Ce launcher se copiait dans
+`Bin` sous le nom `HomecomingAgain`, celui du dossier du mod, ce qui empêchait le mod de démarrer. Réinstaller avec le
+launcher actuel (il retire ce fichier et se copie sous le nom `HomecomingAgain-launcher`), puis recopier la nouvelle
+ligne de lancement. Ou à la main : renommer `Bin/HomecomingAgain` en `HomecomingAgain-launcher` et mettre à jour les
+options de lancement. Quand le mod tourne, son journal est dans `Bin/HomecomingAgain/logs`.
+
 Sans le launcher Linux : copier `version.dll` et `HomecomingAgain.ini` dans `Bin`, et mettre
 `WINEDLLOVERRIDES="version=n,b" %command%` dans les options de lancement.
 

@@ -15,6 +15,7 @@
 #include "compat/SkipMovies.h"
 #include "compat/StartupLogos.h"
 #include "dlss/SharedFrames.h"
+#include "core/Paths.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
 #include "graphics/CameraMath.h"
@@ -54,6 +55,27 @@ void TestStrings() {
     Check(hca::WideToUtf8(L"é") == "\xC3\xA9", "conversion UTF-8 d'un caractère accentué");
     const std::wstring stamp = hca::FileTimestamp();
     Check(stamp.size() == 19 && stamp[8] == L'-' && stamp[15] == L'-', "horodatage AAAAMMJJ-HHMMSS-mmm");
+}
+
+// Le launcher Linux 0.9.4 se copiait dans Bin sous le nom HomecomingAgain : un fichier à la place du dossier du mod.
+void TestEnsureDirectory() {
+    std::printf("Dossiers du mod\n");
+    wchar_t temp[MAX_PATH]{};
+    GetTempPathW(MAX_PATH, temp);
+    const std::wstring base = std::wstring(temp) + L"hca-tests-" + hca::FileTimestamp();
+    const std::wstring folder = base + L"-dossier";
+    const std::wstring file = base + L"-fichier";
+
+    Check(hca::EnsureDirectory(folder), "dossier créé");
+    Check(hca::EnsureDirectory(folder), "dossier déjà présent accepté");
+    const HANDLE handle = CreateFileW(file.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (handle != INVALID_HANDLE_VALUE) {
+        CloseHandle(handle);
+    }
+    Check(!hca::EnsureDirectory(file), "fichier du même nom refusé");
+
+    DeleteFileW(file.c_str());
+    RemoveDirectoryW(folder.c_str());
 }
 
 void TestBorderless() {
@@ -640,6 +662,7 @@ void TestHangClock() {
 int main() {
     TestHangClock();
     TestStrings();
+    TestEnsureDirectory();
     TestBorderless();
     TestFramePeriod();
     TestShaderConstantTable();
