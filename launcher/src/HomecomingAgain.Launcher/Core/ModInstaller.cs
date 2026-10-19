@@ -99,16 +99,34 @@ public static class ModInstaller
             }
         }
 
-        // Le launcher est aussi copié dans Bin, pour pouvoir servir d'option de lancement Steam.
+        report.AddRange(CopyLauncher(paths, launcherExecutable, OperatingSystem.IsWindows()));
+        return report;
+    }
+
+    /// <summary>
+    /// Copie le launcher dans Bin, pour qu'il puisse servir d'option de lancement Steam, et retire l'ancienne copie
+    /// Linux qui portait le nom du dossier du mod. Renvoie le compte rendu.
+    /// </summary>
+    public static IReadOnlyList<string> CopyLauncher(GamePaths paths, string? launcherExecutable, bool windows)
+    {
+        List<string> report = new();
         if (launcherExecutable is not null && File.Exists(launcherExecutable))
         {
-            string target = Path.Combine(paths.BinDirectory, Path.GetFileName(launcherExecutable));
+            string target = paths.LauncherCopy(windows);
             if (!string.Equals(Path.GetFullPath(launcherExecutable), Path.GetFullPath(target),
                                StringComparison.OrdinalIgnoreCase))
             {
                 File.Copy(launcherExecutable, target, overwrite: true);
                 report.Add(Loc.Get("InstallLauncherCopied"));
             }
+        }
+
+        // Le launcher Linux 0.9.4 se copiait sous le nom du dossier du mod, ce qui empêchait le mod de démarrer. Retiré
+        // après la copie : c'est peut-être lui qui tourne (lancé par Steam), et il sert alors de source.
+        if (File.Exists(paths.ModDataDirectory))
+        {
+            File.Delete(paths.ModDataDirectory);
+            report.Add(Loc.Get("InstallOldLauncherRemoved"));
         }
         return report;
     }

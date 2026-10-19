@@ -116,6 +116,45 @@ public sealed class InstallTests : IDisposable
     }
 
     [Fact]
+    public void LinuxLauncherCopyNoLongerTakesTheModFolderName()
+    {
+        GamePaths paths = new(_root);
+        string launcher = Path.Combine(_root, "telechargements", "HomecomingAgain");
+        Directory.CreateDirectory(Path.GetDirectoryName(launcher)!);
+        File.WriteAllText(launcher, "launcher Linux");
+        // Copie laissée par la version 0.9.4 : un fichier à la place du dossier du mod.
+        File.WriteAllText(paths.ModDataDirectory, "ancienne copie");
+
+        ModInstaller.CopyLauncher(paths, launcher, windows: false);
+
+        Assert.Equal("launcher Linux", File.ReadAllText(Path.Combine(_root, "Bin", "HomecomingAgain-launcher")));
+        Assert.False(File.Exists(paths.ModDataDirectory));
+    }
+
+    [Fact]
+    public void OldLinuxCopyRunningFromBinIsCopiedBeforeBeingRemoved()
+    {
+        GamePaths paths = new(_root);
+        File.WriteAllText(paths.ModDataDirectory, "launcher Linux lancé par Steam");
+
+        ModInstaller.CopyLauncher(paths, paths.ModDataDirectory, windows: false);
+
+        Assert.Equal("launcher Linux lancé par Steam", File.ReadAllText(paths.LauncherCopy(windows: false)));
+        Assert.False(File.Exists(paths.ModDataDirectory));
+    }
+
+    [Fact]
+    public void ModFolderIsNeverRemoved()
+    {
+        GamePaths paths = new(_root);
+        Directory.CreateDirectory(paths.LogsDirectory);
+
+        ModInstaller.CopyLauncher(paths, null, windows: false);
+
+        Assert.True(Directory.Exists(paths.LogsDirectory));
+    }
+
+    [Fact]
     public void RejectsAnInvalidGameExecutable()
     {
         GamePaths paths = new(_root);

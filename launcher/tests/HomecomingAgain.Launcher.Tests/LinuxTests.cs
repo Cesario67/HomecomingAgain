@@ -54,7 +54,7 @@ public sealed class LinuxTests
     {
         GamePaths paths = new(Path.Combine("jeu"));
 
-        Assert.Equal($"WINEDLLOVERRIDES=\"version=n,b\" \"{Path.Combine("jeu", "Bin", "HomecomingAgain")}\" %command%",
+        Assert.Equal($"WINEDLLOVERRIDES=\"version=n,b\" \"{Path.Combine("jeu", "Bin", "HomecomingAgain-launcher")}\" %command%",
                      GameProcess.SteamLaunchOption(paths, windows: false));
         Assert.Equal($"\"{Path.Combine("jeu", "Bin", "HomecomingAgain.exe")}\" %command%",
                      GameProcess.SteamLaunchOption(paths, windows: true));

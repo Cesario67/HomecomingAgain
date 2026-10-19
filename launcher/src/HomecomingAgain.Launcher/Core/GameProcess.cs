@@ -98,8 +98,8 @@ public static class GameProcess
     /// aussi le chargement de notre version.dll, au cas où le joueur lance le jeu sans passer par le launcher.
     /// </summary>
     public static string SteamLaunchOption(GamePaths paths, bool windows) => windows
-        ? $"\"{Path.Combine(paths.BinDirectory, "HomecomingAgain.exe")}\" %command%"
-        : $"{DllOverrideVariable}=\"{VersionDllOverride}\" \"{Path.Combine(paths.BinDirectory, "HomecomingAgain")}\" %command%";
+        ? $"\"{paths.LauncherCopy(windows: true)}\" %command%"
+        : $"{DllOverrideVariable}=\"{VersionDllOverride}\" \"{paths.LauncherCopy(windows: false)}\" %command%";
 
     /// <summary>
     /// Lance le jeu. Si le launcher a été démarré par Steam (option de lancement « ... %command% »), on
