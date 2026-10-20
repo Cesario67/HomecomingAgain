@@ -28,9 +28,11 @@ DWORD WINAPI HookGetState(DWORD user, XINPUT_STATE* state) {
             patches::NoteRightStick(state->Gamepad.sThumbRX, state->Gamepad.sThumbRY);
         } else {
             OnPadDisconnected();
+            patches::NoteLeftTrigger(state->Gamepad.bLeftTrigger);
             patches::NoteRightStick(0, 0);
         }
     }
+            patches::NoteLeftTrigger(0);
     return result;
 }
 

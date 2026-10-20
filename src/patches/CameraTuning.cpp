@@ -74,10 +74,6 @@ bool OrbitNeedsReset(unsigned long long lastUpdateMs, unsigned long long nowMs) 
     return lastUpdateMs == 0 || nowMs < lastUpdateMs || nowMs - lastUpdateMs > kOrbitResetMs;
 }
 
-OrbitMove ParseOrbitMove(const wchar_t* text) noexcept {
-    return text != nullptr && _wcsicmp(text, L"Stick") == 0 ? OrbitMove::Stick : OrbitMove::Camera;
-}
-
 float SignedAngle(float radians) noexcept {
     const float wrapped = WrapHeading(radians);
     return wrapped >= kTwoPi / 2.0f ? wrapped - kTwoPi : wrapped;
@@ -88,16 +84,8 @@ float StickMagnitude(float forward, float side) noexcept {
     return std::isfinite(magnitude) ? std::min(magnitude, 1.0f) : 0.0f;
 }
 
-float CameraRelativeHeading(float forward, float side, float cameraYaw) noexcept {
-    return WrapHeading(cameraYaw - std::atan2(side, forward));
-}
-
 float TurnStep(float error, float maxStep) noexcept {
     return std::clamp(error, -maxStep, maxStep);
-}
-
-float ForwardAfterTurn(float magnitude, float remainingError) noexcept {
-    return magnitude * std::max(0.0f, std::cos(remainingError));
 }
 
 bool IsPrecisionCameraName(const char* name) noexcept {

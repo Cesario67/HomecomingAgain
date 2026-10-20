@@ -118,8 +118,7 @@ bool LoadConfig(const std::wstring& iniPath) {
         wchar_t mode[32]{};
         GetPrivateProfileStringW(L"Camera", L"Mode", L"Follow", mode, 32, iniPath.c_str());
         config.cameraMode = patches::camera::ParseCameraMode(mode);
-        GetPrivateProfileStringW(L"Camera", L"OrbitMove", L"Camera", mode, 32, iniPath.c_str());
-        config.cameraOrbitMove = patches::camera::ParseOrbitMove(mode);
+        config.cameraOrbitGuardFollow = ReadInt(iniPath, L"Camera", L"OrbitGuardFollow", 1, 0, 1) != 0;
     }
 
 
