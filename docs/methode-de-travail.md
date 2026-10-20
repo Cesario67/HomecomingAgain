@@ -71,6 +71,19 @@ Leçons de cette branche :
   au chargement (`0x10907130`) ; un nom absent de la liste ne s'affiche pas. Les noms présents (A, B, X, Y, LB, RB,
   LT, RT, sticks, en Xbox et PS3) ont été relevés par journal : ne renvoyer que ceux-là, ou remplacer l'image.
 - **Texture d'un élément d'interface** : changement par nom en `0x1050E5C0` (relais `0x10054DCC`).
+- **Invite à marteler (QTE, « struggle »)** (relevé du 20/10/2026, **vérifié** dans `Engine\pak\pc\GLOBAL.PAK`) : le
+  script d'interface XML du pak contient `StrugglePrompt` (HeavyTexture, texture initiale `shv_xflash`) et le
+  contrôleur `StrugglePromptAnimationList` dont les `TextureSwitcher` Xbox 360 et PS3 (`shv_aflash`, `shv_bflash`,
+  `shv_x360xflash`, `shv_yflash`, `shv_circleflash`, `shv_squareflash`, `shv_triangleflash`, `shv_lshake`) sont
+  **commentés** dans la version PC ; seuls restent `pc_mouseleftflash`, `pc_mouserightflash`, `pc_dodgeflash` et
+  `pc_1flash` à `pc_4flash` (textures `pc_Nflash.f01.tga`, 64x64). Dans le pak, seule `shv_xflash.f01.tga` existe :
+  les autres textures console sont absentes (et `shv_buttonfrustration*` aussi), d'où l'invite vide quand on les
+  demande. Chaque `pc_Nflash` est **deux textures D3D 64x64 DXT3 à un niveau** (grande et petite image, que le moteur
+  alterne), remplies au chargement (pool MANAGED) : le mod les reconnaît à l'empreinte FNV-1a de leurs 4096 octets au
+  premier `UnlockRect` et réécrit leurs pixels (`graphics/FlashIcons`, dessin dans `FlashIconArt`, compression
+  `Dxt3`). **Vérifié en jeu le 20/10/2026** : l'icône Xbox bouge pendant le QTE. Technique réutilisable : décoder une
+  texture du pak (DXT3 = 16 octets par bloc 4x4) pour la regarder, relever les créations de textures avec un journal
+  temporaire, retrouver l'empreinte dans le pak.
 - **Noms des boutons de l'écran des commandes** : tables de pointeurs dans `.data` (`0x111C04C0` axes,
   `0x111C0568` boutons), lues seulement par `0x100E95D0` (`input/ControllerNames`).
 - **Mode manette du moteur** : octet `+0x178` de `[[[0x111D2460]+0x38]+8]` et bit 0 de l'état d'interface

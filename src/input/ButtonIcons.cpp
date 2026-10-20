@@ -9,6 +9,7 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "graphics/FlashIcons.h"
 #include "input/ControllerNames.h"
 #include "input/EngineUiState.h"
 #include "input/MenuBridge.h"
@@ -41,10 +42,10 @@ constexpr int kSettingXbox = 2;
 constexpr int kSettingPs3 = 3;
 
 constexpr int kFaceSlots = 8;
-// Variantes animées (4 à 7) : les textures animées Xbox 360 et PS3 (shv_aflash...) ne s'affichent pas dans la version PC
-// (invite à marteler de l'introduction vide, journal du 17/10/2026). Même demandées dès le chargement de l'interface
-// (clé 0x1000E3F9, acquisition 0x100093D6), 1 seule sur 8 a été obtenue : elles ne sont pas chargeables ainsi. Les
-// icônes fixes, visibles partout, les remplacent (on perd le grossissement du « 1 » animé d'origine).
+// Variantes animées (4 à 7) : plus remplacées par un nom. Les textures animées de console (shv_aflash...) sont absentes
+// de la version PC, l'invite à marteler restait vide quand on les demandait (constaté en jeu le 17 et le 20/10/2026,
+// aussi avec shv_buttonfrustrationx360_a_1) ; et une icône fixe ne bouge pas. Le mod réécrit à la place les pixels des
+// textures pc_1flash à pc_4flash (graphics/FlashIcons.h). Ces emplacements ne servent plus qu'à FaceIconName.
 constexpr const char* kNames[3][kFaceSlots] = {
     {"shv_buttonpccontrol1", "shv_buttonpccontrol2", "shv_buttonpccontrol3", "shv_buttonpccontrol4", "pc_1flash",
      "pc_2flash", "pc_3flash", "pc_4flash"},
@@ -272,14 +273,16 @@ const char* ReplacementIconName(const char* name, int type) noexcept {
     if (name == nullptr || type < 1 || type > 2) {
         return nullptr;
     }
-    for (int i = 0; i < kFaceSlots; ++i) {
+    // Seules les icônes fixes sont remplacées : les variantes animées (pc_1flash...) gardent leur nom, leurs pixels
+    // sont réécrits dans la texture (graphics/FlashIcons.h).
+    for (int i = 0; i < 4; ++i) {
         const char* pc = kNames[0][i];
         const std::size_t length = std::strlen(pc);
         if (std::strncmp(name, pc, length) != 0) {
             continue;
         }
         // Nom exact, ou variante "_64" des icônes fixes (shv_buttonpccontrol1_64...).
-        if (name[length] == '\0' || (i < 4 && std::strcmp(name + length, "_64") == 0)) {
+        if (name[length] == '\0' || std::strcmp(name + length, "_64") == 0) {
             return kNames[type][i];
         }
     }
@@ -294,6 +297,10 @@ void RefreshButtonIcons() noexcept {
     if (g_iconType.exchange(type, std::memory_order_relaxed) != type || !g_namesApplied) {
         g_namesApplied = true;
         ApplyControllerNames(type);
+    }
+    // Images de l'invite à marteler : réécrites dans les textures pc_Nflash (voir graphics/FlashIcons.h).
+    if (GetConfig().animatedIcons) {
+        graphics::flashicons::SetIconType(type);
     }
 }
 

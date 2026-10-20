@@ -101,6 +101,7 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.skipLogos = ReadBool(iniPath, L"Movies", L"SkipLogos", defaults.skipLogos);
     config.menuPad = ReadBool(iniPath, L"Input", L"MenuPad", defaults.menuPad);
     config.buttonIcons = ReadInt(iniPath, L"Input", L"ButtonIcons", defaults.buttonIcons, 0, 3);
+    config.animatedIcons = ReadBool(iniPath, L"Input", L"AnimatedIcons", defaults.animatedIcons);
 
     config.cameraFix = ReadBool(iniPath, L"Camera", L"CameraFix", defaults.cameraFix);
     config.cameraHorizontalSpeed =

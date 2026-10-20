@@ -19,6 +19,9 @@
 #include "graphics/CameraMath.h"
 #include "graphics/CameraTracker.h"
 #include "graphics/DepthEncoding.h"
+#include "graphics/Dxt3.h"
+#include "graphics/FlashIconArt.h"
+#include "graphics/FlashIcons.h"
 #include "graphics/Jitter.h"
 #include "graphics/UiClip.h"
 #include "graphics/SceneEnd.h"
@@ -350,12 +353,74 @@ void TestButtonIcons() {
     const auto same = [](const char* a, const char* b) { return a != nullptr && std::string(a) == b; };
     Check(same(ReplacementIconName("shv_buttonpccontrol1", 1), "shv_buttonxbox360_a_32") &&
               same(ReplacementIconName("shv_buttonpccontrol4_64", 2), "shv_buttonps3_triangle_32") &&
-              same(ReplacementIconName("pc_3flash", 1), "shv_buttonxbox360_x_32"),
+              ReplacementIconName("pc_3flash", 1) == nullptr && ReplacementIconName("pc_1flash", 2) == nullptr,
           "texture PC remplacée par l'icône Xbox 360 ou PS3");
     Check(ReplacementIconName("shv_buttonpccontrol1", 0) == nullptr && ReplacementIconName("shv_buttonactionpc", 1) == nullptr &&
               ReplacementIconName("shv_buttonpccontrol12", 1) == nullptr && ReplacementIconName("pc_1flash_64", 1) == nullptr &&
               ReplacementIconName(nullptr, 1) == nullptr,
           "autres textures et type PC laissés tels quels");
+    {
+        // Icônes animées de l'invite à marteler (graphics/FlashIcons, FlashIconArt, Dxt3).
+        namespace fi = hca::graphics::flashicons;
+        int button = -1;
+        int frame = -1;
+        Check(fi::IdentifyFlashFrame(0x62400812, button, frame) && button == 0 && frame == 0 &&
+                  fi::IdentifyFlashFrame(0xC782C21B, button, frame) && button == 3 && frame == 1 &&
+                  !fi::IdentifyFlashFrame(0x12345678, button, frame),
+              "images pc_1flash à pc_4flash reconnues à leur empreinte");
+        const std::uint8_t abc[3] = {'a', 'b', 'c'};
+        Check(fi::Fnv1a(abc, 3) == 0x1A47E90Bu && fi::Fnv1a(nullptr, 0) == 2166136261u, "FNV-1a (valeurs de référence)");
+
+        constexpr int kSize = hca::graphics::kFlashIconSize;
+        std::uint32_t source[kSize * kSize];
+        std::uint32_t decoded[kSize * kSize];
+        std::uint8_t compressed[kSize * kSize];
+        for (int y = 0; y < kSize; ++y) {
+            for (int x = 0; x < kSize; ++x) {
+                source[y * kSize + x] = x < kSize / 2 ? 0xFF2060C0u : 0x00000000u;  // bleu opaque / transparent
+            }
+        }
+        hca::graphics::EncodeDxt3(source, kSize, kSize, compressed);
+        hca::graphics::DecodeDxt3(compressed, kSize, kSize, decoded);
+        const auto closeEnough = [](std::uint32_t a, std::uint32_t b) {
+            for (int shift = 0; shift < 32; shift += 8) {
+                const int d = static_cast<int>((a >> shift) & 255) - static_cast<int>((b >> shift) & 255);
+                if (d > 10 || d < -10) {
+                    return false;
+                }
+            }
+            return true;
+        };
+        Check(hca::graphics::Dxt3Size(kSize, kSize) == 4096 && closeEnough(decoded[5 * kSize + 5], 0xFF2060C0u) &&
+                  (decoded[5 * kSize + 60] >> 24) == 0,
+              "DXT3 : couleur unie et transparence conservées");
+
+        std::uint32_t big[kSize * kSize];
+        std::uint32_t smallFrame[kSize * kSize];
+        const auto coverage = [](const std::uint32_t* pixels) {
+            int count = 0;
+            for (int i = 0; i < kSize * kSize; ++i) {
+                count += (pixels[i] >> 24) > 127 ? 1 : 0;
+            }
+            return count;
+        };
+        bool distinct = true;
+        std::uint32_t previous = 0;
+        for (int type = 1; type <= 2; ++type) {
+            for (int b = 0; b < 4; ++b) {
+                hca::graphics::RenderFlashFrame(type, b, 0, big);
+                hca::graphics::RenderFlashFrame(type, b, 1, smallFrame);
+                distinct = distinct && (big[0] >> 24) == 0 && (big[32 * kSize + 32] >> 24) == 255 &&
+                           coverage(smallFrame) < coverage(big) && coverage(smallFrame) > 400;
+                std::uint32_t hash = fi::Fnv1a(reinterpret_cast<const std::uint8_t*>(big), sizeof(big));
+                distinct = distinct && hash != previous;
+                previous = hash;
+            }
+        }
+        Check(distinct, "icônes animées : coin transparent, centre opaque, petite image plus petite, huit dessins différents");
+        hca::graphics::RenderFlashFrame(0, 0, 0, big);
+        Check(coverage(big) == 0, "type PC : rien dessiné");
+    }
     using hca::input::ExtraCommandIconName;
     Check(same(ExtraCommandIconName(0x44, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x44, 2), "shv_buttonps3stickr") &&
               ExtraCommandIconName(0x44, 0) == nullptr && ExtraCommandIconName(0x36, 1) == nullptr &&

@@ -105,6 +105,8 @@ struct Config {
     bool menuPad = false;
     // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
     int buttonIcons = 0;
+    // Icônes animées de l'invite à marteler (QTE) aux couleurs de la manette (voir graphics/FlashIcons.h).
+    bool animatedIcons = true;
 
     // [Camera]
     // Correctif de caméra à la manette, porté du Camera Fix d'Emertels (voir patches/CameraFix.h). Désactivé par

@@ -30,6 +30,7 @@
 #include "graphics/UiClip.h"
 #include "graphics/Ssao.h"
 #include "graphics/Smaa.h"
+#include "graphics/FlashIcons.h"
 
 namespace hca::graphics {
 
@@ -181,6 +182,7 @@ void PatchDevice(IDirect3DDevice9* device) {
     }
     scene::Install(device);
     uiclip::Install(device);
+    flashicons::Install(device);
     if (GetConfig().frameCapture) {
         capture::Install(device);
     }
