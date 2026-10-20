@@ -20,7 +20,6 @@ public static class Translations
             ["TabGraphics"] = ("Graphismes", "Graphics"),
             ["TabPerformance"] = ("Performances et stabilité", "Performance and stability"),
             ["TabInstall"] = ("Installation", "Installation"),
-            ["TabAdvanced"] = ("Avancé", "Advanced"),
 
             // --- Réglages ajoutés en 0.9.8 (Graphismes, manette, son, cadence)
             ["FullScreenUiClip"] = ("Carte et interface sur toute l'image (au-delà de 720p)",
@@ -37,10 +36,6 @@ public static class Translations
                                  "Button-mashing prompts in the controller's colors"),
             ["AnimatedIconsHint"] = ("Icône animée aux couleurs de la manette (Xbox 360 ou PS3) au lieu du chiffre du PC.",
                                      "Animated icon in the controller's colors (Xbox 360 or PS3) instead of the PC digit."),
-            ["MenuPad"] = ("Croix et stick gauche = flèches dans les menus",
-                           "D-pad and left stick = arrow keys in menus"),
-            ["MenuPadHint"] = ("Désactivé par défaut : le jeu gère lui-même la manette dans ses menus.",
-                               "Off by default: the game handles the controller in its menus itself."),
             ["OrbitGuardFollow"] = ("Gâchette gauche (L2) : suspend l'orbite", "Left trigger (L2): suspends the orbit"),
             ["OrbitGuardFollowHint"] = ("Tant que L2 (garde au couteau) est tenue, la caméra revient derrière le personnage " +
                                         "et le stick droit le tourne. Exige la caméra orbitale.",
@@ -69,43 +64,6 @@ public static class Translations
                                      "5.1 or 7.1 forces the channel count; Windows then brings it back to that of your " +
                                      "speakers or headphones."),
 
-            // --- Onglet Avancé
-            ["AdvancedHint"] = ("Réglages fins de HomecomingAgain.ini. Les valeurs par défaut conviennent à presque tout le " +
-                                "monde : « Paramètres par défaut » les rétablit.",
-                                "Fine settings of HomecomingAgain.ini. The defaults suit almost everyone: " +
-                                "\"Restore defaults\" brings them back."),
-            ["SecAdvancedSsao"] = ("Occlusion ambiante (SSAO)", "Ambient occlusion (SSAO)"),
-            ["SsaoRadius"] = ("Rayon (unités du jeu)", "Radius (game units)"),
-            ["SsaoFadeStart"] = ("Début du fondu (distance)", "Fade start (distance)"),
-            ["SsaoFadeEnd"] = ("Fin du fondu (distance)", "Fade end (distance)"),
-            ["SsaoAdvancedHint"] = ("Rayon de l'effet et distances entre lesquelles il disparaît progressivement. La force " +
-                                    "se règle dans l'onglet Graphismes.",
-                                    "Effect radius and the distances between which it fades out. The strength is set in the " +
-                                    "Graphics tab."),
-            ["SecAdvancedAudioMovies"] = ("Son et vidéos", "Sound and videos"),
-            ["ChannelOrder"] = ("Ordre des canaux du moteur", "Engine channel order"),
-            ["SkipKey"] = ("Touche pour passer les vidéos (code)", "Key to skip videos (code)"),
-            ["ChannelOrderInvalid"] = ("Ordre invalide : six numéros différents de 0 à 5, séparés par des virgules. L'ordre " +
-                                       "par défaut sera utilisé.",
-                                       "Invalid order: six different numbers from 0 to 5, separated by commas. The default " +
-                                       "order will be used."),
-            ["AudioMoviesAdvancedHint"] = ("Ordre : numéro du canal du jeu pour avant gauche, avant droit, centre, basses, " +
-                                           "arrière gauche, arrière droit. Touche : code de touche Windows (46 = Suppr, " +
-                                           "0 = aucune).",
-                                           "Order: the game's channel number for front left, front right, center, LFE, rear " +
-                                           "left, rear right. Key: Windows key code (46 = Delete, 0 = none)."),
-            ["SecAdvancedDiagnostics"] = ("Diagnostic", "Diagnostics"),
-            ["ReportInterval"] = ("Secondes entre deux rapports de mesures", "Seconds between two measurement reports"),
-            ["DumpKeepCount"] = ("Dumps de plantage conservés", "Crash dumps kept"),
-            ["LogKeepCount"] = ("Journaux conservés", "Logs kept"),
-            ["DiagnosticsAdvancedHint"] = ("Nombre de fichiers conservés : les plus anciens sont supprimés.",
-                                           "Number of files kept: the oldest are deleted."),
-            ["SecExperimental"] = ("Expérimental", "Experimental"),
-            ["D3D9On12"] = ("Direct3D 9 exécuté par Direct3D 12 (D3D9On12)", "Direct3D 9 run through Direct3D 12 (D3D9On12)"),
-            ["D3D9On12Hint"] = ("Préparation du DLSS : le Direct3D 9 du jeu passe par Direct3D 12 (D3D9On12 de Windows). " +
-                                "Expérimental : à ne pas activer sans raison.",
-                                "DLSS groundwork: the game's Direct3D 9 goes through Direct3D 12 (Windows' D3D9On12). " +
-                                "Experimental: do not enable without a reason."),
             ["Yes"] = ("Oui", "Yes"),
             ["No"] = ("Non", "No"),
             ["FolderPickerTitle"] = ("Dossier de Silent Hill Homecoming (celui qui contient Bin et Engine)",

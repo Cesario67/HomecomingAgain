@@ -60,7 +60,6 @@ public sealed partial class MainWindowViewModel : LocalizedViewModel
 
     public GraphicsViewModel Graphics { get; } = new();
     public PerformanceViewModel Performance { get; } = new();
-    public AdvancedViewModel Advanced { get; } = new();
     public StatusViewModel Status { get; }
 
     public GamePaths? Paths { get; private set; }
@@ -131,7 +130,6 @@ public sealed partial class MainWindowViewModel : LocalizedViewModel
         PatchSettings settings = PatchSettings.Read(IniDocument.Load(Paths.ModIni), KeyValueDocument.Load(Paths.GameSettings));
         Graphics.Load(settings);
         Performance.Load(settings);
-        Advanced.Load(settings);
     }
 
     /// <summary>Exécute une action en affichant son résultat ou son erreur dans la barre d'état.</summary>
@@ -173,7 +171,7 @@ public sealed partial class MainWindowViewModel : LocalizedViewModel
         return string.Join(" ", dlss.Prepend(Loc.Get("SettingsSaved")));
     }
 
-    private PatchSettings CurrentSettings() => Advanced.ApplyTo(Performance.ApplyTo(Graphics.ApplyTo(new PatchSettings())));
+    private PatchSettings CurrentSettings() => Performance.ApplyTo(Graphics.ApplyTo(new PatchSettings()));
 
     [RelayCommand(CanExecute = nameof(CanUseGame))]
     private void SaveSettings() => Run(() => WriteSettings(CurrentSettings()));

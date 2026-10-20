@@ -130,10 +130,6 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool AnimatedIcons { get; set; } = true;
 
-    /// <summary>Croix et stick gauche = flèches dans les menus ([Input] MenuPad).</summary>
-    [ObservableProperty]
-    public partial bool MenuPad { get; set; }
-
     /// <summary>Carte et interface étendues au-delà de 720p ([Graphics] FullScreenUiClip).</summary>
     [ObservableProperty]
     public partial bool FullScreenUiClip { get; set; } = true;
@@ -194,7 +190,6 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         CameraAimHorizontalSpeed = settings.CameraAimHorizontalSpeed;
         CameraAimVerticalSpeed = settings.CameraAimVerticalSpeed;
         AnimatedIcons = settings.AnimatedIcons;
-        MenuPad = settings.MenuPad;
         FullScreenUiClip = settings.FullScreenUiClip;
         ObjectViewPerspective = settings.ObjectViewPerspective;
         HighQualityShaders = settings.HighQualityShaders;
@@ -223,7 +218,6 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         CameraAimHorizontalSpeed = PatchSettings.ClampSpeed(CameraAimHorizontalSpeed),
         CameraAimVerticalSpeed = PatchSettings.ClampSpeed(CameraAimVerticalSpeed),
         AnimatedIcons = AnimatedIcons,
-        MenuPad = MenuPad,
         FullScreenUiClip = FullScreenUiClip,
         ObjectViewPerspective = ObjectViewPerspective,
         HighQualityShaders = HighQualityShaders,

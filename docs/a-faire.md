@@ -57,12 +57,13 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
   du personnage suivi y touche désormais. Validé en jeu par l'auteur.
 - Fait (20/10/2026) : `OrbitGuardFollow=1` (défaut) : gâchette gauche (L2) tenue, l'orbite est suspendue (caméra
   derrière le personnage, stick droit qui le tourne). Non validée seule en jeu.
-- Fait (21/10/2026) : tous les réglages utiles de `HomecomingAgain.ini` ont une case, une liste ou un curseur dans le
-  launcher (Graphismes : carte, objets, icônes animées, manette dans les menus, L2, vitesses de la caméra ;
-  Performances : limiteur d'images, son), et un onglet Avancé reçoit le reste (SSAO fin, ordre des canaux, touche de
-  saut des vidéos, nombre de dumps et de journaux, D3D9On12). Restent hors du launcher, volontairement : `SsaoDebug`,
-  `FrameCapture`, `FrameCaptureKey`, `BackBufferDump`, `SkipMovies` (outils de diagnostic et de test). Rendu des
-  nouveaux écrans à vérifier à l'œil (les liaisons sont vérifiées à la compilation, pas la mise en page).
+- Fait (21/10/2026) : les réglages utiles de `HomecomingAgain.ini` ont une case, une liste ou un curseur dans le
+  launcher (Graphismes : carte, objets, icônes animées, L2, vitesses de la caméra ; Performances : limiteur d'images,
+  son). Volontairement hors du launcher, à modifier à la main : `MenuPad` (le jeu gère déjà sa manette dans ses
+  menus), `SsaoRadius`, `SsaoFadeStart`, `SsaoFadeEnd`, `D3D9On12`, `ChannelOrder`, `SkipKey`, `ReportIntervalSeconds`,
+  `DumpKeepCount`, `LogKeepCount` (réglage fin, expérimental ou diagnostic) et `SsaoDebug`, `FrameCapture`,
+  `FrameCaptureKey`, `BackBufferDump`, `SkipMovies`. Le launcher ne touche pas à ces lignes en enregistrant (test). Un
+  onglet Avancé a été essayé puis retiré à la demande de l'auteur. Rendu des nouveaux écrans à vérifier à l'œil.
 - Fait (20/10/2026) : une piste de la cinématique des insectes n'était entendue qu'à gauche. **Vérifié** par le
   journal : le canal 0 (avant gauche) du flux 5.1 du moteur est vide en jeu courant (0,0000) et porte 0,08 à 0,11
   pendant la scène. Il est maintenant envoyé à égalité des deux côtés (`DownmixSurroundToStereo`). Validé à

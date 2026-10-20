@@ -111,8 +111,6 @@
             <TextBlock Classes="hint" Text="{Binding L[ButtonIconsHint]}" />
             <CheckBox Content="{Binding L[AnimatedIcons]}" IsChecked="{Binding AnimatedIcons}" />
             <TextBlock Classes="hint" Text="{Binding L[AnimatedIconsHint]}" />
-            <CheckBox Content="{Binding L[MenuPad]}" IsChecked="{Binding MenuPad}" />
-            <TextBlock Classes="hint" Text="{Binding L[MenuPadHint]}" />
             <CheckBox Content="{Binding L[PlayStationPad]}" IsChecked="{Binding PlayStationPad}" />
             <TextBlock Classes="hint" Text="{Binding L[PlayStationPadHint]}" />
             <CheckBox Content="{Binding L[CameraFix]}" IsChecked="{Binding CameraFix}" />
@@ -204,58 +202,6 @@
             <CheckBox Content="{Binding L[HangDetection]}" IsChecked="{Binding HangDetection}" />
             <CheckBox Content="{Binding L[FrameStats]}" IsChecked="{Binding FrameStats}" />
             <TextBlock Classes="hint" Text="{Binding L[DiagnosticsHint]}" />
-          </StackPanel>
-        </ScrollViewer>
-      </TabItem>
-
-      <!-- Avancé -->
-      <TabItem Header="{Binding L[TabAdvanced]}">
-        <ScrollViewer>
-          <StackPanel Spacing="6" Margin="0,8" DataContext="{Binding Advanced}" x:DataType="vm:AdvancedViewModel">
-            <TextBlock Classes="hint" Text="{Binding L[AdvancedHint]}" />
-
-            <TextBlock Classes="section" Text="{Binding L[SecAdvancedSsao]}" />
-            <Grid ColumnDefinitions="220,160" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
-              <TextBlock Text="{Binding L[SsaoRadius]}" VerticalAlignment="Center" />
-              <NumericUpDown Grid.Column="1" Value="{Binding SsaoRadius}" Minimum="0.05" Maximum="100" Increment="0.1"
-                             FormatString="0.0#" />
-              <TextBlock Grid.Row="1" Text="{Binding L[SsaoFadeStart]}" VerticalAlignment="Center" />
-              <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SsaoFadeStart}" Minimum="0" Maximum="100000"
-                             Increment="10" FormatString="0" />
-              <TextBlock Grid.Row="2" Text="{Binding L[SsaoFadeEnd]}" VerticalAlignment="Center" />
-              <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding SsaoFadeEnd}" Minimum="1" Maximum="100000"
-                             Increment="10" FormatString="0" />
-            </Grid>
-            <TextBlock Classes="hint" Text="{Binding L[SsaoAdvancedHint]}" />
-
-            <TextBlock Classes="section" Text="{Binding L[SecAdvancedAudioMovies]}" />
-            <Grid ColumnDefinitions="220,160" RowDefinitions="Auto,Auto" RowSpacing="6">
-              <TextBlock Text="{Binding L[ChannelOrder]}" VerticalAlignment="Center" />
-              <TextBox Grid.Column="1" Text="{Binding ChannelOrder}" />
-              <TextBlock Grid.Row="1" Text="{Binding L[SkipKey]}" VerticalAlignment="Center" />
-              <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SkipKey}" Minimum="0" Maximum="254"
-                             Increment="1" FormatString="0" />
-            </Grid>
-            <TextBlock Classes="warning" Text="{Binding L[ChannelOrderInvalid]}" IsVisible="{Binding ChannelOrderInvalid}" />
-            <TextBlock Classes="hint" Text="{Binding L[AudioMoviesAdvancedHint]}" />
-
-            <TextBlock Classes="section" Text="{Binding L[SecAdvancedDiagnostics]}" />
-            <Grid ColumnDefinitions="220,160" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
-              <TextBlock Text="{Binding L[ReportInterval]}" VerticalAlignment="Center" />
-              <NumericUpDown Grid.Column="1" Value="{Binding ReportIntervalSeconds}" Minimum="1" Maximum="3600"
-                             Increment="1" FormatString="0" />
-              <TextBlock Grid.Row="1" Text="{Binding L[DumpKeepCount]}" VerticalAlignment="Center" />
-              <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding DumpKeepCount}" Minimum="1" Maximum="100"
-                             Increment="1" FormatString="0" />
-              <TextBlock Grid.Row="2" Text="{Binding L[LogKeepCount]}" VerticalAlignment="Center" />
-              <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding LogKeepCount}" Minimum="1" Maximum="500"
-                             Increment="1" FormatString="0" />
-            </Grid>
-            <TextBlock Classes="hint" Text="{Binding L[DiagnosticsAdvancedHint]}" />
-
-            <TextBlock Classes="section" Text="{Binding L[SecExperimental]}" />
-            <CheckBox Content="{Binding L[D3D9On12]}" IsChecked="{Binding D3D9On12}" />
-            <TextBlock Classes="hint" Text="{Binding L[D3D9On12Hint]}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>

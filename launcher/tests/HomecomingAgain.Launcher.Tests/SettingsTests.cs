@@ -100,11 +100,10 @@ public sealed class SettingsTests
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
             FilmGrain = 0, SkipLogos = false, God = true, UnlimitedAmmo = true, PlayStationPad = false, CameraFix = true,
             CameraOrbit = true,
-            FullScreenUiClip = false, ObjectViewPerspective = false, SsaoRadius = 2.25, SsaoFadeStart = 200,
-            SsaoFadeEnd = 600, D3D9On12 = true, AnimatedIcons = false, MenuPad = true, OrbitGuardFollow = false,
-            CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25, CameraAimHorizontalSpeed = 2.5,
-            CameraAimVerticalSpeed = 3.0, AudioChannelFix = false, AudioChannels = 6, AudioChannelOrder = "0,1,2,3,4,5",
-            FrameLimitFps = 90, ReportIntervalSeconds = 30, SkipKey = 27, DumpKeepCount = 5, LogKeepCount = 100,
+            FullScreenUiClip = false, ObjectViewPerspective = false, AnimatedIcons = false,
+            OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,
+            CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false, AudioChannels = 6,
+            FrameLimitFps = 90,
         };
         IniDocument mod = IniDocument.Parse("");
         KeyValueDocument game = KeyValueDocument.Parse(OriginalGameSettings);
@@ -122,12 +121,10 @@ public sealed class SettingsTests
         PatchSettings read = PatchSettings.Read(IniDocument.Parse(""), KeyValueDocument.Parse(OriginalGameSettings));
         Assert.True(read.FullScreenUiClip && read.ObjectViewPerspective && read.AnimatedIcons && read.OrbitGuardFollow);
         Assert.True(read.AudioChannelFix);
-        Assert.False(read.MenuPad || read.D3D9On12);
-        Assert.Equal((1.5, 150, 450), (read.SsaoRadius, read.SsaoFadeStart, read.SsaoFadeEnd));
+        Assert.True(read.AnimatedIcons);
         Assert.Equal((1.0, 1.0, 1.0, 1.0), (read.CameraHorizontalSpeed, read.CameraVerticalSpeed,
                                            read.CameraAimHorizontalSpeed, read.CameraAimVerticalSpeed));
-        Assert.Equal((0, 0, 10, 46), (read.AudioChannels, read.FrameLimitFps, read.ReportIntervalSeconds, read.SkipKey));
-        Assert.Equal((10, 30, "2,4,1,3,5,0"), (read.DumpKeepCount, read.LogKeepCount, read.AudioChannelOrder));
+        Assert.Equal((0, 0), (read.AudioChannels, read.FrameLimitFps));
     }
 
     [Fact]
@@ -135,23 +132,40 @@ public sealed class SettingsTests
     {
         PatchSettings source = new()
         {
-            FullScreenUiClip = false, ObjectViewPerspective = false, SsaoRadius = 2.25, SsaoFadeStart = 200,
-            SsaoFadeEnd = 600, D3D9On12 = true, AnimatedIcons = false, MenuPad = true, OrbitGuardFollow = false,
-            CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25, CameraAimHorizontalSpeed = 2.5,
-            CameraAimVerticalSpeed = 3.0, AudioChannelFix = false, AudioChannels = 8, AudioChannelOrder = "0,1,2,3,4,5",
-            FrameLimitFps = 90, ReportIntervalSeconds = 30, SkipKey = 27, DumpKeepCount = 5, LogKeepCount = 100,
+            FullScreenUiClip = false, ObjectViewPerspective = false, AnimatedIcons = false,
+            OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,
+            CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false, AudioChannels = 8,
+            FrameLimitFps = 90,
         };
         GraphicsViewModel graphics = new();
         PerformanceViewModel performance = new();
-        AdvancedViewModel advanced = new();
         graphics.Load(source);
         performance.Load(source);
-        advanced.Load(source);
 
-        PatchSettings result = advanced.ApplyTo(performance.ApplyTo(graphics.ApplyTo(new PatchSettings())));
+        PatchSettings result = performance.ApplyTo(graphics.ApplyTo(new PatchSettings()));
 
         Assert.Equal(source, result with { DisplayMode = source.DisplayMode, Width = source.Width, Height = source.Height,
                                            TargetFps = source.TargetFps });
+    }
+
+    [Fact]
+    public void SettingsTheLauncherDoesNotExposeAreLeftAsTheyAre()
+    {
+        // Réglages du .ini sans case dans le launcher : l'enregistrement ne doit ni les remettre à leur défaut ni les retirer.
+        const string text = "[Graphics]\nSsaoRadius=2.25\nSsaoFadeStart=200\nSsaoFadeEnd=600\nD3D9On12=1\n" +
+                            "[Audio]\nChannelOrder=0,1,2,3,4,5\n[Movies]\nSkipKey=27\n[Frames]\nReportIntervalSeconds=30\n" +
+                            "[Crash]\nDumpKeepCount=5\n[Debug]\nLogKeepCount=100\nFrameCapture=1\nSkipMovies=1\n" +
+                            "[Input]\nMenuPad=1";
+        IniDocument mod = IniDocument.Parse(text);
+        new PatchSettings().WriteMod(mod);
+        Assert.Equal(("2.25", "200", "600", "1"), (mod.Get("Graphics", "SsaoRadius"), mod.Get("Graphics", "SsaoFadeStart"),
+                                                    mod.Get("Graphics", "SsaoFadeEnd"), mod.Get("Graphics", "D3D9On12")));
+        Assert.Equal(("0,1,2,3,4,5", "27", "30", "5"), (mod.Get("Audio", "ChannelOrder"), mod.Get("Movies", "SkipKey"),
+                                                         mod.Get("Frames", "ReportIntervalSeconds"),
+                                                         mod.Get("Crash", "DumpKeepCount")));
+        Assert.Equal(("100", "1", "1"), (mod.Get("Debug", "LogKeepCount"), mod.Get("Debug", "FrameCapture"),
+                                         mod.Get("Debug", "SkipMovies")));
+        Assert.Equal("1", mod.Get("Input", "MenuPad"));
     }
 
     [Fact]
@@ -164,55 +178,15 @@ public sealed class SettingsTests
     }
 
     [Fact]
-    public void ClearingANumericFieldKeepsTheDefault()
-    {
-        AdvancedViewModel advanced = new() { LogKeepCount = null, SsaoRadius = null, ChannelOrder = "x" };
-        PatchSettings result = advanced.ApplyTo(new PatchSettings());
-        Assert.Equal((30, 1.5, "2,4,1,3,5,0"), (result.LogKeepCount, result.SsaoRadius, result.AudioChannelOrder));
-        Assert.True(advanced.ChannelOrderInvalid);
-    }
-
-    [Fact]
     public void NewOptionsAreClampedToWhatTheDllAccepts()
     {
         IniDocument mod = IniDocument.Parse("");
         (new PatchSettings
         {
-            CameraHorizontalSpeed = 9, CameraVerticalSpeed = 0.01, SsaoRadius = 500, SsaoFadeStart = 300, SsaoFadeEnd = 100,
-            AudioChannels = 4, FrameLimitFps = 5000, ReportIntervalSeconds = 0, SkipKey = 999, DumpKeepCount = 0,
-            LogKeepCount = 9999,
+            CameraHorizontalSpeed = 9, CameraVerticalSpeed = 0.01, AudioChannels = 4, FrameLimitFps = 5000,
         }).WriteMod(mod);
         Assert.Equal(("3.0", "0.25"), (mod.Get("Camera", "HorizontalSpeed"), mod.Get("Camera", "VerticalSpeed")));
-        Assert.Equal("100.0", mod.Get("Graphics", "SsaoRadius"));
-        Assert.Equal(("300", "301"), (mod.Get("Graphics", "SsaoFadeStart"), mod.Get("Graphics", "SsaoFadeEnd")));
-        Assert.Equal(("0", "1000", "1"), (mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps"),
-                                          mod.Get("Frames", "ReportIntervalSeconds")));
-        Assert.Equal(("254", "1", "500"), (mod.Get("Movies", "SkipKey"), mod.Get("Crash", "DumpKeepCount"),
-                                           mod.Get("Debug", "LogKeepCount")));
-    }
-
-    [Theory]
-    [InlineData("2,4,1,3,5,0", true)]
-    [InlineData(" 0, 1, 2, 3, 4, 5 ", true)]
-    [InlineData("2,4,1,3,5", false)]
-    [InlineData("2,2,1,3,5,0", false)]
-    [InlineData("2,4,1,3,5,9", false)]
-    [InlineData("a,b,c,d,e,f", false)]
-    [InlineData("", false)]
-    public void ChannelOrderIsValidatedLikeTheDll(string order, bool valid)
-    {
-        Assert.Equal(valid, PatchSettings.IsValidChannelOrder(order));
-        IniDocument mod = IniDocument.Parse("");
-        (new PatchSettings { AudioChannelOrder = order }).WriteMod(mod);
-        Assert.Equal(valid ? order.Trim() : "2,4,1,3,5,0", mod.Get("Audio", "ChannelOrder"));
-    }
-
-    [Fact]
-    public void InvalidChannelOrderInTheIniFallsBackToTheDefault()
-    {
-        IniDocument mod = IniDocument.Parse("[Audio]\nChannelOrder=1,1,1,1,1,1");
-        PatchSettings read = PatchSettings.Read(mod, KeyValueDocument.Parse(OriginalGameSettings));
-        Assert.Equal("2,4,1,3,5,0", read.AudioChannelOrder);
+        Assert.Equal(("0", "1000"), (mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps")));
     }
 
     [Theory]
