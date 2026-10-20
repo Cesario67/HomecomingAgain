@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(HomecomingAgain VERSION 0.9.7 LANGUAGES C CXX RC)
+project(HomecomingAgain VERSION 0.9.8 LANGUAGES C CXX RC)
 
 if(NOT MSVC)
     message(FATAL_ERROR "HomecomingAgain se compile avec MSVC (Build Tools for Visual Studio).")
