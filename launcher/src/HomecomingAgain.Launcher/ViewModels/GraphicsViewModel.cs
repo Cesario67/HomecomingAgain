@@ -100,14 +100,44 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
 
     /// <summary>Correctif de caméra à la manette ([Camera] CameraFix et commandes du stick droit).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OrbitOptionsEnabled))]
     public partial bool CameraFix { get; set; }
 
-    /// <summary>Manette PlayStation présentée comme une manette Xbox ([Input] PlayStationPad).</summary>
-    [ObservableProperty]
-    public partial bool PlayStationPad { get; set; } = true;
     /// <summary>Caméra orbitale ([Camera] Mode=Orbit), expérimentale.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OrbitOptionsEnabled))]
     public partial bool CameraOrbit { get; set; }
+
+    /// <summary>
+    /// Les options de l'orbite (L2...) ne servent que si le correctif de caméra ET l'orbite sont cochés : la DLL ignore
+    /// le mode orbite sans le correctif, mais la case de l'orbite garde sa valeur quand elle est grisée.
+    /// </summary>
+    public bool OrbitOptionsEnabled => CameraFix && CameraOrbit;
+
+    /// <summary>Orbite suspendue tant que la gâchette gauche (L2) est tenue ([Camera] OrbitGuardFollow).</summary>
+    [ObservableProperty]
+    public partial bool OrbitGuardFollow { get; set; } = true;
+
+    /// <summary>Vitesses de la caméra ([Camera]) : de 0,25 à 3, 1 = calibrage d'origine.</summary>
+    [ObservableProperty]
+    public partial double CameraHorizontalSpeed { get; set; } = 1.0;
+
+    [ObservableProperty]
+    public partial double CameraVerticalSpeed { get; set; } = 1.0;
+
+    [ObservableProperty]
+    public partial double CameraAimHorizontalSpeed { get; set; } = 1.0;
+
+    [ObservableProperty]
+    public partial double CameraAimVerticalSpeed { get; set; } = 1.0;
+
+    /// <summary>Carte et interface étendues au-delà de 720p ([Graphics] FullScreenUiClip).</summary>
+    [ObservableProperty]
+    public partial bool FullScreenUiClip { get; set; } = true;
+
+    /// <summary>Perspective de la vue d'inspection des objets rétablie ([Graphics] ObjectViewPerspective).</summary>
+    [ObservableProperty]
+    public partial bool ObjectViewPerspective { get; set; } = true;
 
     [ObservableProperty]
     public partial bool HighQualityShaders { get; set; }
@@ -153,8 +183,14 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedFilmGrain = FilmGrainLevels.LastOrDefault(choice => choice.Value <= settings.FilmGrain) ?? FilmGrainLevels[0];
         SelectedButtonIcons = ButtonIconSets.FirstOrDefault(choice => choice.Value == settings.ButtonIcons) ?? ButtonIconSets[0];
         CameraFix = settings.CameraFix;
-        PlayStationPad = settings.PlayStationPad;
         CameraOrbit = settings.CameraOrbit;
+        OrbitGuardFollow = settings.OrbitGuardFollow;
+        CameraHorizontalSpeed = settings.CameraHorizontalSpeed;
+        CameraVerticalSpeed = settings.CameraVerticalSpeed;
+        CameraAimHorizontalSpeed = settings.CameraAimHorizontalSpeed;
+        CameraAimVerticalSpeed = settings.CameraAimVerticalSpeed;
+        FullScreenUiClip = settings.FullScreenUiClip;
+        ObjectViewPerspective = settings.ObjectViewPerspective;
         HighQualityShaders = settings.HighQualityShaders;
         FullResolutionTextures = settings.FullResolutionTextures;
     }
@@ -173,8 +209,14 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         FilmGrain = SelectedFilmGrain.Value,
         ButtonIcons = SelectedButtonIcons.Value,
         CameraFix = CameraFix,
-        PlayStationPad = PlayStationPad,
         CameraOrbit = CameraOrbit,
+        OrbitGuardFollow = OrbitGuardFollow,
+        CameraHorizontalSpeed = PatchSettings.ClampSpeed(CameraHorizontalSpeed),
+        CameraVerticalSpeed = PatchSettings.ClampSpeed(CameraVerticalSpeed),
+        CameraAimHorizontalSpeed = PatchSettings.ClampSpeed(CameraAimHorizontalSpeed),
+        CameraAimVerticalSpeed = PatchSettings.ClampSpeed(CameraAimVerticalSpeed),
+        FullScreenUiClip = FullScreenUiClip,
+        ObjectViewPerspective = ObjectViewPerspective,
         HighQualityShaders = HighQualityShaders,
         FullResolutionTextures = FullResolutionTextures,
     };

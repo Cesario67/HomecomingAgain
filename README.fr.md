@@ -62,8 +62,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   Xbox ; sans manette Xbox branchée, la manette PlayStation lui est présentée comme une manette Xbox, avec les icônes
   PlayStation en mode auto (`[Input] PlayStationPad`, activé par défaut).
 - **Caméra orbitale** (expérimental) : avec le correctif de caméra, le stick droit fait tourner la caméra seule autour
-  du personnage. À cocher dans le launcher (onglet Graphismes), avec le choix de la direction en marche (vers la
-  caméra ou vers le stick gauche).
+  du personnage. À cocher dans le launcher (onglet Manette). La gâchette gauche (L2) tenue suspend l'orbite
+  (`OrbitGuardFollow`).
 
 ### Confort
 

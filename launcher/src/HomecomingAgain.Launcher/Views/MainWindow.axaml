@@ -77,7 +77,24 @@
                         ItemsSource="{Binding FilmGrainLevels}" SelectedItem="{Binding SelectedFilmGrain}" />
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[FilmGrainHint]}" />
+            <CheckBox Content="{Binding L[FullScreenUiClip]}" IsChecked="{Binding FullScreenUiClip}" />
+            <TextBlock Classes="hint" Text="{Binding L[FullScreenUiClipHint]}" />
+            <CheckBox Content="{Binding L[ObjectViewPerspective]}" IsChecked="{Binding ObjectViewPerspective}" />
+            <TextBlock Classes="hint" Text="{Binding L[ObjectViewPerspectiveHint]}" />
 
+            <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
+            <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />
+            <CheckBox Content="{Binding L[FullResolutionTextures]}" IsChecked="{Binding FullResolutionTextures}" />
+            <TextBlock Classes="hint" Text="{Binding L[GameQualityHint]}" />
+            <TextBlock Classes="hint" Text="{Binding L[SmaaCredit]}" />
+            <TextBlock Classes="hint" Text="{Binding L[DlssCredit]}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <!-- Manette -->
+      <TabItem Header="{Binding L[TabController]}">
+        <ScrollViewer>
+          <StackPanel Spacing="6" Margin="0,8" DataContext="{Binding Graphics}" x:DataType="vm:GraphicsViewModel">
             <TextBlock Classes="section" Text="{Binding L[SecController]}" />
             <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" RowSpacing="8">
               <TextBlock Text="{Binding L[ButtonIcons]}" VerticalAlignment="Center" />
@@ -105,22 +122,39 @@
               </ItemsControl>
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[ButtonIconsHint]}" />
-            <CheckBox Content="{Binding L[PlayStationPad]}" IsChecked="{Binding PlayStationPad}" />
-            <TextBlock Classes="hint" Text="{Binding L[PlayStationPadHint]}" />
             <CheckBox Content="{Binding L[CameraFix]}" IsChecked="{Binding CameraFix}" />
             <TextBlock Classes="hint" Text="{Binding L[CameraFixHint]}" />
             <CheckBox Content="{Binding L[CameraOrbit]}" IsChecked="{Binding CameraOrbit}" IsEnabled="{Binding CameraFix}" />
             <TextBlock Classes="hint" Text="{Binding L[CameraOrbitHint]}" />
-
-            <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
-            <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />
-            <CheckBox Content="{Binding L[FullResolutionTextures]}" IsChecked="{Binding FullResolutionTextures}" />
-            <TextBlock Classes="hint" Text="{Binding L[GameQualityHint]}" />
-            <TextBlock Classes="hint" Text="{Binding L[SmaaCredit]}" />
-            <TextBlock Classes="hint" Text="{Binding L[DlssCredit]}" />
+            <CheckBox Content="{Binding L[OrbitGuardFollow]}" IsChecked="{Binding OrbitGuardFollow}" IsEnabled="{Binding OrbitOptionsEnabled}" />
+            <TextBlock Classes="hint" Text="{Binding L[OrbitGuardFollowHint]}" />
+            <Grid ColumnDefinitions="220,*,50" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4" IsEnabled="{Binding CameraFix}">
+              <TextBlock Text="{Binding L[CameraHorizontalSpeed]}" VerticalAlignment="Center" />
+              <Slider Grid.Column="1" Minimum="0.25" Maximum="3" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                      Value="{Binding CameraHorizontalSpeed}" />
+              <TextBlock Grid.Column="2" Text="{Binding CameraHorizontalSpeed, StringFormat={}{0:0.00}}"
+                         HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="1" Text="{Binding L[CameraVerticalSpeed]}" VerticalAlignment="Center" />
+              <Slider Grid.Row="1" Grid.Column="1" Minimum="0.25" Maximum="3" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                      Value="{Binding CameraVerticalSpeed}" />
+              <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding CameraVerticalSpeed, StringFormat={}{0:0.00}}"
+                         HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="2" Text="{Binding L[CameraAimHorizontalSpeed]}" VerticalAlignment="Center" />
+              <Slider Grid.Row="2" Grid.Column="1" Minimum="0.25" Maximum="3" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                      Value="{Binding CameraAimHorizontalSpeed}" />
+              <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding CameraAimHorizontalSpeed, StringFormat={}{0:0.00}}"
+                         HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="3" Text="{Binding L[CameraAimVerticalSpeed]}" VerticalAlignment="Center" />
+              <Slider Grid.Row="3" Grid.Column="1" Minimum="0.25" Maximum="3" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                      Value="{Binding CameraAimVerticalSpeed}" />
+              <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding CameraAimVerticalSpeed, StringFormat={}{0:0.00}}"
+                         HorizontalAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[CameraSpeedsHint]}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>
+
 
       <!-- Performances et stabilité -->
       <TabItem Header="{Binding L[TabPerformance]}">
@@ -138,6 +172,10 @@
             <TextBlock Classes="hint" Text="{Binding L[PreciseTimerHint]}" />
             <CheckBox Content="{Binding L[SkipLogos]}" IsChecked="{Binding SkipLogos}" />
             <TextBlock Classes="hint" Text="{Binding L[SkipLogosHint]}" />
+
+            <TextBlock Classes="section" Text="{Binding L[SecAudio]}" />
+            <CheckBox Content="{Binding L[AudioChannelFix]}" IsChecked="{Binding AudioChannelFix}" />
+            <TextBlock Classes="hint" Text="{Binding L[AudioChannelFixHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecCheats]}" />
             <CheckBox Content="{Binding L[God]}" IsChecked="{Binding God}" />
