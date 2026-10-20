@@ -126,7 +126,7 @@
             <TextBlock Classes="hint" Text="{Binding L[CameraFixHint]}" />
             <CheckBox Content="{Binding L[CameraOrbit]}" IsChecked="{Binding CameraOrbit}" IsEnabled="{Binding CameraFix}" />
             <TextBlock Classes="hint" Text="{Binding L[CameraOrbitHint]}" />
-            <CheckBox Content="{Binding L[OrbitGuardFollow]}" IsChecked="{Binding OrbitGuardFollow}" IsEnabled="{Binding CameraOrbit}" />
+            <CheckBox Content="{Binding L[OrbitGuardFollow]}" IsChecked="{Binding OrbitGuardFollow}" IsEnabled="{Binding OrbitOptionsEnabled}" />
             <TextBlock Classes="hint" Text="{Binding L[OrbitGuardFollowHint]}" />
             <Grid ColumnDefinitions="220,*,50" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4" IsEnabled="{Binding CameraFix}">
               <TextBlock Text="{Binding L[CameraHorizontalSpeed]}" VerticalAlignment="Center" />

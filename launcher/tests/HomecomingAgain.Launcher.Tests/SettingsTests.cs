@@ -165,6 +165,21 @@ public sealed class SettingsTests
         Assert.Equal(("0", "0"), (mod.Get("Input", "AnimatedIcons"), mod.Get("Input", "PlayStationPad")));
     }
 
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]  // correctif décoché alors que l'orbite reste cochée : options grisées
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public void OrbitOptionsNeedBothTheCameraFixAndTheOrbit(bool cameraFix, bool orbit, bool enabled)
+    {
+        GraphicsViewModel graphics = new() { CameraFix = cameraFix, CameraOrbit = orbit };
+        Assert.Equal(enabled, graphics.OrbitOptionsEnabled);
+        List<string> changed = [];
+        graphics.PropertyChanged += (_, e) => changed.Add(e.PropertyName ?? "");
+        graphics.CameraFix = !cameraFix;
+        Assert.Contains(nameof(GraphicsViewModel.OrbitOptionsEnabled), changed);
+    }
+
     [Fact]
     public void NewOptionsAreClampedToWhatTheDllAccepts()
     {

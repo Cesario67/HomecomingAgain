@@ -100,11 +100,19 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
 
     /// <summary>Correctif de caméra à la manette ([Camera] CameraFix et commandes du stick droit).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OrbitOptionsEnabled))]
     public partial bool CameraFix { get; set; }
 
     /// <summary>Caméra orbitale ([Camera] Mode=Orbit), expérimentale.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OrbitOptionsEnabled))]
     public partial bool CameraOrbit { get; set; }
+
+    /// <summary>
+    /// Les options de l'orbite (L2...) ne servent que si le correctif de caméra ET l'orbite sont cochés : la DLL ignore
+    /// le mode orbite sans le correctif, mais la case de l'orbite garde sa valeur quand elle est grisée.
+    /// </summary>
+    public bool OrbitOptionsEnabled => CameraFix && CameraOrbit;
 
     /// <summary>Orbite suspendue tant que la gâchette gauche (L2) est tenue ([Camera] OrbitGuardFollow).</summary>
     [ObservableProperty]
