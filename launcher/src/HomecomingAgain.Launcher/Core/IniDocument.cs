@@ -31,6 +31,15 @@ public sealed class IniDocument
     public int GetInt(string section, string key, int fallback) =>
         Get(section, key) is { } value && int.TryParse(value, out int number) ? number : fallback;
 
+    /// <summary>Nombre à virgule écrit avec un point, quelle que soit la langue de Windows (comme le lit la DLL).</summary>
+    public double GetDouble(string section, string key, double fallback) =>
+        Get(section, key) is { } value
+        && double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double number)
+        && double.IsFinite(number) ? number : fallback;
+
+    public void SetDouble(string section, string key, double value) =>
+        Set(section, key, value.ToString("0.0##", System.Globalization.CultureInfo.InvariantCulture));
+
     public void Set(string section, string key, string value)
     {
         int index = FindKey(section, key);

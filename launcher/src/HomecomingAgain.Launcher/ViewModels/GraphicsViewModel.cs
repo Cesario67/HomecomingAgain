@@ -109,6 +109,39 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool CameraOrbit { get; set; }
 
+    /// <summary>Orbite suspendue tant que la gâchette gauche (L2) est tenue ([Camera] OrbitGuardFollow).</summary>
+    [ObservableProperty]
+    public partial bool OrbitGuardFollow { get; set; } = true;
+
+    /// <summary>Vitesses de la caméra ([Camera]) : de 0,25 à 3, 1 = calibrage d'origine.</summary>
+    [ObservableProperty]
+    public partial double CameraHorizontalSpeed { get; set; } = 1.0;
+
+    [ObservableProperty]
+    public partial double CameraVerticalSpeed { get; set; } = 1.0;
+
+    [ObservableProperty]
+    public partial double CameraAimHorizontalSpeed { get; set; } = 1.0;
+
+    [ObservableProperty]
+    public partial double CameraAimVerticalSpeed { get; set; } = 1.0;
+
+    /// <summary>Invite à marteler aux couleurs de la manette ([Input] AnimatedIcons).</summary>
+    [ObservableProperty]
+    public partial bool AnimatedIcons { get; set; } = true;
+
+    /// <summary>Croix et stick gauche = flèches dans les menus ([Input] MenuPad).</summary>
+    [ObservableProperty]
+    public partial bool MenuPad { get; set; }
+
+    /// <summary>Carte et interface étendues au-delà de 720p ([Graphics] FullScreenUiClip).</summary>
+    [ObservableProperty]
+    public partial bool FullScreenUiClip { get; set; } = true;
+
+    /// <summary>Perspective de la vue d'inspection des objets rétablie ([Graphics] ObjectViewPerspective).</summary>
+    [ObservableProperty]
+    public partial bool ObjectViewPerspective { get; set; } = true;
+
     [ObservableProperty]
     public partial bool HighQualityShaders { get; set; }
 
@@ -155,6 +188,15 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         CameraFix = settings.CameraFix;
         PlayStationPad = settings.PlayStationPad;
         CameraOrbit = settings.CameraOrbit;
+        OrbitGuardFollow = settings.OrbitGuardFollow;
+        CameraHorizontalSpeed = settings.CameraHorizontalSpeed;
+        CameraVerticalSpeed = settings.CameraVerticalSpeed;
+        CameraAimHorizontalSpeed = settings.CameraAimHorizontalSpeed;
+        CameraAimVerticalSpeed = settings.CameraAimVerticalSpeed;
+        AnimatedIcons = settings.AnimatedIcons;
+        MenuPad = settings.MenuPad;
+        FullScreenUiClip = settings.FullScreenUiClip;
+        ObjectViewPerspective = settings.ObjectViewPerspective;
         HighQualityShaders = settings.HighQualityShaders;
         FullResolutionTextures = settings.FullResolutionTextures;
     }
@@ -175,6 +217,15 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         CameraFix = CameraFix,
         PlayStationPad = PlayStationPad,
         CameraOrbit = CameraOrbit,
+        OrbitGuardFollow = OrbitGuardFollow,
+        CameraHorizontalSpeed = PatchSettings.ClampSpeed(CameraHorizontalSpeed),
+        CameraVerticalSpeed = PatchSettings.ClampSpeed(CameraVerticalSpeed),
+        CameraAimHorizontalSpeed = PatchSettings.ClampSpeed(CameraAimHorizontalSpeed),
+        CameraAimVerticalSpeed = PatchSettings.ClampSpeed(CameraAimVerticalSpeed),
+        AnimatedIcons = AnimatedIcons,
+        MenuPad = MenuPad,
+        FullScreenUiClip = FullScreenUiClip,
+        ObjectViewPerspective = ObjectViewPerspective,
         HighQualityShaders = HighQualityShaders,
         FullResolutionTextures = FullResolutionTextures,
     };

@@ -62,8 +62,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   Xbox ; sans manette Xbox branchée, la manette PlayStation lui est présentée comme une manette Xbox, avec les icônes
   PlayStation en mode auto (`[Input] PlayStationPad`, activé par défaut).
 - **Caméra orbitale** (expérimental) : avec le correctif de caméra, le stick droit fait tourner la caméra seule autour
-  du personnage. À cocher dans le launcher (onglet Graphismes), avec le choix de la direction en marche (vers la
-  caméra ou vers le stick gauche).
+  du personnage. À cocher dans le launcher (onglet Graphismes). La gâchette gauche (L2) tenue suspend l'orbite
+  (`OrbitGuardFollow`).
 
 ### Confort
 
@@ -73,7 +73,7 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   (`God=1`, `UnlimitedAmmo=1`). Vérifiées en jeu.
 - **Logos de démarrage accélérés** : l'écran titre arrive au bout de 5 s environ au lieu de 23. Les logos (Konami,
   Double Helix, mentions légales) défilent en accéléré ; le jeu a déjà fini de charger pendant qu'ils s'affichent.
-- **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par
+- **Launcher** (`HomecomingAgain.exe`) : tous les réglages (un onglet Avancé contient les réglages fins), l'installation et la désinstallation, en anglais (par
   défaut) et en français.
 
 ## Installation

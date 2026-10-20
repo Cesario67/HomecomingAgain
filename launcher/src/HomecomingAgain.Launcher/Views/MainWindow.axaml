@@ -77,6 +77,10 @@
                         ItemsSource="{Binding FilmGrainLevels}" SelectedItem="{Binding SelectedFilmGrain}" />
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[FilmGrainHint]}" />
+            <CheckBox Content="{Binding L[FullScreenUiClip]}" IsChecked="{Binding FullScreenUiClip}" />
+            <TextBlock Classes="hint" Text="{Binding L[FullScreenUiClipHint]}" />
+            <CheckBox Content="{Binding L[ObjectViewPerspective]}" IsChecked="{Binding ObjectViewPerspective}" />
+            <TextBlock Classes="hint" Text="{Binding L[ObjectViewPerspectiveHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecController]}" />
             <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" RowSpacing="8">
@@ -105,12 +109,41 @@
               </ItemsControl>
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[ButtonIconsHint]}" />
+            <CheckBox Content="{Binding L[AnimatedIcons]}" IsChecked="{Binding AnimatedIcons}" />
+            <TextBlock Classes="hint" Text="{Binding L[AnimatedIconsHint]}" />
+            <CheckBox Content="{Binding L[MenuPad]}" IsChecked="{Binding MenuPad}" />
+            <TextBlock Classes="hint" Text="{Binding L[MenuPadHint]}" />
             <CheckBox Content="{Binding L[PlayStationPad]}" IsChecked="{Binding PlayStationPad}" />
             <TextBlock Classes="hint" Text="{Binding L[PlayStationPadHint]}" />
             <CheckBox Content="{Binding L[CameraFix]}" IsChecked="{Binding CameraFix}" />
             <TextBlock Classes="hint" Text="{Binding L[CameraFixHint]}" />
             <CheckBox Content="{Binding L[CameraOrbit]}" IsChecked="{Binding CameraOrbit}" IsEnabled="{Binding CameraFix}" />
             <TextBlock Classes="hint" Text="{Binding L[CameraOrbitHint]}" />
+            <CheckBox Content="{Binding L[OrbitGuardFollow]}" IsChecked="{Binding OrbitGuardFollow}" IsEnabled="{Binding CameraOrbit}" />
+            <TextBlock Classes="hint" Text="{Binding L[OrbitGuardFollowHint]}" />
+            <Grid ColumnDefinitions="220,*,50" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4" IsEnabled="{Binding CameraFix}">
+              <TextBlock Text="{Binding L[CameraHorizontalSpeed]}" VerticalAlignment="Center" />
+              <Slider Grid.Column="1" Minimum="0.25" Maximum="3" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                      Value="{Binding CameraHorizontalSpeed}" />
+              <TextBlock Grid.Column="2" Text="{Binding CameraHorizontalSpeed, StringFormat={}{0:0.00}}"
+                         HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="1" Text="{Binding L[CameraVerticalSpeed]}" VerticalAlignment="Center" />
+              <Slider Grid.Row="1" Grid.Column="1" Minimum="0.25" Maximum="3" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                      Value="{Binding CameraVerticalSpeed}" />
+              <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding CameraVerticalSpeed, StringFormat={}{0:0.00}}"
+                         HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="2" Text="{Binding L[CameraAimHorizontalSpeed]}" VerticalAlignment="Center" />
+              <Slider Grid.Row="2" Grid.Column="1" Minimum="0.25" Maximum="3" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                      Value="{Binding CameraAimHorizontalSpeed}" />
+              <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding CameraAimHorizontalSpeed, StringFormat={}{0:0.00}}"
+                         HorizontalAlignment="Right" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="3" Text="{Binding L[CameraAimVerticalSpeed]}" VerticalAlignment="Center" />
+              <Slider Grid.Row="3" Grid.Column="1" Minimum="0.25" Maximum="3" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                      Value="{Binding CameraAimVerticalSpeed}" />
+              <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding CameraAimVerticalSpeed, StringFormat={}{0:0.00}}"
+                         HorizontalAlignment="Right" VerticalAlignment="Center" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[CameraSpeedsHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
             <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />
@@ -134,10 +167,26 @@
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[TargetFpsHint]}" />
             <TextBlock Classes="warning" Text="{Binding L[HighFpsWarning]}" IsVisible="{Binding ShowHighFrameRateWarning}" />
+            <Grid ColumnDefinitions="220,*">
+              <TextBlock Text="{Binding L[FrameLimit]}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding FrameLimits}" SelectedItem="{Binding SelectedFrameLimit}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[FrameLimitHint]}" />
             <CheckBox Content="{Binding L[PreciseTimer]}" IsChecked="{Binding PreciseTimer}" />
             <TextBlock Classes="hint" Text="{Binding L[PreciseTimerHint]}" />
             <CheckBox Content="{Binding L[SkipLogos]}" IsChecked="{Binding SkipLogos}" />
             <TextBlock Classes="hint" Text="{Binding L[SkipLogosHint]}" />
+
+            <TextBlock Classes="section" Text="{Binding L[SecAudio]}" />
+            <CheckBox Content="{Binding L[AudioChannelFix]}" IsChecked="{Binding AudioChannelFix}" />
+            <TextBlock Classes="hint" Text="{Binding L[AudioChannelFixHint]}" />
+            <Grid ColumnDefinitions="220,*">
+              <TextBlock Text="{Binding L[AudioChannels]}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding AudioChannelChoices}" SelectedItem="{Binding SelectedAudioChannels}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[AudioChannelsHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecCheats]}" />
             <CheckBox Content="{Binding L[God]}" IsChecked="{Binding God}" />
@@ -155,6 +204,58 @@
             <CheckBox Content="{Binding L[HangDetection]}" IsChecked="{Binding HangDetection}" />
             <CheckBox Content="{Binding L[FrameStats]}" IsChecked="{Binding FrameStats}" />
             <TextBlock Classes="hint" Text="{Binding L[DiagnosticsHint]}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- Avancé -->
+      <TabItem Header="{Binding L[TabAdvanced]}">
+        <ScrollViewer>
+          <StackPanel Spacing="6" Margin="0,8" DataContext="{Binding Advanced}" x:DataType="vm:AdvancedViewModel">
+            <TextBlock Classes="hint" Text="{Binding L[AdvancedHint]}" />
+
+            <TextBlock Classes="section" Text="{Binding L[SecAdvancedSsao]}" />
+            <Grid ColumnDefinitions="220,160" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+              <TextBlock Text="{Binding L[SsaoRadius]}" VerticalAlignment="Center" />
+              <NumericUpDown Grid.Column="1" Value="{Binding SsaoRadius}" Minimum="0.05" Maximum="100" Increment="0.1"
+                             FormatString="0.0#" />
+              <TextBlock Grid.Row="1" Text="{Binding L[SsaoFadeStart]}" VerticalAlignment="Center" />
+              <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SsaoFadeStart}" Minimum="0" Maximum="100000"
+                             Increment="10" FormatString="0" />
+              <TextBlock Grid.Row="2" Text="{Binding L[SsaoFadeEnd]}" VerticalAlignment="Center" />
+              <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding SsaoFadeEnd}" Minimum="1" Maximum="100000"
+                             Increment="10" FormatString="0" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[SsaoAdvancedHint]}" />
+
+            <TextBlock Classes="section" Text="{Binding L[SecAdvancedAudioMovies]}" />
+            <Grid ColumnDefinitions="220,160" RowDefinitions="Auto,Auto" RowSpacing="6">
+              <TextBlock Text="{Binding L[ChannelOrder]}" VerticalAlignment="Center" />
+              <TextBox Grid.Column="1" Text="{Binding ChannelOrder}" />
+              <TextBlock Grid.Row="1" Text="{Binding L[SkipKey]}" VerticalAlignment="Center" />
+              <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding SkipKey}" Minimum="0" Maximum="254"
+                             Increment="1" FormatString="0" />
+            </Grid>
+            <TextBlock Classes="warning" Text="{Binding L[ChannelOrderInvalid]}" IsVisible="{Binding ChannelOrderInvalid}" />
+            <TextBlock Classes="hint" Text="{Binding L[AudioMoviesAdvancedHint]}" />
+
+            <TextBlock Classes="section" Text="{Binding L[SecAdvancedDiagnostics]}" />
+            <Grid ColumnDefinitions="220,160" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+              <TextBlock Text="{Binding L[ReportInterval]}" VerticalAlignment="Center" />
+              <NumericUpDown Grid.Column="1" Value="{Binding ReportIntervalSeconds}" Minimum="1" Maximum="3600"
+                             Increment="1" FormatString="0" />
+              <TextBlock Grid.Row="1" Text="{Binding L[DumpKeepCount]}" VerticalAlignment="Center" />
+              <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding DumpKeepCount}" Minimum="1" Maximum="100"
+                             Increment="1" FormatString="0" />
+              <TextBlock Grid.Row="2" Text="{Binding L[LogKeepCount]}" VerticalAlignment="Center" />
+              <NumericUpDown Grid.Row="2" Grid.Column="1" Value="{Binding LogKeepCount}" Minimum="1" Maximum="500"
+                             Increment="1" FormatString="0" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[DiagnosticsAdvancedHint]}" />
+
+            <TextBlock Classes="section" Text="{Binding L[SecExperimental]}" />
+            <CheckBox Content="{Binding L[D3D9On12]}" IsChecked="{Binding D3D9On12}" />
+            <TextBlock Classes="hint" Text="{Binding L[D3D9On12Hint]}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>
