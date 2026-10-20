@@ -102,8 +102,7 @@ public sealed class SettingsTests
             CameraOrbit = true,
             FullScreenUiClip = false, ObjectViewPerspective = false, AnimatedIcons = false,
             OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,
-            CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false, AudioChannels = 6,
-            FrameLimitFps = 90,
+            CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false,
         };
         IniDocument mod = IniDocument.Parse("");
         KeyValueDocument game = KeyValueDocument.Parse(OriginalGameSettings);
@@ -124,7 +123,6 @@ public sealed class SettingsTests
         Assert.True(read.AnimatedIcons);
         Assert.Equal((1.0, 1.0, 1.0, 1.0), (read.CameraHorizontalSpeed, read.CameraVerticalSpeed,
                                            read.CameraAimHorizontalSpeed, read.CameraAimVerticalSpeed));
-        Assert.Equal((0, 0), (read.AudioChannels, read.FrameLimitFps));
     }
 
     [Fact]
@@ -134,8 +132,7 @@ public sealed class SettingsTests
         {
             FullScreenUiClip = false, ObjectViewPerspective = false, AnimatedIcons = false,
             OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,
-            CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false, AudioChannels = 8,
-            FrameLimitFps = 90,
+            CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false,
         };
         GraphicsViewModel graphics = new();
         PerformanceViewModel performance = new();
@@ -153,7 +150,8 @@ public sealed class SettingsTests
     {
         // Réglages du .ini sans case dans le launcher : l'enregistrement ne doit ni les remettre à leur défaut ni les retirer.
         const string text = "[Graphics]\nSsaoRadius=2.25\nSsaoFadeStart=200\nSsaoFadeEnd=600\nD3D9On12=1\n" +
-                            "[Audio]\nChannelOrder=0,1,2,3,4,5\n[Movies]\nSkipKey=27\n[Frames]\nReportIntervalSeconds=30\n" +
+                            "[Audio]\nChannelOrder=0,1,2,3,4,5\nChannels=6\n[Movies]\nSkipKey=27\n" +
+                            "[Frames]\nReportIntervalSeconds=30\nFrameLimitFps=90\n" +
                             "[Crash]\nDumpKeepCount=5\n[Debug]\nLogKeepCount=100\nFrameCapture=1\nSkipMovies=1\n" +
                             "[Input]\nMenuPad=1";
         IniDocument mod = IniDocument.Parse(text);
@@ -165,17 +163,9 @@ public sealed class SettingsTests
                                                          mod.Get("Crash", "DumpKeepCount")));
         Assert.Equal(("100", "1", "1"), (mod.Get("Debug", "LogKeepCount"), mod.Get("Debug", "FrameCapture"),
                                          mod.Get("Debug", "SkipMovies")));
-        Assert.Equal("1", mod.Get("Input", "MenuPad"));
+        Assert.Equal(("1", "6", "90"), (mod.Get("Input", "MenuPad"), mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps")));
     }
 
-    [Fact]
-    public void ACustomFrameLimitFromTheIniIsKeptNotLost()
-    {
-        PerformanceViewModel performance = new();
-        performance.Load(new PatchSettings { FrameLimitFps = 100 });
-        Assert.Equal(100, performance.SelectedFrameLimit.Value);
-        Assert.Equal(100, performance.ApplyTo(new PatchSettings()).FrameLimitFps);
-    }
 
     [Fact]
     public void NewOptionsAreClampedToWhatTheDllAccepts()
@@ -183,10 +173,9 @@ public sealed class SettingsTests
         IniDocument mod = IniDocument.Parse("");
         (new PatchSettings
         {
-            CameraHorizontalSpeed = 9, CameraVerticalSpeed = 0.01, AudioChannels = 4, FrameLimitFps = 5000,
+            CameraHorizontalSpeed = 9, CameraVerticalSpeed = 0.01,
         }).WriteMod(mod);
         Assert.Equal(("3.0", "0.25"), (mod.Get("Camera", "HorizontalSpeed"), mod.Get("Camera", "VerticalSpeed")));
-        Assert.Equal(("0", "1000"), (mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps")));
     }
 
     [Theory]

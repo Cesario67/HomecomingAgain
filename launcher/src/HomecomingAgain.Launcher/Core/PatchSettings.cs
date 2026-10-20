@@ -56,16 +56,12 @@ public sealed record PatchSettings
     public double CameraAimHorizontalSpeed { get; init; } = 1.0;
     public double CameraAimVerticalSpeed { get; init; } = 1.0;
 
-    // --- Son ([Audio]) : correction des sons d'un seul côté, canaux de sortie (0 = ceux de Windows, 6 = 5.1, 8 = 7.1)
-    //.
+    // --- Son ([Audio]) : correction des sons d'un seul côté.
     public bool AudioChannelFix { get; init; } = true;
-    public int AudioChannels { get; init; }
 
     // --- Cadence ([Frames])
     public int TargetFps { get; init; } = 60;
     public bool PreciseTimer { get; init; } = true;
-    // Limiteur d'images (0 = aucun).
-    public int FrameLimitFps { get; init; }
 
     // --- Démarrage ([Movies]) : logos accélérés, touche pour passer les vidéos (code Windows, 0 = aucune).
     public bool SkipLogos { get; init; } = true;
@@ -117,13 +113,11 @@ public sealed record PatchSettings
             CameraAimHorizontalSpeed = ClampSpeed(mod.GetDouble("Camera", "AimHorizontalSpeed", defaults.CameraAimHorizontalSpeed)),
             CameraAimVerticalSpeed = ClampSpeed(mod.GetDouble("Camera", "AimVerticalSpeed", defaults.CameraAimVerticalSpeed)),
             AudioChannelFix = mod.GetBool("Audio", "ChannelFix", defaults.AudioChannelFix),
-            AudioChannels = mod.GetInt("Audio", "Channels", defaults.AudioChannels),
             PlayStationPad = mod.GetBool("Input", "PlayStationPad", defaults.PlayStationPad),
             // Mêmes règles que la DLL (patches/CameraTuning.cpp) : toute autre valeur = défaut.
             CameraOrbit = string.Equals(mod.Get("Camera", "Mode"), "Orbit", StringComparison.OrdinalIgnoreCase),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
-            FrameLimitFps = mod.GetInt("Frames", "FrameLimitFps", defaults.FrameLimitFps),
             SkipLogos = mod.GetBool("Movies", "SkipLogos", defaults.SkipLogos),
             God = mod.GetBool("Cheats", "God", defaults.God),
             UnlimitedAmmo = mod.GetBool("Cheats", "UnlimitedAmmo", defaults.UnlimitedAmmo),
@@ -165,10 +159,8 @@ public sealed record PatchSettings
         mod.SetDouble("Camera", "AimHorizontalSpeed", ClampSpeed(CameraAimHorizontalSpeed));
         mod.SetDouble("Camera", "AimVerticalSpeed", ClampSpeed(CameraAimVerticalSpeed));
         mod.SetBool("Audio", "ChannelFix", AudioChannelFix);
-        mod.SetInt("Audio", "Channels", AudioChannels is 6 or 8 ? AudioChannels : 0);
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
-        mod.SetInt("Frames", "FrameLimitFps", Math.Clamp(FrameLimitFps, 0, 1000));
         mod.SetBool("Movies", "SkipLogos", SkipLogos);
         mod.SetBool("Cheats", "God", God);
         mod.SetBool("Cheats", "UnlimitedAmmo", UnlimitedAmmo);

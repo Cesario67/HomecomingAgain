@@ -20,33 +20,6 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     [NotifyPropertyChangedFor(nameof(ShowHighFrameRateWarning))]
     public partial Choice<int> SelectedFrameRate { get; set; }
 
-    /// <summary>Limiteur d'images ([Frames] FrameLimitFps), 0 = aucun.</summary>
-    public IReadOnlyList<Choice<int>> FrameLimits { get; private set; } =
-    [
-        Choice<int>.Localized(0, "NoFrameLimit"),
-        new(30, "30"),
-        new(60, "60"),
-        new(90, "90"),
-        new(120, "120"),
-        new(144, "144"),
-        new(165, "165"),
-        new(240, "240"),
-    ];
-
-    [ObservableProperty]
-    public partial Choice<int> SelectedFrameLimit { get; set; }
-
-    /// <summary>Canaux de sortie du son ([Audio] Channels) : 0 = ceux de Windows, 6 = 5.1, 8 = 7.1.</summary>
-    public IReadOnlyList<Choice<int>> AudioChannelChoices { get; } =
-    [
-        Choice<int>.Localized(0, "AudioChannelsWindows"),
-        new(6, "5.1"),
-        new(8, "7.1"),
-    ];
-
-    [ObservableProperty]
-    public partial Choice<int> SelectedAudioChannels { get; set; }
-
     /// <summary>Sons envoyés d'un seul côté mélangés vers la stéréo par le mod ([Audio] ChannelFix).</summary>
     [ObservableProperty]
     public partial bool AudioChannelFix { get; set; } = true;
@@ -90,24 +63,13 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     public PerformanceViewModel()
     {
         SelectedFrameRate = FrameRates[1];
-        SelectedFrameLimit = FrameLimits[0];
-        SelectedAudioChannels = AudioChannelChoices[0];
-        Loc.Instance.LanguageChanged += () =>
-        {
-            FrameRates[0].RefreshLabel();
-            FrameLimits[0].RefreshLabel();
-            AudioChannelChoices[0].RefreshLabel();
-        };
+        Loc.Instance.LanguageChanged += () => FrameRates[0].RefreshLabel();
     }
 
     public void Load(PatchSettings settings)
     {
         SelectedFrameRate = FrameRates.FirstOrDefault(choice => choice.Value == settings.TargetFps)
                             ?? AddCustomFrameRate(settings.TargetFps);
-        SelectedFrameLimit = FrameLimits.FirstOrDefault(choice => choice.Value == settings.FrameLimitFps)
-                             ?? AddCustomFrameLimit(settings.FrameLimitFps);
-        SelectedAudioChannels = AudioChannelChoices.FirstOrDefault(choice => choice.Value == settings.AudioChannels)
-                                ?? AudioChannelChoices[0];
         AudioChannelFix = settings.AudioChannelFix;
         PreciseTimer = settings.PreciseTimer;
         SkipLogos = settings.SkipLogos;
@@ -124,8 +86,6 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     public PatchSettings ApplyTo(PatchSettings settings) => settings with
     {
         TargetFps = SelectedFrameRate.Value,
-        FrameLimitFps = SelectedFrameLimit.Value,
-        AudioChannels = SelectedAudioChannels.Value,
         AudioChannelFix = AudioChannelFix,
         PreciseTimer = PreciseTimer,
         SkipLogos = SkipLogos,
@@ -148,11 +108,4 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
         return choice;
     }
 
-    private Choice<int> AddCustomFrameLimit(int fps)
-    {
-        Choice<int> choice = new(fps, fps.ToString());
-        FrameLimits = [.. FrameLimits, choice];
-        OnPropertyChanged(nameof(FrameLimits));
-        return choice;
-    }
 }

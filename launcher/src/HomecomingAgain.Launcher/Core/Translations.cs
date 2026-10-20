@@ -18,6 +18,7 @@ public static class Translations
             ["Save"] = ("Enregistrer", "Save"),
             ["Play"] = ("▶  Jouer", "▶  Play"),
             ["TabGraphics"] = ("Graphismes", "Graphics"),
+            ["TabController"] = ("Manette", "Controller"),
             ["TabPerformance"] = ("Performances et stabilité", "Performance and stability"),
             ["TabInstall"] = ("Installation", "Installation"),
 
@@ -47,22 +48,12 @@ public static class Translations
             ["CameraAimVerticalSpeed"] = ("Visée : vitesse verticale", "Aiming: vertical speed"),
             ["CameraSpeedsHint"] = ("De 0,25 à 3 (1 = calibrage d'origine du correctif de caméra). Exige le correctif de caméra.",
                                     "From 0.25 to 3 (1 = the camera fix's original calibration). Requires the camera fix."),
-            ["FrameLimit"] = ("Limiteur d'images", "Frame limiter"),
-            ["NoFrameLimit"] = ("Aucun", "None"),
-            ["FrameLimitHint"] = ("Limite le nombre d'images affichées par seconde. Aucun = pas de limite.",
-                                  "Limits the number of frames displayed per second. None = no limit."),
             ["SecAudio"] = ("Son", "Sound"),
             ["AudioChannelFix"] = ("Corriger les sons entendus d'un seul côté", "Fix sounds heard on one side only"),
             ["AudioChannelFixHint"] = ("Mélange vers la stéréo fait par le mod (par exemple une piste de la cinématique des " +
                                        "insectes n'était entendue qu'à gauche). Désactivé = jeu d'origine.",
                                        "Mixing down to stereo done by the mod (for example a track of the insect cutscene was " +
                                        "only heard on the left). Off = original game."),
-            ["AudioChannels"] = ("Canaux de sortie", "Output channels"),
-            ["AudioChannelsWindows"] = ("Ceux de Windows (jeu d'origine)", "Those of Windows (original game)"),
-            ["AudioChannelsHint"] = ("5.1 ou 7.1 force le nombre de canaux ; Windows les ramène ensuite à ceux de vos " +
-                                     "enceintes ou de votre casque.",
-                                     "5.1 or 7.1 forces the channel count; Windows then brings it back to that of your " +
-                                     "speakers or headphones."),
 
             ["Yes"] = ("Oui", "Yes"),
             ["No"] = ("Non", "No"),

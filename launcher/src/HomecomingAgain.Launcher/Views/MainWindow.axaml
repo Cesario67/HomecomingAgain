@@ -82,6 +82,19 @@
             <CheckBox Content="{Binding L[ObjectViewPerspective]}" IsChecked="{Binding ObjectViewPerspective}" />
             <TextBlock Classes="hint" Text="{Binding L[ObjectViewPerspectiveHint]}" />
 
+            <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
+            <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />
+            <CheckBox Content="{Binding L[FullResolutionTextures]}" IsChecked="{Binding FullResolutionTextures}" />
+            <TextBlock Classes="hint" Text="{Binding L[GameQualityHint]}" />
+            <TextBlock Classes="hint" Text="{Binding L[SmaaCredit]}" />
+            <TextBlock Classes="hint" Text="{Binding L[DlssCredit]}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+      <!-- Manette -->
+      <TabItem Header="{Binding L[TabController]}">
+        <ScrollViewer>
+          <StackPanel Spacing="6" Margin="0,8" DataContext="{Binding Graphics}" x:DataType="vm:GraphicsViewModel">
             <TextBlock Classes="section" Text="{Binding L[SecController]}" />
             <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" RowSpacing="8">
               <TextBlock Text="{Binding L[ButtonIcons]}" VerticalAlignment="Center" />
@@ -142,16 +155,10 @@
                          HorizontalAlignment="Right" VerticalAlignment="Center" />
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[CameraSpeedsHint]}" />
-
-            <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
-            <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />
-            <CheckBox Content="{Binding L[FullResolutionTextures]}" IsChecked="{Binding FullResolutionTextures}" />
-            <TextBlock Classes="hint" Text="{Binding L[GameQualityHint]}" />
-            <TextBlock Classes="hint" Text="{Binding L[SmaaCredit]}" />
-            <TextBlock Classes="hint" Text="{Binding L[DlssCredit]}" />
           </StackPanel>
         </ScrollViewer>
       </TabItem>
+
 
       <!-- Performances et stabilité -->
       <TabItem Header="{Binding L[TabPerformance]}">
@@ -165,12 +172,6 @@
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[TargetFpsHint]}" />
             <TextBlock Classes="warning" Text="{Binding L[HighFpsWarning]}" IsVisible="{Binding ShowHighFrameRateWarning}" />
-            <Grid ColumnDefinitions="220,*">
-              <TextBlock Text="{Binding L[FrameLimit]}" VerticalAlignment="Center" />
-              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
-                        ItemsSource="{Binding FrameLimits}" SelectedItem="{Binding SelectedFrameLimit}" />
-            </Grid>
-            <TextBlock Classes="hint" Text="{Binding L[FrameLimitHint]}" />
             <CheckBox Content="{Binding L[PreciseTimer]}" IsChecked="{Binding PreciseTimer}" />
             <TextBlock Classes="hint" Text="{Binding L[PreciseTimerHint]}" />
             <CheckBox Content="{Binding L[SkipLogos]}" IsChecked="{Binding SkipLogos}" />
@@ -179,12 +180,6 @@
             <TextBlock Classes="section" Text="{Binding L[SecAudio]}" />
             <CheckBox Content="{Binding L[AudioChannelFix]}" IsChecked="{Binding AudioChannelFix}" />
             <TextBlock Classes="hint" Text="{Binding L[AudioChannelFixHint]}" />
-            <Grid ColumnDefinitions="220,*">
-              <TextBlock Text="{Binding L[AudioChannels]}" VerticalAlignment="Center" />
-              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
-                        ItemsSource="{Binding AudioChannelChoices}" SelectedItem="{Binding SelectedAudioChannels}" />
-            </Grid>
-            <TextBlock Classes="hint" Text="{Binding L[AudioChannelsHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecCheats]}" />
             <CheckBox Content="{Binding L[God]}" IsChecked="{Binding God}" />
