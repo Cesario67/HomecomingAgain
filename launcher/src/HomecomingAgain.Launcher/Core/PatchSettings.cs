@@ -29,6 +29,9 @@ public sealed record PatchSettings
     public int SsaoStrength { get; init; } = 100;
     public int ShadowResolution { get; init; } = 8192;
     public int FilmGrain { get; init; } = 100;
+    // Carte et interface étendues au-delà de 1280x720 ; perspective de la vue d'inspection des objets rétablie.
+    public bool FullScreenUiClip { get; init; } = true;
+    public bool ObjectViewPerspective { get; init; } = true;
 
     // --- DLSS ([DLSS]) : ShareFrames, Jitter et Apply ensemble. Désactivé par défaut (NVIDIA RTX et DXVK nécessaires).
     public bool Dlss { get; init; }
@@ -39,16 +42,24 @@ public sealed record PatchSettings
 
     // --- Caméra à la manette ([Camera] CameraFix, plus les commandes du stick droit, voir ControllerBinds).
     public bool CameraFix { get; init; }
-    // Manette PlayStation sans Steam Input ([Input] PlayStationPad).
-    public bool PlayStationPad { get; init; } = true;
     // Caméra orbitale ([Camera] Mode=Orbit, sinon Follow), effective seulement avec CameraFix.
     public bool CameraOrbit { get; init; }
+    // Orbite suspendue tant que la gâchette gauche (L2) est tenue ([Camera] OrbitGuardFollow).
+    public bool OrbitGuardFollow { get; init; } = true;
+    // Vitesses de la caméra ([Camera]) : de 0,25 à 3, 1 = calibrage d'origine.
+    public double CameraHorizontalSpeed { get; init; } = 1.0;
+    public double CameraVerticalSpeed { get; init; } = 1.0;
+    public double CameraAimHorizontalSpeed { get; init; } = 1.0;
+    public double CameraAimVerticalSpeed { get; init; } = 1.0;
+
+    // --- Son ([Audio]) : correction des sons d'un seul côté.
+    public bool AudioChannelFix { get; init; } = true;
 
     // --- Cadence ([Frames])
     public int TargetFps { get; init; } = 60;
     public bool PreciseTimer { get; init; } = true;
 
-    // --- Démarrage ([Movies] SkipLogos)
+    // --- Démarrage ([Movies]) : logos accélérés, touche pour passer les vidéos (code Windows, 0 = aucune).
     public bool SkipLogos { get; init; } = true;
 
     // --- Triches ([Cheats])
@@ -86,10 +97,17 @@ public sealed record PatchSettings
             SsaoStrength = mod.GetInt("Graphics", "SsaoStrength", defaults.SsaoStrength),
             ShadowResolution = mod.GetInt("Graphics", "ShadowResolution", defaults.ShadowResolution),
             FilmGrain = mod.GetInt("Graphics", "FilmGrain", defaults.FilmGrain),
+            FullScreenUiClip = mod.GetBool("Graphics", "FullScreenUiClip", defaults.FullScreenUiClip),
+            ObjectViewPerspective = mod.GetBool("Graphics", "ObjectViewPerspective", defaults.ObjectViewPerspective),
             Dlss = mod.GetBool("DLSS", "ShareFrames", false) && mod.GetBool("DLSS", "Apply", false),
             ButtonIcons = Math.Clamp(mod.GetInt("Input", "ButtonIcons", 0), 0, 3),
             CameraFix = mod.GetBool("Camera", "CameraFix", defaults.CameraFix),
-            PlayStationPad = mod.GetBool("Input", "PlayStationPad", defaults.PlayStationPad),
+            OrbitGuardFollow = mod.GetBool("Camera", "OrbitGuardFollow", defaults.OrbitGuardFollow),
+            CameraHorizontalSpeed = ClampSpeed(mod.GetDouble("Camera", "HorizontalSpeed", defaults.CameraHorizontalSpeed)),
+            CameraVerticalSpeed = ClampSpeed(mod.GetDouble("Camera", "VerticalSpeed", defaults.CameraVerticalSpeed)),
+            CameraAimHorizontalSpeed = ClampSpeed(mod.GetDouble("Camera", "AimHorizontalSpeed", defaults.CameraAimHorizontalSpeed)),
+            CameraAimVerticalSpeed = ClampSpeed(mod.GetDouble("Camera", "AimVerticalSpeed", defaults.CameraAimVerticalSpeed)),
+            AudioChannelFix = mod.GetBool("Audio", "ChannelFix", defaults.AudioChannelFix),
             // Mêmes règles que la DLL (patches/CameraTuning.cpp) : toute autre valeur = défaut.
             CameraOrbit = string.Equals(mod.Get("Camera", "Mode"), "Orbit", StringComparison.OrdinalIgnoreCase),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
@@ -106,6 +124,10 @@ public sealed record PatchSettings
         };
     }
 
+    /// <summary>Vitesses de caméra acceptées par la DLL (patches/CameraTuning.cpp) : de 0,25 à 3.</summary>
+    public static double ClampSpeed(double speed) => Math.Clamp(speed, 0.25, 3.0);
+
+
     public void WriteMod(IniDocument mod)
     {
         mod.SetBool("Window", "Borderless", DisplayMode == DisplayMode.Borderless);
@@ -115,13 +137,20 @@ public sealed record PatchSettings
         mod.SetInt("Graphics", "SsaoStrength", Math.Clamp(SsaoStrength, 10, 400));
         mod.SetInt("Graphics", "ShadowResolution", ShadowResolution is 4096 or 8192 ? ShadowResolution : 2048);
         mod.SetInt("Graphics", "FilmGrain", Math.Clamp(FilmGrain, 0, 100));
+        mod.SetBool("Graphics", "FullScreenUiClip", FullScreenUiClip);
+        mod.SetBool("Graphics", "ObjectViewPerspective", ObjectViewPerspective);
         mod.SetBool("DLSS", "ShareFrames", Dlss);
         mod.SetInt("DLSS", "Jitter", Dlss ? 1 : 0);
         mod.SetBool("DLSS", "Apply", Dlss);
         mod.SetInt("Input", "ButtonIcons", Math.Clamp(ButtonIcons, 0, 3));
         mod.SetBool("Camera", "CameraFix", CameraFix);
-        mod.SetBool("Input", "PlayStationPad", PlayStationPad);
         mod.Set("Camera", "Mode", CameraOrbit ? "Orbit" : "Follow");
+        mod.SetBool("Camera", "OrbitGuardFollow", OrbitGuardFollow);
+        mod.SetDouble("Camera", "HorizontalSpeed", ClampSpeed(CameraHorizontalSpeed));
+        mod.SetDouble("Camera", "VerticalSpeed", ClampSpeed(CameraVerticalSpeed));
+        mod.SetDouble("Camera", "AimHorizontalSpeed", ClampSpeed(CameraAimHorizontalSpeed));
+        mod.SetDouble("Camera", "AimVerticalSpeed", ClampSpeed(CameraAimVerticalSpeed));
+        mod.SetBool("Audio", "ChannelFix", AudioChannelFix);
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Movies", "SkipLogos", SkipLogos);

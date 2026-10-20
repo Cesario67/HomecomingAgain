@@ -59,7 +59,7 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
   controllers; with no Xbox controller plugged in, the PlayStation controller is presented to it as an Xbox one, with
   PlayStation icons in auto mode (`[Input] PlayStationPad`, on by default).
 - **Orbit camera** (experimental): with the camera fix, the right stick turns the camera alone around the character.
-  Enabled in the launcher (Graphics tab), with a choice of walking direction (towards the camera or the left stick).
+  Enabled in the launcher (Controller tab). Holding the left trigger (L2) suspends the orbit (`OrbitGuardFollow`).
 
 ### Comfort
 

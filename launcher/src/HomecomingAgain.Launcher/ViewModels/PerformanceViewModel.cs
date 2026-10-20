@@ -20,6 +20,10 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     [NotifyPropertyChangedFor(nameof(ShowHighFrameRateWarning))]
     public partial Choice<int> SelectedFrameRate { get; set; }
 
+    /// <summary>Sons envoyés d'un seul côté mélangés vers la stéréo par le mod ([Audio] ChannelFix).</summary>
+    [ObservableProperty]
+    public partial bool AudioChannelFix { get; set; } = true;
+
     [ObservableProperty]
     public partial bool PreciseTimer { get; set; } = true;
 
@@ -66,6 +70,7 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     {
         SelectedFrameRate = FrameRates.FirstOrDefault(choice => choice.Value == settings.TargetFps)
                             ?? AddCustomFrameRate(settings.TargetFps);
+        AudioChannelFix = settings.AudioChannelFix;
         PreciseTimer = settings.PreciseTimer;
         SkipLogos = settings.SkipLogos;
         God = settings.God;
@@ -81,6 +86,7 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     public PatchSettings ApplyTo(PatchSettings settings) => settings with
     {
         TargetFps = SelectedFrameRate.Value,
+        AudioChannelFix = AudioChannelFix,
         PreciseTimer = PreciseTimer,
         SkipLogos = SkipLogos,
         God = God,
@@ -101,4 +107,5 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
         OnPropertyChanged(nameof(FrameRates));
         return choice;
     }
+
 }
