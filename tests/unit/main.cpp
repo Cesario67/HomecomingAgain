@@ -21,6 +21,9 @@
 #include "graphics/CameraMath.h"
 #include "graphics/CameraTracker.h"
 #include "graphics/DepthEncoding.h"
+#include "graphics/Dxt3.h"
+#include "graphics/FlashIconArt.h"
+#include "graphics/FlashIcons.h"
 #include "graphics/Jitter.h"
 #include "graphics/UiClip.h"
 #include "graphics/SceneEnd.h"
@@ -378,12 +381,74 @@ void TestButtonIcons() {
     const auto same = [](const char* a, const char* b) { return a != nullptr && std::string(a) == b; };
     Check(same(ReplacementIconName("shv_buttonpccontrol1", 1), "shv_buttonxbox360_a_32") &&
               same(ReplacementIconName("shv_buttonpccontrol4_64", 2), "shv_buttonps3_triangle_32") &&
-              same(ReplacementIconName("pc_3flash", 1), "shv_buttonxbox360_x_32"),
+              ReplacementIconName("pc_3flash", 1) == nullptr && ReplacementIconName("pc_1flash", 2) == nullptr,
           "texture PC remplacée par l'icône Xbox 360 ou PS3");
     Check(ReplacementIconName("shv_buttonpccontrol1", 0) == nullptr && ReplacementIconName("shv_buttonactionpc", 1) == nullptr &&
               ReplacementIconName("shv_buttonpccontrol12", 1) == nullptr && ReplacementIconName("pc_1flash_64", 1) == nullptr &&
               ReplacementIconName(nullptr, 1) == nullptr,
           "autres textures et type PC laissés tels quels");
+    {
+        // Icônes animées de l'invite à marteler (graphics/FlashIcons, FlashIconArt, Dxt3).
+        namespace fi = hca::graphics::flashicons;
+        int button = -1;
+        int frame = -1;
+        Check(fi::IdentifyFlashFrame(0x62400812, button, frame) && button == 0 && frame == 0 &&
+                  fi::IdentifyFlashFrame(0xC782C21B, button, frame) && button == 3 && frame == 1 &&
+                  !fi::IdentifyFlashFrame(0x12345678, button, frame),
+              "images pc_1flash à pc_4flash reconnues à leur empreinte");
+        const std::uint8_t abc[3] = {'a', 'b', 'c'};
+        Check(fi::Fnv1a(abc, 3) == 0x1A47E90Bu && fi::Fnv1a(nullptr, 0) == 2166136261u, "FNV-1a (valeurs de référence)");
+
+        constexpr int kSize = hca::graphics::kFlashIconSize;
+        std::uint32_t source[kSize * kSize];
+        std::uint32_t decoded[kSize * kSize];
+        std::uint8_t compressed[kSize * kSize];
+        for (int y = 0; y < kSize; ++y) {
+            for (int x = 0; x < kSize; ++x) {
+                source[y * kSize + x] = x < kSize / 2 ? 0xFF2060C0u : 0x00000000u;  // bleu opaque / transparent
+            }
+        }
+        hca::graphics::EncodeDxt3(source, kSize, kSize, compressed);
+        hca::graphics::DecodeDxt3(compressed, kSize, kSize, decoded);
+        const auto closeEnough = [](std::uint32_t a, std::uint32_t b) {
+            for (int shift = 0; shift < 32; shift += 8) {
+                const int d = static_cast<int>((a >> shift) & 255) - static_cast<int>((b >> shift) & 255);
+                if (d > 10 || d < -10) {
+                    return false;
+                }
+            }
+            return true;
+        };
+        Check(hca::graphics::Dxt3Size(kSize, kSize) == 4096 && closeEnough(decoded[5 * kSize + 5], 0xFF2060C0u) &&
+                  (decoded[5 * kSize + 60] >> 24) == 0,
+              "DXT3 : couleur unie et transparence conservées");
+
+        std::uint32_t big[kSize * kSize];
+        std::uint32_t smallFrame[kSize * kSize];
+        const auto coverage = [](const std::uint32_t* pixels) {
+            int count = 0;
+            for (int i = 0; i < kSize * kSize; ++i) {
+                count += (pixels[i] >> 24) > 127 ? 1 : 0;
+            }
+            return count;
+        };
+        bool distinct = true;
+        std::uint32_t previous = 0;
+        for (int type = 1; type <= 2; ++type) {
+            for (int b = 0; b < 4; ++b) {
+                hca::graphics::RenderFlashFrame(type, b, 0, big);
+                hca::graphics::RenderFlashFrame(type, b, 1, smallFrame);
+                distinct = distinct && (big[0] >> 24) == 0 && (big[32 * kSize + 32] >> 24) == 255 &&
+                           coverage(smallFrame) < coverage(big) && coverage(smallFrame) > 400;
+                std::uint32_t hash = fi::Fnv1a(reinterpret_cast<const std::uint8_t*>(big), sizeof(big));
+                distinct = distinct && hash != previous;
+                previous = hash;
+            }
+        }
+        Check(distinct, "icônes animées : coin transparent, centre opaque, petite image plus petite, huit dessins différents");
+        hca::graphics::RenderFlashFrame(0, 0, 0, big);
+        Check(coverage(big) == 0, "type PC : rien dessiné");
+    }
     using hca::input::ExtraCommandIconName;
     Check(same(ExtraCommandIconName(0x44, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x44, 2), "shv_buttonps3stickr") &&
               ExtraCommandIconName(0x44, 0) == nullptr && ExtraCommandIconName(0x36, 1) == nullptr &&
@@ -470,6 +535,34 @@ void TestUiClip() {
     pixel(compensated, 1920, 1080, x1080, y1080);
     Check(std::fabs(x720 - x1080) < 0.01f && std::fabs(y720 - y1080) < 0.01f && std::fabs(x720 - 640.0f) > 1.0f,
           "carte : même pixel après extension de la zone (projection compensée)");
+
+    // Couteau en inspection, relevé F11 en 1920x1080 (20/10/2026) : le moteur agrandit le modèle de 1,5 dans les
+    // quatre lignes sans éloigner la caméra. Après correction, le bloc 3x3 est celui du relevé en 1280x720 pris au même
+    // moment de l'animation ([0.14559 0 0.54333] [0 1 0] [-0.96594 0 0.25882] x2), les constantes sont intactes.
+    const float knife[16] = {0.21838f, 0,       0.815f,   6.5468f, 0,        1.5f,    0,       -10.537f,
+                             -1.4489f, 0,       0.38823f, 12.045f, -1.4489f, 0,       0.38823f, 13.045f};
+    const float knife720Block[12] = {0.14559f, 0, 0.54333f, 0, 1, 0, -0.96594f, 0, 0.25882f, -0.96593f, 0, 0.25882f};
+    float fixed[16];
+    std::memcpy(fixed, knife, sizeof(fixed));
+    const bool changed = hca::graphics::uiclip::RestoreObjectPerspective(fixed, 1.5f);
+    bool matches720 = true;
+    for (int row = 0; row < 4; ++row) {
+        for (int column = 0; column < 3; ++column) {
+            matches720 = matches720 && std::fabs(fixed[row * 4 + column] - knife720Block[row * 3 + column]) < 1e-3f;
+        }
+        matches720 = matches720 && fixed[row * 4 + 3] == knife[row * 4 + 3];
+    }
+    Check(changed && matches720, "objets : matrice de l'inspection ramenée à celle du 720p (échelle 1,5 retirée, constantes intactes)");
+    // La carte (norme 1,5 mais distance 50) et le 720p (échelle 1) ne bougent pas.
+    float map[16];
+    std::memcpy(map, original, sizeof(map));
+    float knife720[16] = {0.1456f, 0, 0.5433f, 0.0468f, 0, 1, 0, -4.037f, -0.966f, 0, 0.2588f, 12.045f, -0.966f, 0, 0.2588f, 13.045f};
+    float knife720Copy[16];
+    std::memcpy(knife720Copy, knife720, sizeof(knife720));
+    Check(!hca::graphics::uiclip::RestoreObjectPerspective(map, 1.5f) && std::memcmp(map, original, sizeof(map)) == 0 &&
+              !hca::graphics::uiclip::RestoreObjectPerspective(knife720, 1.0f) &&
+              std::memcmp(knife720, knife720Copy, sizeof(knife720)) == 0,
+          "objets : carte (distance 50) et 720p (échelle 1) intacts");
 }
 
 void TestJitter() {

@@ -39,6 +39,8 @@ struct Config {
     int filmGrain = 100;
     // Zone 1280x720 fixe du jeu (carte) étendue à toute l'image (voir graphics/UiClip.h).
     bool fullScreenUiClip = true;
+    // Perspective de la vue d'inspection des objets rétablie au-delà de 720p (voir graphics/UiClip.h).
+    bool objectViewPerspective = true;
     // Jeu exécuté par D3D9On12 (Direct3D 12), préparation du DLSS, expérimental (voir graphics/D3D9On12.h).
     bool d3d9On12 = false;
 
@@ -105,6 +107,8 @@ struct Config {
     bool menuPad = false;
     // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
     int buttonIcons = 0;
+    // Icônes animées de l'invite à marteler (QTE) aux couleurs de la manette (voir graphics/FlashIcons.h).
+    bool animatedIcons = true;
     // Manette PlayStation (DualShock 4, DualSense) présentée comme une manette Xbox 360 quand aucune manette XInput
     // n'est branchée (input/SonyPad.h).
     bool playStationPad = true;
