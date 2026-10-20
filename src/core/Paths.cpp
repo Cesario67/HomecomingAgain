@@ -26,14 +26,17 @@ std::wstring ModulePath(HMODULE module) {
     }
 }
 
+}  // namespace
+
 bool EnsureDirectory(const std::wstring& path) {
     if (CreateDirectoryW(path.c_str(), nullptr)) {
         return true;
     }
-    return GetLastError() == ERROR_ALREADY_EXISTS;
+    // ERROR_ALREADY_EXISTS vaut aussi pour un fichier du même nom : c'était le cas du launcher Linux 0.9.4, copié
+    // dans Bin sous le nom HomecomingAgain (sans extension), qui empêchait le mod de démarrer.
+    const DWORD attributes = GetFileAttributesW(path.c_str());
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 }
-
-}  // namespace
 
 bool InitPaths() {
     g_paths.gameExe = ModulePath(nullptr);

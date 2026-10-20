@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <iterator>
+#include <map>
 #include <string>
 
 #include "audio/AudioProbe.h"
@@ -14,6 +15,7 @@
 #include "compat/SkipMovies.h"
 #include "compat/StartupLogos.h"
 #include "dlss/SharedFrames.h"
+#include "core/Paths.h"
 #include "core/Strings.h"
 #include "graphics/BorderlessWindow.h"
 #include "graphics/CameraMath.h"
@@ -29,11 +31,13 @@
 #include "input/ButtonIcons.h"
 #include "input/ControllerNames.h"
 #include "input/MenuBridge.h"
+#include "input/SonyPad.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
 #include "graphics/ShaderConstantTable.h"
 #include "graphics/ShadowResolution.h"
 #include "patches/CameraTuning.h"
+#include "patches/Cheats.h"
 #include "patches/FrameRateCap.h"
 
 namespace {
@@ -54,6 +58,27 @@ void TestStrings() {
     Check(hca::WideToUtf8(L"é") == "\xC3\xA9", "conversion UTF-8 d'un caractère accentué");
     const std::wstring stamp = hca::FileTimestamp();
     Check(stamp.size() == 19 && stamp[8] == L'-' && stamp[15] == L'-', "horodatage AAAAMMJJ-HHMMSS-mmm");
+}
+
+// Le launcher Linux 0.9.4 se copiait dans Bin sous le nom HomecomingAgain : un fichier à la place du dossier du mod.
+void TestEnsureDirectory() {
+    std::printf("Dossiers du mod\n");
+    wchar_t temp[MAX_PATH]{};
+    GetTempPathW(MAX_PATH, temp);
+    const std::wstring base = std::wstring(temp) + L"hca-tests-" + hca::FileTimestamp();
+    const std::wstring folder = base + L"-dossier";
+    const std::wstring file = base + L"-fichier";
+
+    Check(hca::EnsureDirectory(folder), "dossier créé");
+    Check(hca::EnsureDirectory(folder), "dossier déjà présent accepté");
+    const HANDLE handle = CreateFileW(file.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (handle != INVALID_HANDLE_VALUE) {
+        CloseHandle(handle);
+    }
+    Check(!hca::EnsureDirectory(file), "fichier du même nom refusé");
+
+    DeleteFileW(file.c_str());
+    RemoveDirectoryW(folder.c_str());
 }
 
 void TestBorderless() {
@@ -342,8 +367,11 @@ void TestControllerNames() {
 
 void TestButtonIcons() {
     using hca::input::IconTypeFor;
-    Check(IconTypeFor(0, true) == 1 && IconTypeFor(0, false) == 0, "icônes auto : Xbox 360 avec manette, PC sans");
-    Check(IconTypeFor(1, true) == 0 && IconTypeFor(2, false) == 1 && IconTypeFor(3, true) == 2 && IconTypeFor(9, true) == 0,
+    Check(IconTypeFor(0, true, false) == 1 && IconTypeFor(0, false, false) == 0, "icônes auto : Xbox 360 avec manette, PC sans");
+    Check(IconTypeFor(0, true, true) == 2, "icônes auto : PS3 avec une manette PlayStation");
+    Check(IconTypeFor(2, true, true) == 1, "icônes forcées Xbox 360 même avec une manette PlayStation");
+    Check(IconTypeFor(1, true, false) == 0 && IconTypeFor(2, false, false) == 1 && IconTypeFor(3, true, false) == 2 &&
+              IconTypeFor(9, true, false) == 0,
           "icônes forcées : PC, Xbox 360, PS3, valeur inconnue = PC");
     using hca::input::FaceIconName;
     Check(std::string(FaceIconName(1, 0)) == "shv_buttonxbox360_a_32" && std::string(FaceIconName(2, 3)) == "shv_buttonps3_triangle_32" &&
@@ -450,6 +478,30 @@ void TestDepthEncoding() {
     Check(!ParseEncoding(98, zero, 1, untouched), "facteur nul refusé");
 }
 
+void TestUiClipItem() {
+    using hca::graphics::uiclip::LooksStraightDown;
+    // Carte (relevés du 16/10/2026) : caméra verticale, compensée.
+    const float map[16] = {0.84375f, 0, 0, 25, 0, 1.1325e-07f, 1.5f, -25, 0, -1.5f, 1.1325e-07f, 49.001f, 0, -1.5f, 1.1325e-07f, 50};
+    const float mapTurned[16] = {7.8227e-08f, 4.2468e-08f, 0.5625f, 51.832f, -1, 1.05e-14f, 1.3907e-07f, -55.303f,
+                                 -0.0f, -1, 7.5499e-08f, 49.062f, -0.0f, -1, 7.5498e-08f, 50.062f};
+    // Couteau examiné (relevé F11 du 18/10/2026) : caméra de biais, pas compensée.
+    const float knife[16] = {0.65572f, 0.53026f, -0.02779f, 5.0617f, -0.0f, 0.078504f, 1.4979f, -6.6194f,
+                             0.94399f, -1.1641f, 0.06101f, 15.123f, 0.94398f, -1.1641f, 0.061009f, 16.123f};
+    Check(LooksStraightDown(map) && LooksStraightDown(mapTurned), "carte : caméra verticale reconnue");
+    Check(!LooksStraightDown(knife), "objet examiné : caméra de biais, projection non compensée");
+    // Le point que le jeu croit au centre de l'image 1920x1080 (x/w = 0,5, y/w = -0,5 dans sa zone 1280x720) revient
+    // au centre après recentrage.
+    float aimed[16] = {1, 0, 0, 0.5f, 0, 1, 0, -0.5f, 0, 0, 1, 0, 0.3f, 0, 0, 1};
+    hca::graphics::uiclip::RecenterProjection(aimed, 1280.0f / 1920.0f, 720.0f / 1080.0f);
+    const float atOrigin[4] = {aimed[3], aimed[7], aimed[11], aimed[15]};
+    Check(std::fabs(atOrigin[0] / atOrigin[3]) < 1e-5f && std::fabs(atOrigin[1] / atOrigin[3]) < 1e-5f,
+          "objet examiné : point visé ramené au centre de l'image");
+    Check(aimed[0] == 1.0f && aimed[1] == 0.0f && aimed[5] == 1.0f && aimed[4] == 0.0f,
+          "objet examiné : objet déplacé, orientation et perspective inchangées");
+    const float upward[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50};
+    Check(!LooksStraightDown(upward), "caméra vers le haut : pas la carte");
+}
+
 void TestUiClip() {
     using hca::graphics::uiclip::ExpandLegacyRect;
     long w = 1280;
@@ -485,20 +537,22 @@ void TestUiClip() {
           "carte : même pixel après extension de la zone (projection compensée)");
 
     // Couteau en inspection, relevé F11 en 1920x1080 (20/10/2026) : le moteur agrandit le modèle de 1,5 dans les
-    // quatre lignes sans éloigner la caméra. Après correction, la norme de la ligne w vaut 1, les lignes x et y et les
-    // constantes sont intactes.
+    // quatre lignes sans éloigner la caméra. Après correction, le bloc 3x3 est celui du relevé en 1280x720 pris au même
+    // moment de l'animation ([0.14559 0 0.54333] [0 1 0] [-0.96594 0 0.25882] x2), les constantes sont intactes.
     const float knife[16] = {0.21838f, 0,       0.815f,   6.5468f, 0,        1.5f,    0,       -10.537f,
                              -1.4489f, 0,       0.38823f, 12.045f, -1.4489f, 0,       0.38823f, 13.045f};
+    const float knife720Block[12] = {0.14559f, 0, 0.54333f, 0, 1, 0, -0.96594f, 0, 0.25882f, -0.96593f, 0, 0.25882f};
     float fixed[16];
     std::memcpy(fixed, knife, sizeof(fixed));
     const bool changed = hca::graphics::uiclip::RestoreObjectPerspective(fixed, 1.5f);
-    const float wNorm = std::sqrt(fixed[12] * fixed[12] + fixed[13] * fixed[13] + fixed[14] * fixed[14]);
-    bool keptRows = true;
-    for (int i : {0, 1, 2, 3, 4, 5, 6, 7, 11, 15}) {
-        keptRows = keptRows && fixed[i] == knife[i];
+    bool matches720 = true;
+    for (int row = 0; row < 4; ++row) {
+        for (int column = 0; column < 3; ++column) {
+            matches720 = matches720 && std::fabs(fixed[row * 4 + column] - knife720Block[row * 3 + column]) < 1e-3f;
+        }
+        matches720 = matches720 && fixed[row * 4 + 3] == knife[row * 4 + 3];
     }
-    Check(changed && std::fabs(wNorm - 1.0f) < 1e-3f && keptRows && std::fabs(fixed[12] - knife[12] / 1.5f) < 1e-5f,
-          "objets : perspective de l'inspection rétablie (échelle 1,5 retirée de z et w, x, y et constantes intacts)");
+    Check(changed && matches720, "objets : matrice de l'inspection ramenée à celle du 720p (échelle 1,5 retirée, constantes intactes)");
     // La carte (norme 1,5 mais distance 50) et le 720p (échelle 1) ne bougent pas.
     float map[16];
     std::memcpy(map, original, sizeof(map));
@@ -607,7 +661,87 @@ void TestCameraTuning() {
           "marche avant réduite tant qu'il ne regarde pas la direction, nulle au-delà d'un quart de tour");
 }
 
+// Fausse mémoire du moteur pour la chaîne [[[0x111D2460]+0x38]+8] (patches/Cheats.h).
+struct FakeMemory {
+    std::map<std::uintptr_t, std::uintptr_t> cells;
+    bool operator()(std::uintptr_t address, std::uintptr_t& value) const {
+        const auto found = cells.find(address);
+        if (found == cells.end()) {
+            return false;
+        }
+        value = found->second;
+        return true;
+    }
+};
+
+void TestCheatPointers() {
+    using hca::patches::cheats::FollowPointers;
+    FakeMemory memory;
+    memory.cells = {{0x111D2460, 0x2000}, {0x2038, 0x3000}, {0x3008, 0x4000}};
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0x4000, "triches : chaîne de pointeurs complète");
+    Check(FollowPointers(0x111D2460, {}, memory) == 0x2000, "triches : racine seule");
+
+    // Un pointeur nul ne doit pas être suivi, même si l'adresse 0 + offset se lit.
+    memory.cells[0x2038] = 0;
+    memory.cells[0x0008] = 0x5000;
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0, "triches : pointeur nul au milieu");
+
+    memory.cells.erase(0x2038);
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0, "triches : lecture impossible au milieu");
+
+    memory.cells = {{0x111D2460, 0}};
+    Check(FollowPointers(0x111D2460, {0x38, 0x08}, memory) == 0, "triches : moteur pas encore initialisé");
+}
+
 }  // namespace
+
+void TestSonyPad() {
+    using hca::input::SonyToXInput;
+    const hca::input::AxisRanges ranges = {0, 65535, 0, 65535, 0, 65535, 0, 65535, 0, 65535, 0, 65535};
+    JOYINFOEX raw{};
+    raw.dwXpos = raw.dwYpos = raw.dwZpos = raw.dwRpos = 32768;
+    raw.dwPOV = 0xFFFF;
+    XINPUT_GAMEPAD pad = SonyToXInput(raw, ranges);
+    Check(pad.sThumbLX == 0 && pad.sThumbRX == 0 && pad.wButtons == 0 && pad.bLeftTrigger == 0,
+          "PlayStation : sticks au centre, rien d'appuyé");
+
+    // Stick gauche en haut à gauche, stick droit en bas à droite (WinMM : haut = 0).
+    raw.dwXpos = 0;
+    raw.dwYpos = 0;
+    raw.dwZpos = 65535;
+    raw.dwRpos = 65535;
+    pad = SonyToXInput(raw, ranges);
+    Check(pad.sThumbLX == -32768 && pad.sThumbLY == 32767 && pad.sThumbRX == 32767 && pad.sThumbRY == -32768,
+          "PlayStation : sens des sticks (vertical inversé)");
+
+    // L2 sur V, R2 sur U ; plages non standard ramenées sur 0 à 255.
+    const hca::input::AxisRanges narrow = {0, 255, 0, 255, 0, 255, 0, 255, 0, 255, 0, 255};
+    raw = JOYINFOEX{};
+    raw.dwVpos = 255;
+    raw.dwUpos = 0;
+    raw.dwPOV = 0xFFFF;
+    pad = SonyToXInput(raw, narrow);
+    Check(pad.bLeftTrigger == 255 && pad.bRightTrigger == 0, "PlayStation : L2 sur V, R2 sur U");
+
+    // Croix = A, Rond = B, Carré = X, Triangle = Y, Create = Back, Options = Start.
+    raw.dwButtons = (1u << 1) | (1u << 2) | (1u << 0) | (1u << 3) | (1u << 8) | (1u << 9);
+    pad = SonyToXInput(raw, narrow);
+    Check(pad.wButtons == (XINPUT_GAMEPAD_A | XINPUT_GAMEPAD_B | XINPUT_GAMEPAD_X | XINPUT_GAMEPAD_Y |
+                           XINPUT_GAMEPAD_BACK | XINPUT_GAMEPAD_START),
+          "PlayStation : boutons de face, Create et Options");
+    raw.dwButtons = 1u << 1;
+    Check(SonyToXInput(raw, narrow).wButtons == XINPUT_GAMEPAD_A, "PlayStation : Croix seule = A seul");
+
+    // Croix directionnelle : haut, diagonale bas-gauche, centre.
+    raw.dwButtons = 0;
+    raw.dwPOV = 0;
+    Check(SonyToXInput(raw, narrow).wButtons == XINPUT_GAMEPAD_DPAD_UP, "PlayStation : croix vers le haut");
+    raw.dwPOV = 22500;
+    Check(SonyToXInput(raw, narrow).wButtons == (XINPUT_GAMEPAD_DPAD_DOWN | XINPUT_GAMEPAD_DPAD_LEFT),
+          "PlayStation : diagonale bas-gauche");
+    raw.dwPOV = 0xFFFF;
+    Check(SonyToXInput(raw, narrow).wButtons == 0, "PlayStation : croix au repos");
+}
 
 void TestHangClock() {
     using hca::crash::HangElapsed;
@@ -621,6 +755,7 @@ void TestHangClock() {
 int main() {
     TestHangClock();
     TestStrings();
+    TestEnsureDirectory();
     TestBorderless();
     TestFramePeriod();
     TestShaderConstantTable();
@@ -641,7 +776,10 @@ int main() {
     TestDepthEncoding();
     TestJitter();
     TestUiClip();
+    TestUiClipItem();
     TestCameraTuning();
+    TestSonyPad();
+    TestCheatPointers();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

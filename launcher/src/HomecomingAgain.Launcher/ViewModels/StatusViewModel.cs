@@ -27,7 +27,7 @@ public sealed partial class StatusViewModel(MainWindowViewModel main, string pac
     public string InstallButtonText => IsPackage ? Loc.Get("InstallButtonVersion", PackageVersion) : Loc.Get("InstallButton");
 
     public string SteamLaunchOption =>
-        main.Paths is { } paths ? $"\"{Path.Combine(paths.BinDirectory, "HomecomingAgain.exe")}\" %command%" : string.Empty;
+        main.Paths is { } paths ? GameProcess.SteamLaunchOption(paths, OperatingSystem.IsWindows()) : string.Empty;
 
     /// <summary>Après un changement de langue : le texte du bouton d'installation est recalculé.</summary>
     public void NotifyLanguageChanged() => OnPropertyChanged(nameof(InstallButtonText));
@@ -74,7 +74,7 @@ public sealed partial class StatusViewModel(MainWindowViewModel main, string pac
     [RelayCommand]
     private void OpenLatestLog() => main.Run(() =>
     {
-        string? latest = DiagnosticReport.Latest(main.Paths!.LogsDirectory, "*.log");
+        string? latest = DiagnosticReport.LatestModLog(main.Paths!);
         if (latest is null)
         {
             return Loc.Get("NoLogYet");

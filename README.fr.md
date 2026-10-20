@@ -41,6 +41,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Grain de pellicule réglable** : désactivé, réduit de moitié ou comme à l'origine.
 - **Carte entière au-delà du 720p** : le jeu limitait l'écran de la carte à une zone fixe de 1280x720 ; le mod l'étend
   à toute l'image (1080p, 1440p, 4K...) en gardant la carte à sa taille et à sa place d'origine.
+- **Objets examinés au-delà du 720p** : l'objet qu'on vient de ramasser (couteau, trousse...) était coupé dans le coin
+  de l'écran, ou étiré. Il est maintenant centré, entier et bien proportionné, comme en 720p.
 - **DLSS (DLAA, expérimental)** : anticrénelage par l'IA de NVIDIA, plus stable et plus net que le SMAA, à la
   résolution d'origine. Cartes NVIDIA RTX uniquement ; l'option du launcher installe aussi DXVK (Direct3D 9 sur
   Vulkan). Le jeu étant 32 bits et le DLSS 64 bits, un petit programme 64 bits (`HomecomingAgain.Dlss.exe`) reçoit les
@@ -56,10 +58,19 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Vrais noms des boutons** sur l'écran des commandes (LB, LT, Croix haut...) au lieu de « Button 6 », et icône
   du stick droit à côté de « Zoom » sur la carte.
 - **Plus de pauses intempestives** : A et B sont laissés au jeu, qui gère lui-même la manette dans ses menus.
+- **Manette PlayStation sans Steam Input** (DualShock 4, DualSense, en test) : le jeu ne connaît que les manettes
+  Xbox ; sans manette Xbox branchée, la manette PlayStation lui est présentée comme une manette Xbox, avec les icônes
+  PlayStation en mode auto (`[Input] PlayStationPad`, activé par défaut).
+- **Caméra orbitale** (expérimental) : avec le correctif de caméra, le stick droit fait tourner la caméra seule autour
+  du personnage. À cocher dans le launcher (onglet Graphismes), avec le choix de la direction en marche (vers la
+  caméra ou vers le stick gauche).
 
 ### Confort
 
 - **Passer les cinématiques** : la touche Suppr passe les cinématiques en vidéo.
+- **Triches** (désactivées par défaut) : mode dieu (le joueur ne perd plus de vie) et munitions illimitées, à
+  cocher dans le launcher (onglet Performances et stabilité) ou dans la section `[Cheats]` de `HomecomingAgain.ini`
+  (`God=1`, `UnlimitedAmmo=1`). Vérifiées en jeu.
 - **Logos de démarrage accélérés** : l'écran titre arrive au bout de 5 s environ au lieu de 23. Les logos (Konami,
   Double Helix, mentions légales) défilent en accéléré ; le jeu a déjà fini de charger pendant qu'ils s'affichent.
 - **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par
@@ -69,6 +80,27 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 
 Lancer `HomecomingAgain.exe`, choisir le dossier du jeu, puis **Installer**. Le launcher copie le mod dans `Bin`,
 applique le patch 4 Go et garde une copie des fichiers modifiés. **Désinstaller** remet tout comme avant.
+
+### Linux et Steam Deck (Proton) : expérimental, pas encore testé
+
+Le jeu tourne dans Proton, et le mod (une DLL Windows) avec lui. Le launcher existe aussi en version Linux :
+1. Télécharger `HomecomingAgain` (version Linux), le rendre exécutable (`chmod +x HomecomingAgain`) et le lancer. Il
+   trouve le jeu dans les bibliothèques Steam habituelles (`~/.local/share/Steam`, `~/.steam/steam`, Flatpak).
+2. **Installer**, puis copier la ligne de l'onglet Installation dans les options de lancement Steam du jeu. Elle
+   commence par `WINEDLLOVERRIDES="version=n,b"` : sans cela, Wine utilise sa propre `version.dll` et le mod n'est
+   pas chargé.
+
+**Le mod ne marche pas après une installation avec le premier launcher Linux 0.9.4 ?** Ce launcher se copiait dans
+`Bin` sous le nom `HomecomingAgain`, celui du dossier du mod, ce qui empêchait le mod de démarrer. Réinstaller avec le
+launcher actuel (il retire ce fichier et se copie sous le nom `HomecomingAgain-launcher`), puis recopier la nouvelle
+ligne de lancement. Ou à la main : renommer `Bin/HomecomingAgain` en `HomecomingAgain-launcher` et mettre à jour les
+options de lancement. Quand le mod tourne, son journal est dans `Bin/HomecomingAgain/logs`.
+
+Sans le launcher Linux : copier `version.dll` et `HomecomingAgain.ini` dans `Bin`, et mettre
+`WINEDLLOVERRIDES="version=n,b" %command%` dans les options de lancement.
+
+L'option DLSS est grisée sous Linux : Proton a déjà son propre DXVK, et le DLSS y demande des réglages (dxvk-nvapi,
+substitutions de DLL) pas encore testés.
 
 ## Réglages
 

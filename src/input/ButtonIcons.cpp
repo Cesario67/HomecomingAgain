@@ -13,6 +13,7 @@
 #include "input/ControllerNames.h"
 #include "input/EngineUiState.h"
 #include "input/MenuBridge.h"
+#include "input/SonyPad.h"
 
 namespace hca::input {
 
@@ -61,7 +62,7 @@ bool g_namesApplied = false;  // noms de l'écran des commandes appliqués au mo
 
 // Remplaçante : mêmes conventions que l'original (aucun argument, résultat dans eax, ecx inutilisé).
 int ControllerType() {
-    return IconTypeFor(GetConfig().buttonIcons, PadConnected());
+    return IconTypeFor(GetConfig().buttonIcons, PadConnected(), SonyPadInUse());
 }
 
 // Lecture protégée : la structure du texte n'est connue que par le désassemblage.
@@ -293,7 +294,7 @@ void RefreshButtonIcons() noexcept {
     if (!g_textureHooked) {
         return;
     }
-    const int type = IconTypeFor(GetConfig().buttonIcons, PadConnected());
+    const int type = IconTypeFor(GetConfig().buttonIcons, PadConnected(), SonyPadInUse());
     if (g_iconType.exchange(type, std::memory_order_relaxed) != type || !g_namesApplied) {
         g_namesApplied = true;
         ApplyControllerNames(type);
@@ -304,14 +305,14 @@ void RefreshButtonIcons() noexcept {
     }
 }
 
-int IconTypeFor(int setting, bool padConnected) noexcept {
+int IconTypeFor(int setting, bool padConnected, bool playStationPad) noexcept {
     switch (setting) {
         case kSettingXbox:
             return 1;
         case kSettingPs3:
             return 2;
         case kSettingAuto:
-            return padConnected ? 1 : 0;
+            return !padConnected ? 0 : playStationPad ? 2 : 1;
         case kSettingPc:
         default:
             return 0;
@@ -348,7 +349,7 @@ void InstallButtonIcons(HMODULE engine) {
     log::Info("Icônes de boutons : textures A, B, X, Y {}, icônes dans les textes {}, icône R3 (zoom de la carte) {}",
               g_textureHooked ? "remplacées à l'affichage" : "non modifiées (code différent)",
               inline_ ? "remplacées" : "non modifiées (code différent)", zoom ? "ajoutée" : "non ajoutée");
-    log::Info("Icônes de boutons : {} ({})", setting == kSettingAuto ? "auto, Xbox 360 si une manette est branchée"
+    log::Info("Icônes de boutons : {} ({})", setting == kSettingAuto ? "auto, selon la manette branchée"
                                              : setting == kSettingXbox ? "Xbox 360"
                                                                        : "PS3",
               ok ? "appliqué" : "échec");

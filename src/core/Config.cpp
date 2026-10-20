@@ -104,6 +104,7 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.menuPad = ReadBool(iniPath, L"Input", L"MenuPad", defaults.menuPad);
     config.buttonIcons = ReadInt(iniPath, L"Input", L"ButtonIcons", defaults.buttonIcons, 0, 3);
     config.animatedIcons = ReadBool(iniPath, L"Input", L"AnimatedIcons", defaults.animatedIcons);
+    config.playStationPad = ReadBool(iniPath, L"Input", L"PlayStationPad", defaults.playStationPad);
 
     config.cameraFix = ReadBool(iniPath, L"Camera", L"CameraFix", defaults.cameraFix);
     config.cameraHorizontalSpeed =
@@ -121,6 +122,8 @@ bool LoadConfig(const std::wstring& iniPath) {
         GetPrivateProfileStringW(L"Camera", L"OrbitMove", L"Camera", mode, 32, iniPath.c_str());
         config.cameraOrbitMove = patches::camera::ParseOrbitMove(mode);
     }
+    config.cheatGod = ReadBool(iniPath, L"Cheats", L"God", defaults.cheatGod);
+    config.cheatUnlimitedAmmo = ReadBool(iniPath, L"Cheats", L"UnlimitedAmmo", defaults.cheatUnlimitedAmmo);
 
 
     config.logKeepCount = ReadInt(iniPath, L"Debug", L"LogKeepCount", defaults.logKeepCount, 1, 500);

@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace HomecomingAgain.Launcher.Core;
 
 /// <summary>État de l'installation du mod dans un dossier de jeu.</summary>
@@ -30,15 +28,22 @@ public static class ModInstaller
     public static bool IsPackageDirectory(string directory) =>
         ModVersionOf(Path.Combine(directory, GamePaths.ModDllName)) is not null;
 
-    /// <summary>Version de notre version.dll (null si absente ou si c'est une autre DLL, celle de Windows par exemple).</summary>
+    /// <summary>
+    /// Version de notre version.dll (null si absente ou si c'est une autre DLL, celle de Windows par exemple). Lue par
+    /// <see cref="PeVersionInfo"/> et non FileVersionInfo, qui ne lit pas les DLL natives sous Linux.
+    /// </summary>
     public static string? ModVersionOf(string dllPath)
     {
         if (!File.Exists(dllPath))
         {
             return null;
         }
-        FileVersionInfo info = FileVersionInfo.GetVersionInfo(dllPath);
-        return info.FileDescription?.Contains("Homecoming Again", StringComparison.Ordinal) == true ? info.FileVersion : null;
+        IReadOnlyDictionary<string, string> strings = PeVersionInfo.ReadStrings(dllPath);
+        return strings.TryGetValue("FileDescription", out string? description) &&
+               description.Contains("Homecoming Again", StringComparison.Ordinal) &&
+               strings.TryGetValue("FileVersion", out string? version)
+            ? version
+            : null;
     }
 
     /// <summary>Installe ou met à jour la DLL, les réglages absents, les licences et le launcher. Renvoie le compte rendu.</summary>
@@ -94,16 +99,34 @@ public static class ModInstaller
             }
         }
 
-        // Le launcher est aussi copié dans Bin, pour pouvoir servir d'option de lancement Steam.
+        report.AddRange(CopyLauncher(paths, launcherExecutable, OperatingSystem.IsWindows()));
+        return report;
+    }
+
+    /// <summary>
+    /// Copie le launcher dans Bin, pour qu'il puisse servir d'option de lancement Steam, et retire l'ancienne copie
+    /// Linux qui portait le nom du dossier du mod. Renvoie le compte rendu.
+    /// </summary>
+    public static IReadOnlyList<string> CopyLauncher(GamePaths paths, string? launcherExecutable, bool windows)
+    {
+        List<string> report = new();
         if (launcherExecutable is not null && File.Exists(launcherExecutable))
         {
-            string target = Path.Combine(paths.BinDirectory, Path.GetFileName(launcherExecutable));
+            string target = paths.LauncherCopy(windows);
             if (!string.Equals(Path.GetFullPath(launcherExecutable), Path.GetFullPath(target),
                                StringComparison.OrdinalIgnoreCase))
             {
                 File.Copy(launcherExecutable, target, overwrite: true);
                 report.Add(Loc.Get("InstallLauncherCopied"));
             }
+        }
+
+        // Le launcher Linux 0.9.4 se copiait sous le nom du dossier du mod, ce qui empêchait le mod de démarrer. Retiré
+        // après la copie : c'est peut-être lui qui tourne (lancé par Steam), et il sert alors de source.
+        if (File.Exists(paths.ModDataDirectory))
+        {
+            File.Delete(paths.ModDataDirectory);
+            report.Add(Loc.Get("InstallOldLauncherRemoved"));
         }
         return report;
     }

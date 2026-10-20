@@ -50,6 +50,7 @@
             <TextBlock Classes="hint" Text="{Binding L[SmaaHint]}" />
             <CheckBox Content="{Binding L[Dlss]}" IsChecked="{Binding Dlss}" IsEnabled="{Binding DlssAvailable}" />
             <TextBlock Classes="hint" Text="{Binding L[DlssHint]}" />
+            <TextBlock Classes="warning" Text="{Binding L[DlssLinux]}" IsVisible="{Binding DlssUnsupportedOnLinux}" />
             <Grid ColumnDefinitions="220,*">
               <TextBlock Text="{Binding L[Anisotropy]}" VerticalAlignment="Center" />
               <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
@@ -104,8 +105,17 @@
               </ItemsControl>
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[ButtonIconsHint]}" />
+            <CheckBox Content="{Binding L[PlayStationPad]}" IsChecked="{Binding PlayStationPad}" />
+            <TextBlock Classes="hint" Text="{Binding L[PlayStationPadHint]}" />
             <CheckBox Content="{Binding L[CameraFix]}" IsChecked="{Binding CameraFix}" />
             <TextBlock Classes="hint" Text="{Binding L[CameraFixHint]}" />
+            <CheckBox Content="{Binding L[CameraOrbit]}" IsChecked="{Binding CameraOrbit}" IsEnabled="{Binding CameraFix}" />
+            <Grid ColumnDefinitions="220,*" IsEnabled="{Binding CameraOrbit}" IsVisible="{Binding CameraFix}">
+              <TextBlock Text="{Binding L[OrbitMove]}" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding OrbitMoves}" SelectedItem="{Binding SelectedOrbitMove}" />
+            </Grid>
+            <TextBlock Classes="hint" Text="{Binding L[CameraOrbitHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecGameQuality]}" />
             <CheckBox Content="{Binding L[HighQualityShaders]}" IsChecked="{Binding HighQualityShaders}" />
@@ -133,6 +143,11 @@
             <TextBlock Classes="hint" Text="{Binding L[PreciseTimerHint]}" />
             <CheckBox Content="{Binding L[SkipLogos]}" IsChecked="{Binding SkipLogos}" />
             <TextBlock Classes="hint" Text="{Binding L[SkipLogosHint]}" />
+
+            <TextBlock Classes="section" Text="{Binding L[SecCheats]}" />
+            <CheckBox Content="{Binding L[God]}" IsChecked="{Binding God}" />
+            <CheckBox Content="{Binding L[UnlimitedAmmo]}" IsChecked="{Binding UnlimitedAmmo}" />
+            <TextBlock Classes="hint" Text="{Binding L[CheatsHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecCompatibility]}" />
             <CheckBox Content="{Binding L[WindowThreadLock]}" IsChecked="{Binding WindowThreadLock}" />

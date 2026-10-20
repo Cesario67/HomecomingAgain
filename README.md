@@ -39,6 +39,8 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **Adjustable film grain**: off, halved or as in the original.
 - **Map no longer cut off above 720p**: the game clipped the map screen to a fixed 1280x720 area; the mod extends it to
   the whole picture (1080p, 1440p, 4K...) while keeping the map at its original size and place.
+- **Examined items above 720p**: the item just picked up (knife, first aid kit...) was cut off in a corner of the
+  screen, or stretched. It is now centred, whole and correctly proportioned, as in 720p.
 - **DLSS (DLAA, experimental)**: NVIDIA AI anti-aliasing, more stable and sharper than SMAA, at native resolution.
   NVIDIA RTX cards only; the launcher option also installs DXVK (Direct3D 9 on Vulkan). As the game is 32-bit and DLSS
   is 64-bit, a small 64-bit program (`HomecomingAgain.Dlss.exe`) receives the game's images, applies DLSS and hands
@@ -53,10 +55,18 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **Real button names** on the controls screen (LB, LT, D-pad up...) instead of "Button 6", and the right stick icon
   next to "Zoom" on the map.
 - **No more accidental pauses**: A and B are left to the game, which handles the controller in its own menus.
+- **PlayStation controller without Steam Input** (DualShock 4, DualSense, being tested): the game only knows Xbox
+  controllers; with no Xbox controller plugged in, the PlayStation controller is presented to it as an Xbox one, with
+  PlayStation icons in auto mode (`[Input] PlayStationPad`, on by default).
+- **Orbit camera** (experimental): with the camera fix, the right stick turns the camera alone around the character.
+  Enabled in the launcher (Graphics tab), with a choice of walking direction (towards the camera or the left stick).
 
 ### Comfort
 
 - **Skip cutscenes**: the Delete key skips video cutscenes.
+- **Cheats** (off by default): god mode (the player loses no health) and unlimited ammo, as checkboxes in the
+  launcher (Performance and stability tab) or in the `[Cheats]` section of `HomecomingAgain.ini` (`God=1`,
+  `UnlimitedAmmo=1`). Verified in game.
 - **Faster startup logos**: the title screen appears after about 5 s instead of 23. The logos (Konami, Double Helix,
   legal screen) play fast-forwarded; the game has already finished loading while they show.
 - **Launcher** (`HomecomingAgain.exe`): all settings, install and uninstall, in English (default) and French.
@@ -65,6 +75,26 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 
 Run `HomecomingAgain.exe`, select the game folder, then **Install**. The launcher copies the mod into `Bin`, applies
 the 4 GB patch and keeps a copy of every file it changes. **Uninstall** restores everything.
+
+### Linux and Steam Deck (Proton): experimental, not tested yet
+
+The game runs in Proton, and the mod (a Windows DLL) with it. The launcher also comes as a Linux build:
+1. Download `HomecomingAgain` (Linux build), make it executable (`chmod +x HomecomingAgain`) and run it. It finds the
+   game in the usual Steam libraries (`~/.local/share/Steam`, `~/.steam/steam`, Flatpak).
+2. **Install**, then copy the line from the Installation tab into the game's Steam launch options. It starts with
+   `WINEDLLOVERRIDES="version=n,b"`: without it, Wine uses its own `version.dll` and the mod is not loaded.
+
+**Mod not working after installing with the first 0.9.4 Linux launcher?** That launcher copied itself into `Bin` as
+`HomecomingAgain`, the name of the mod's own folder, which prevented the mod from starting. Install again with the
+current launcher (it removes that file and copies itself as `HomecomingAgain-launcher`), then copy the new launch
+line. Or by hand: rename `Bin/HomecomingAgain` to `HomecomingAgain-launcher` and update the launch options. When the
+mod is running, `Bin/HomecomingAgain/logs` holds its log.
+
+Without the Linux launcher: copy `version.dll` and `HomecomingAgain.ini` into `Bin`, and set the launch options to
+`WINEDLLOVERRIDES="version=n,b" %command%`.
+
+The DLSS option is greyed out on Linux: Proton already ships its own DXVK, and DLSS there needs settings
+(dxvk-nvapi, DLL overrides) that have not been tested.
 
 ## Settings
 
