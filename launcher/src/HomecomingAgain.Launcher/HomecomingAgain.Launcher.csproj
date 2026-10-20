@@ -11,7 +11,7 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <AssemblyName>HomecomingAgain</AssemblyName>
     <RootNamespace>HomecomingAgain.Launcher</RootNamespace>
-    <Version>0.9.6</Version>
+    <Version>0.9.7</Version>
     <Product>Homecoming Again</Product>
     <Description>Homecoming Again : installation, réglages et lancement de Silent Hill: Homecoming</Description>
     <Copyright>Copyright (C) 2026 Cesar Schaal. Licence GPL-3.0-or-later.</Copyright>

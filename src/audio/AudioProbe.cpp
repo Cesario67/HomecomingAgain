@@ -100,6 +100,8 @@ struct VoiceMeter {
     std::uint64_t frames = 0;
 };
 VoiceMeter g_meters[4];
+double g_preEnergy[6]{};  // voix 5.1 avant conversion en stéréo
+std::uint64_t g_preFrames = 0;
 ULONGLONG g_nextEnergyLog = 0;
 int g_energyLogs = 0;
 
@@ -202,6 +204,13 @@ HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer
             auto* samples = const_cast<float*>(reinterpret_cast<const float*>(b->audioData));
             const std::uint32_t frames = b->audioBytes / (6 * sizeof(float));
             if (g_surroundAsStereo) {
+                // Mesure avant conversion : les 6 canaux tels que le moteur les écrit (journalisée avec les niveaux).
+                for (std::uint32_t i = 0; i < frames; ++i) {
+                    for (int c = 0; c < 6; ++c) {
+                        g_preEnergy[c] += static_cast<double>(samples[i * 6 + c]) * samples[i * 6 + c];
+                    }
+                }
+                g_preFrames += frames;
                 DownmixSurroundToStereo(samples, frames, true);
                 std::memcpy(&converted, buffer, sizeof(converted));
                 converted.audioBytes = frames * 2 * sizeof(float);
@@ -210,7 +219,8 @@ HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer
                 RemapSurroundFrames(samples, frames, GetConfig().audioChannelOrder);
             }
         }
-    }    if (buffer != nullptr && g_energyLogs < 12) {
+    }
+    if (buffer != nullptr && g_energyLogs < 60) {
         for (VoiceMeter& meter : g_meters) {
             if (meter.voice != voice || meter.channels == 0 || meter.channels > 8) {
                 continue;
@@ -230,21 +240,37 @@ HRESULT STDMETHODCALLTYPE HookSubmitSourceBuffer(void* voice, const void* buffer
         if (g_nextEnergyLog == 0) {
             g_nextEnergyLog = now + 5000;
         } else if (now >= g_nextEnergyLog) {
-            g_nextEnergyLog = now + 5000;
-            ++g_energyLogs;
+            g_nextEnergyLog = now + 1000;
             std::string text;
+            bool audible = false;
             for (VoiceMeter& meter : g_meters) {
                 if (meter.voice == nullptr) {
                     continue;
                 }
                 text += std::format(" | {} canaux :", meter.channels);
                 for (UINT32 c = 0; c < meter.channels; ++c) {
-                    text += std::format(" {:.4f}", meter.frames > 0 ? std::sqrt(meter.energy[c] / meter.frames) : 0.0);
+                    const double level = meter.frames > 0 ? std::sqrt(meter.energy[c] / meter.frames) : 0.0;
+                    audible = audible || level > 0.0005;
+                    text += std::format(" {:.4f}", level);
                     meter.energy[c] = 0.0;
                 }
                 meter.frames = 0;
             }
-            log::Info("Audio : niveau par voix et par canal (5.1 dans l'ordre AvG AvD C Basses ArG ArD){}", text);
+            // Une ligne par seconde, seulement quand un son passe (le niveau est mesuré sur la seconde écoulée).
+            std::string before;
+            for (int c = 0; c < 6; ++c) {
+                const double level = g_preFrames > 0 ? std::sqrt(g_preEnergy[c] / g_preFrames) : 0.0;
+                audible = audible || level > 0.0005;
+                before += std::format(" {:.4f}", level);
+                g_preEnergy[c] = 0.0;
+            }
+            g_preFrames = 0;
+            if (audible) {
+                ++g_energyLogs;
+                log::Info("Audio : niveau par voix (après conversion stéréo du mod){} | voix 5.1 avant conversion "
+                          "(AvG AvD C Basses ArG ArD){}",
+                          text, before);
+            }
         }
     }
     return g_submitSourceBuffer(voice, buffer, wma);
@@ -321,6 +347,10 @@ HRESULT STDMETHODCALLTYPE HookCreateMasteringVoice(void* xaudio, void** voice, U
     // [Audio] Channels : sortie forcée en 5.1 ou 7.1. Avec un casque (2 canaux), le moteur envoie ses sons mono à droite
     // seulement (constaté le 10/10/2026) ; XAudio2 ramène ensuite les canaux forcés vers ceux du périphérique.
     const UINT32 requested = channels;
+    // Nouveau moteur audio (le jeu en recrée un après un chargement) : les voix mesurées sont à renouveler.
+    for (VoiceMeter& meter : g_meters) {
+        meter = VoiceMeter{};
+    }
     if (channels == 0 && GetConfig().audioChannels != 0) {
         channels = static_cast<UINT32>(GetConfig().audioChannels);
     }
@@ -451,8 +481,11 @@ void DownmixSurroundToStereo(float* samples, std::uint32_t frames, bool standard
         if (standard) {
             // Mélange 5.1 vers stéréo habituel (ordre de Windows : AvG AvD C Basses ArG ArD). C'est la conversion de XAudio2 2.1,
     // pas le placement du moteur, qui envoyait les sons d'un seul côté (vérifié à l'écoute le 13/10/2026).
-            left = f[0] + kShared * f[2] + kShared * f[4] + kLfe * f[3];
-            right = f[1] + kShared * f[2] + kShared * f[5] + kLfe * f[3];
+            // Exception, 20/10/2026 : le canal avant gauche du moteur est vide en jeu courant (0,0000 aux mesures du
+            // menu et de l'exploration) mais porte une piste de la cinématique des insectes (niveaux 0,08 à 0,11 contre
+            // 0,03 à droite), entendue d'un seul côté. Ce canal est donc envoyé à égalité des deux côtés.
+            left = kShared * f[0] + kShared * f[2] + kShared * f[4] + kLfe * f[3];
+            right = f[1] + kShared * f[0] + kShared * f[2] + kShared * f[5] + kLfe * f[3];
         } else {
             left = right = kShared * (f[0] + f[1] + f[2] + f[4] + f[5]) + kLfe * f[3];
         }

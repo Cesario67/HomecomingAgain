@@ -124,8 +124,8 @@ struct Config {
     float cameraAimVerticalSpeed = 1.0f;
     // Follow (Camera Fix, le personnage tourne) ou Orbit (la caméra tourne seule autour de lui, expérimental).
     patches::camera::CameraMode cameraMode = patches::camera::CameraMode::Follow;
+    bool cameraOrbitGuardFollow = true;
     // En orbite : le personnage se tourne vers la caméra quand il marche (Camera) ou vers la direction du stick (Stick).
-    patches::camera::OrbitMove cameraOrbitMove = patches::camera::OrbitMove::Camera;
 
     // [Cheats]
     // Mode dieu et munitions illimitées, par les variables de débogage du moteur (voir patches/Cheats.h).

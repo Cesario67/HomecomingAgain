@@ -228,7 +228,11 @@ void TestChannelFix() {
     Check(side[0] == side[1], "son de l'avant droit centré");
     float std51[6] = {1, 0, 0, 0, 0, 1};
     hca::audio::DownmixSurroundToStereo(std51, 1, true);
-    Check(std51[0] == 1.0f && std51[1] > 0.7f && std51[1] < 0.71f, "mélange 5.1 habituel : avant gauche à gauche, arrière droit à droite");
+    Check(std51[0] > 0.7f && std51[0] < 0.71f && std51[1] > 1.4f && std51[1] < 1.42f,
+          "mélange 5.1 habituel : arrière droit à droite, avant gauche centré (piste de cinématique d'un seul côté)");
+    float frontLeft[6] = {1, 0, 0, 0, 0, 0};
+    hca::audio::DownmixSurroundToStereo(frontLeft, 1, true);
+    Check(frontLeft[0] == frontLeft[1] && frontLeft[0] > 0.7f, "canal avant gauche seul : égal des deux côtés");
 }
 
 void TestSharedFrames() {
@@ -643,22 +647,13 @@ void TestCameraTuning() {
     Check(std::fabs(SignedAngle(3.5f) + 2.7831853f) < 1e-5f && std::fabs(SignedAngle(-0.5f) + 0.5f) < 1e-6f &&
               std::fabs(SignedAngle(0.5f) - 0.5f) < 1e-6f,
           "angle signé dans [-π ; π[");
-    Check(ParseOrbitMove(L"Stick") == OrbitMove::Stick && ParseOrbitMove(L"stick") == OrbitMove::Stick &&
-              ParseOrbitMove(L"Camera") == OrbitMove::Camera && ParseOrbitMove(L"") == OrbitMove::Camera &&
-              ParseOrbitMove(nullptr) == OrbitMove::Camera,
-          "déplacement en orbite : Stick reconnu, Camera par défaut");
     Check(StickMagnitude(0.6f, 0.8f) == 1.0f && std::fabs(StickMagnitude(0.3f, 0.4f) - 0.5f) < 1e-6f &&
               StickMagnitude(std::nanf(""), 0.0f) == 0.0f,
           "inclinaison du stick bornée à 1");
-    Check(std::fabs(CameraRelativeHeading(1.0f, 0.0f, 1.0f) - 1.0f) < 1e-6f &&
-              std::fabs(CameraRelativeHeading(0.0f, 1.0f, 2.0f) - (2.0f - 1.5707963f)) < 1e-5f &&
-              std::fabs(CameraRelativeHeading(-1.0f, 0.0f, 0.5f) - (0.5f + 3.1415927f)) < 1e-5f,
-          "direction voulue : avant = cap de la caméra, droite = même sens que l'orbite, arrière = demi-tour");
     Check(TurnStep(0.05f, 0.1f) == 0.05f && TurnStep(2.0f, 0.1f) == 0.1f && TurnStep(-2.0f, 0.1f) == -0.1f,
           "rotation par image bornée");
-    Check(ForwardAfterTurn(0.8f, 0.0f) == 0.8f && std::fabs(ForwardAfterTurn(1.0f, 1.0471976f) - 0.5f) < 1e-5f &&
-              ForwardAfterTurn(1.0f, 2.5f) == 0.0f && ForwardAfterTurn(1.0f, -2.5f) == 0.0f,
-          "marche avant réduite tant qu'il ne regarde pas la direction, nulle au-delà d'un quart de tour");
+    Check(!IsTriggerPressed(0) && !IsTriggerPressed(30) && IsTriggerPressed(31) && IsTriggerPressed(255),
+          "gâchette gauche tenue au-delà du seuil de 30");
 }
 
 // Fausse mémoire du moteur pour la chaîne [[[0x111D2460]+0x38]+8] (patches/Cheats.h).
