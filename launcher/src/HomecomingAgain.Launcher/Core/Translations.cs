@@ -33,10 +33,6 @@ public static class Translations
                                              "déformée : elle est rétablie.",
                                              "Above 720p the perspective of the item inspection view (knife...) is " +
                                              "distorted: it is restored."),
-            ["AnimatedIcons"] = ("Invites à marteler aux couleurs de la manette",
-                                 "Button-mashing prompts in the controller's colors"),
-            ["AnimatedIconsHint"] = ("Icône animée aux couleurs de la manette (Xbox 360 ou PS3) au lieu du chiffre du PC.",
-                                     "Animated icon in the controller's colors (Xbox 360 or PS3) instead of the PC digit."),
             ["OrbitGuardFollow"] = ("Gâchette gauche (L2) : suspend l'orbite", "Left trigger (L2): suspends the orbit"),
             ["OrbitGuardFollowHint"] = ("Tant que L2 (garde au couteau) est tenue, la caméra revient derrière le personnage " +
                                         "et le stick droit le tourne. Exige la caméra orbitale.",
@@ -135,14 +131,6 @@ public static class Translations
                                    "A, B, X, Y button icons in menus, the inventory, the controls screen and in-game prompts " +
                                    "(Open, Save...). The original game shows the digits 1 to 4."),
             ["CameraFix"] = ("Correctif de caméra (stick droit)", "Camera fix (right stick)"),
-            ["PlayStationPad"] = ("Manette PlayStation sans Steam Input (DualShock 4, DualSense)",
-                                   "PlayStation controller without Steam Input (DualShock 4, DualSense)"),
-            ["PlayStationPadHint"] = ("Le jeu ne connaît que les manettes Xbox : sans manette Xbox branchée, la manette " +
-                                       "PlayStation lui est présentée comme une manette Xbox, avec les icônes PlayStation " +
-                                       "en mode auto. Inutile si Steam Input est activé pour le jeu.",
-                                       "The game only knows Xbox controllers: with no Xbox controller plugged in, the " +
-                                       "PlayStation controller is presented to it as an Xbox one, with PlayStation icons " +
-                                       "in auto mode. Not needed if Steam Input is enabled for the game."),
             ["CameraOrbit"] = ("Caméra orbitale (expérimental)", "Orbit camera (experimental)"),
             ["CameraOrbitHint"] = ("Exige le correctif de caméra. Le stick droit fait tourner la caméra seule autour du " +
                                      "personnage, sans la ramener derrière lui. La visée aux armes à feu garde la caméra " +

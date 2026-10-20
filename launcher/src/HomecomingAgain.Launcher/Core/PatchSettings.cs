@@ -39,13 +39,9 @@ public sealed record PatchSettings
     // --- Manette ([Input]) : icônes de boutons, 0 = auto (Xbox 360 si une manette est branchée), 1 = clavier,
     // 2 = Xbox 360, 3 = PS3.
     public int ButtonIcons { get; init; }
-    // Invite à marteler (QTE) aux couleurs de la manette ([Input] AnimatedIcons).
-    public bool AnimatedIcons { get; init; } = true;
 
     // --- Caméra à la manette ([Camera] CameraFix, plus les commandes du stick droit, voir ControllerBinds).
     public bool CameraFix { get; init; }
-    // Manette PlayStation sans Steam Input ([Input] PlayStationPad).
-    public bool PlayStationPad { get; init; } = true;
     // Caméra orbitale ([Camera] Mode=Orbit, sinon Follow), effective seulement avec CameraFix.
     public bool CameraOrbit { get; init; }
     // Orbite suspendue tant que la gâchette gauche (L2) est tenue ([Camera] OrbitGuardFollow).
@@ -105,7 +101,6 @@ public sealed record PatchSettings
             ObjectViewPerspective = mod.GetBool("Graphics", "ObjectViewPerspective", defaults.ObjectViewPerspective),
             Dlss = mod.GetBool("DLSS", "ShareFrames", false) && mod.GetBool("DLSS", "Apply", false),
             ButtonIcons = Math.Clamp(mod.GetInt("Input", "ButtonIcons", 0), 0, 3),
-            AnimatedIcons = mod.GetBool("Input", "AnimatedIcons", defaults.AnimatedIcons),
             CameraFix = mod.GetBool("Camera", "CameraFix", defaults.CameraFix),
             OrbitGuardFollow = mod.GetBool("Camera", "OrbitGuardFollow", defaults.OrbitGuardFollow),
             CameraHorizontalSpeed = ClampSpeed(mod.GetDouble("Camera", "HorizontalSpeed", defaults.CameraHorizontalSpeed)),
@@ -113,7 +108,6 @@ public sealed record PatchSettings
             CameraAimHorizontalSpeed = ClampSpeed(mod.GetDouble("Camera", "AimHorizontalSpeed", defaults.CameraAimHorizontalSpeed)),
             CameraAimVerticalSpeed = ClampSpeed(mod.GetDouble("Camera", "AimVerticalSpeed", defaults.CameraAimVerticalSpeed)),
             AudioChannelFix = mod.GetBool("Audio", "ChannelFix", defaults.AudioChannelFix),
-            PlayStationPad = mod.GetBool("Input", "PlayStationPad", defaults.PlayStationPad),
             // Mêmes règles que la DLL (patches/CameraTuning.cpp) : toute autre valeur = défaut.
             CameraOrbit = string.Equals(mod.Get("Camera", "Mode"), "Orbit", StringComparison.OrdinalIgnoreCase),
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
@@ -149,9 +143,7 @@ public sealed record PatchSettings
         mod.SetInt("DLSS", "Jitter", Dlss ? 1 : 0);
         mod.SetBool("DLSS", "Apply", Dlss);
         mod.SetInt("Input", "ButtonIcons", Math.Clamp(ButtonIcons, 0, 3));
-        mod.SetBool("Input", "AnimatedIcons", AnimatedIcons);
         mod.SetBool("Camera", "CameraFix", CameraFix);
-        mod.SetBool("Input", "PlayStationPad", PlayStationPad);
         mod.Set("Camera", "Mode", CameraOrbit ? "Orbit" : "Follow");
         mod.SetBool("Camera", "OrbitGuardFollow", OrbitGuardFollow);
         mod.SetDouble("Camera", "HorizontalSpeed", ClampSpeed(CameraHorizontalSpeed));

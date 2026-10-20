@@ -122,10 +122,6 @@
               </ItemsControl>
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[ButtonIconsHint]}" />
-            <CheckBox Content="{Binding L[AnimatedIcons]}" IsChecked="{Binding AnimatedIcons}" />
-            <TextBlock Classes="hint" Text="{Binding L[AnimatedIconsHint]}" />
-            <CheckBox Content="{Binding L[PlayStationPad]}" IsChecked="{Binding PlayStationPad}" />
-            <TextBlock Classes="hint" Text="{Binding L[PlayStationPadHint]}" />
             <CheckBox Content="{Binding L[CameraFix]}" IsChecked="{Binding CameraFix}" />
             <TextBlock Classes="hint" Text="{Binding L[CameraFixHint]}" />
             <CheckBox Content="{Binding L[CameraOrbit]}" IsChecked="{Binding CameraOrbit}" IsEnabled="{Binding CameraFix}" />

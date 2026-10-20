@@ -102,9 +102,6 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool CameraFix { get; set; }
 
-    /// <summary>Manette PlayStation présentée comme une manette Xbox ([Input] PlayStationPad).</summary>
-    [ObservableProperty]
-    public partial bool PlayStationPad { get; set; } = true;
     /// <summary>Caméra orbitale ([Camera] Mode=Orbit), expérimentale.</summary>
     [ObservableProperty]
     public partial bool CameraOrbit { get; set; }
@@ -125,10 +122,6 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
 
     [ObservableProperty]
     public partial double CameraAimVerticalSpeed { get; set; } = 1.0;
-
-    /// <summary>Invite à marteler aux couleurs de la manette ([Input] AnimatedIcons).</summary>
-    [ObservableProperty]
-    public partial bool AnimatedIcons { get; set; } = true;
 
     /// <summary>Carte et interface étendues au-delà de 720p ([Graphics] FullScreenUiClip).</summary>
     [ObservableProperty]
@@ -182,14 +175,12 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedFilmGrain = FilmGrainLevels.LastOrDefault(choice => choice.Value <= settings.FilmGrain) ?? FilmGrainLevels[0];
         SelectedButtonIcons = ButtonIconSets.FirstOrDefault(choice => choice.Value == settings.ButtonIcons) ?? ButtonIconSets[0];
         CameraFix = settings.CameraFix;
-        PlayStationPad = settings.PlayStationPad;
         CameraOrbit = settings.CameraOrbit;
         OrbitGuardFollow = settings.OrbitGuardFollow;
         CameraHorizontalSpeed = settings.CameraHorizontalSpeed;
         CameraVerticalSpeed = settings.CameraVerticalSpeed;
         CameraAimHorizontalSpeed = settings.CameraAimHorizontalSpeed;
         CameraAimVerticalSpeed = settings.CameraAimVerticalSpeed;
-        AnimatedIcons = settings.AnimatedIcons;
         FullScreenUiClip = settings.FullScreenUiClip;
         ObjectViewPerspective = settings.ObjectViewPerspective;
         HighQualityShaders = settings.HighQualityShaders;
@@ -210,14 +201,12 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         FilmGrain = SelectedFilmGrain.Value,
         ButtonIcons = SelectedButtonIcons.Value,
         CameraFix = CameraFix,
-        PlayStationPad = PlayStationPad,
         CameraOrbit = CameraOrbit,
         OrbitGuardFollow = OrbitGuardFollow,
         CameraHorizontalSpeed = PatchSettings.ClampSpeed(CameraHorizontalSpeed),
         CameraVerticalSpeed = PatchSettings.ClampSpeed(CameraVerticalSpeed),
         CameraAimHorizontalSpeed = PatchSettings.ClampSpeed(CameraAimHorizontalSpeed),
         CameraAimVerticalSpeed = PatchSettings.ClampSpeed(CameraAimVerticalSpeed),
-        AnimatedIcons = AnimatedIcons,
         FullScreenUiClip = FullScreenUiClip,
         ObjectViewPerspective = ObjectViewPerspective,
         HighQualityShaders = HighQualityShaders,

@@ -46,7 +46,6 @@ public sealed class SettingsTests
         Assert.True(settings.WindowThreadLock && settings.D3DMultithreaded && settings.HangDetection);
         Assert.True(settings.SkipLogos);
         Assert.False(settings.God || settings.UnlimitedAmmo);
-        Assert.True(settings.PlayStationPad);
         Assert.False(settings.CameraOrbit);
     }
 
@@ -98,9 +97,9 @@ public sealed class SettingsTests
             FullResolutionTextures = true, Smaa = false, Anisotropy = 4, TargetFps = 144, PreciseTimer = false,
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
-            FilmGrain = 0, SkipLogos = false, God = true, UnlimitedAmmo = true, PlayStationPad = false, CameraFix = true,
+            FilmGrain = 0, SkipLogos = false, God = true, UnlimitedAmmo = true, CameraFix = true,
             CameraOrbit = true,
-            FullScreenUiClip = false, ObjectViewPerspective = false, AnimatedIcons = false,
+            FullScreenUiClip = false, ObjectViewPerspective = false,
             OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,
             CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false,
         };
@@ -118,9 +117,8 @@ public sealed class SettingsTests
     public void NewOptionsHaveTheDllDefaultsWhenTheIniIsEmpty()
     {
         PatchSettings read = PatchSettings.Read(IniDocument.Parse(""), KeyValueDocument.Parse(OriginalGameSettings));
-        Assert.True(read.FullScreenUiClip && read.ObjectViewPerspective && read.AnimatedIcons && read.OrbitGuardFollow);
+        Assert.True(read.FullScreenUiClip && read.ObjectViewPerspective && read.OrbitGuardFollow);
         Assert.True(read.AudioChannelFix);
-        Assert.True(read.AnimatedIcons);
         Assert.Equal((1.0, 1.0, 1.0, 1.0), (read.CameraHorizontalSpeed, read.CameraVerticalSpeed,
                                            read.CameraAimHorizontalSpeed, read.CameraAimVerticalSpeed));
     }
@@ -130,7 +128,7 @@ public sealed class SettingsTests
     {
         PatchSettings source = new()
         {
-            FullScreenUiClip = false, ObjectViewPerspective = false, AnimatedIcons = false,
+            FullScreenUiClip = false, ObjectViewPerspective = false,
             OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,
             CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false,
         };
@@ -153,7 +151,7 @@ public sealed class SettingsTests
                             "[Audio]\nChannelOrder=0,1,2,3,4,5\nChannels=6\n[Movies]\nSkipKey=27\n" +
                             "[Frames]\nReportIntervalSeconds=30\nFrameLimitFps=90\n" +
                             "[Crash]\nDumpKeepCount=5\n[Debug]\nLogKeepCount=100\nFrameCapture=1\nSkipMovies=1\n" +
-                            "[Input]\nMenuPad=1";
+                            "[Input]\nMenuPad=1\nAnimatedIcons=0\nPlayStationPad=0";
         IniDocument mod = IniDocument.Parse(text);
         new PatchSettings().WriteMod(mod);
         Assert.Equal(("2.25", "200", "600", "1"), (mod.Get("Graphics", "SsaoRadius"), mod.Get("Graphics", "SsaoFadeStart"),
@@ -164,8 +162,8 @@ public sealed class SettingsTests
         Assert.Equal(("100", "1", "1"), (mod.Get("Debug", "LogKeepCount"), mod.Get("Debug", "FrameCapture"),
                                          mod.Get("Debug", "SkipMovies")));
         Assert.Equal(("1", "6", "90"), (mod.Get("Input", "MenuPad"), mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps")));
+        Assert.Equal(("0", "0"), (mod.Get("Input", "AnimatedIcons"), mod.Get("Input", "PlayStationPad")));
     }
-
 
     [Fact]
     public void NewOptionsAreClampedToWhatTheDllAccepts()
