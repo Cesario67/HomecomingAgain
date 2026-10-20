@@ -116,6 +116,7 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Input]` | `MenuPad=0` | Translate the controller into keyboard keys in menus (D-pad, left stick, Start); off by default, the game handles the controller itself |
 | `[Camera]` | `CameraFix=0` | Controller camera fix (based on Emertels' Camera Fix): the character turns with the right stick, proportional vertical response, separate aim sensitivity. Speeds `HorizontalSpeed`, `VerticalSpeed`, `AimHorizontalSpeed`, `AimVerticalSpeed` (0.25 to 3.0). The launcher also frees the right stick in `Engine\binds_pc_mjs.cfg` |
 | `[Camera]` | `Mode=Follow` | With `CameraFix=1`: `Follow` = the character turns and the camera follows; `Orbit` (experimental) = the right stick turns the camera around the character, who stays put |
+| `[Camera]` | `OrbitGuardFollow=1` | With `Mode=Orbit`: `1` = while the left trigger (L2, knife guard) is held, the orbit is suspended (camera back behind the character, right stick turns him); `0` = the orbit stays active |
 | `[DLSS]` | `ShareFrames`, `Jitter`, `Apply` | DLSS (DLAA): all three at 1 to enable it, with DXVK (done by the launcher) |
 
 ## Known limitations
