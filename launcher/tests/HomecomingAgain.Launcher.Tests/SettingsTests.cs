@@ -47,29 +47,29 @@ public sealed class SettingsTests
         Assert.True(settings.SkipLogos);
         Assert.False(settings.God || settings.UnlimitedAmmo);
         Assert.True(settings.PlayStationPad);
-        Assert.False(settings.CameraOrbit || settings.OrbitMoveStick);
+        Assert.False(settings.CameraOrbit);
     }
 
     [Theory]
-    [InlineData("Orbit", "Stick", true, true)]
-    [InlineData("orbit", "stick", true, true)]
-    [InlineData("Follow", "Camera", false, false)]
-    [InlineData("autre", "autre", false, false)]
-    public void ReadsCameraModeLikeTheDll(string mode, string move, bool orbit, bool stick)
+    [InlineData("Orbit", true)]
+    [InlineData("orbit", true)]
+    [InlineData("Follow", false)]
+    [InlineData("autre", false)]
+    public void ReadsCameraModeLikeTheDll(string mode, bool orbit)
     {
-        IniDocument mod = IniDocument.Parse($"[Camera]\nMode={mode}\nOrbitMove={move}");
+        IniDocument mod = IniDocument.Parse($"[Camera]\nMode={mode}");
         PatchSettings settings = PatchSettings.Read(mod, KeyValueDocument.Parse(OriginalGameSettings));
-        Assert.Equal((orbit, stick), (settings.CameraOrbit, settings.OrbitMoveStick));
+        Assert.Equal(orbit, settings.CameraOrbit);
     }
 
     [Fact]
     public void WritesCameraModeAsText()
     {
         IniDocument mod = IniDocument.Parse("");
-        (new PatchSettings() with { CameraOrbit = true, OrbitMoveStick = true }).WriteMod(mod);
-        Assert.Equal(("Orbit", "Stick"), (mod.Get("Camera", "Mode"), mod.Get("Camera", "OrbitMove")));
+        (new PatchSettings() with { CameraOrbit = true }).WriteMod(mod);
+        Assert.Equal("Orbit", mod.Get("Camera", "Mode"));
         (new PatchSettings()).WriteMod(mod);
-        Assert.Equal(("Follow", "Camera"), (mod.Get("Camera", "Mode"), mod.Get("Camera", "OrbitMove")));
+        Assert.Equal("Follow", mod.Get("Camera", "Mode"));
     }
 
     [Theory]
@@ -99,7 +99,7 @@ public sealed class SettingsTests
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
             FilmGrain = 0, SkipLogos = false, God = true, UnlimitedAmmo = true, PlayStationPad = false, CameraFix = true,
-            CameraOrbit = true, OrbitMoveStick = true,
+            CameraOrbit = true,
         };
         IniDocument mod = IniDocument.Parse("");
         KeyValueDocument game = KeyValueDocument.Parse(OriginalGameSettings);
