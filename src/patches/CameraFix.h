@@ -31,9 +31,8 @@ namespace hca::patches {
 // de la caméra seul (le personnage n'est plus tourné) et le cap calculé par le moteur, qui ramène la caméra derrière le
 // personnage (ressort de 0x108DB27A à 0x108DB39E, vérifié), est ignoré. Le moteur tourne aussi le personnage avec le
 // stick droit par son entrée (+0xAE8, recopiée en 0x10384F57) : mise à 0 hors visée. Le stick gauche le déplace par
-// rapport à lui-même (vérifié en jeu le 18/10/2026) : en marche, le mod le tourne vers la caméra ([Camera]
-// OrbitMove=Camera, stick d'origine conservé) ou vers la direction du stick à l'écran (OrbitMove=Stick, le moteur ne
-// reçoit alors que la marche avant). Validé en jeu à la manette le 18/10/2026 (OrbitMove=Camera). Pendant la garde
+// rapport à lui-même (vérifié en jeu le 18/10/2026) : en marche, le mod le tourne vers la caméra (stick d'origine
+// conservé). Validé en jeu à la manette le 18/10/2026. Pendant la garde
 // au couteau (L2), l'orbite reste active : une option pour la suspendre est notée dans docs/a-faire.md.
 //
 // Désactivé par défaut ([Camera] CameraFix=0) : le comportement change et il faut retirer du stick droit les
@@ -44,5 +43,8 @@ void ApplyCameraFix(HMODULE engineModule);
 
 // Appelée par le hook XInput (input/XInputHooks.cpp) à chaque lecture de la première manette.
 void NoteRightStick(SHORT x, SHORT y) noexcept;
+
+// Gâchette gauche de la première manette (0 à 255) : tenue, elle suspend l'orbite ([Camera] OrbitGuardFollow=1).
+void NoteLeftTrigger(BYTE value) noexcept;
 
 }  // namespace hca::patches

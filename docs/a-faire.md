@@ -49,8 +49,16 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
   (`patches/CameraFix`), désactivé par défaut, activé par le launcher avec les touches du stick droit. Validé en jeu
   à la manette par l'utilisateur. Reste : vérifier que la souris ne passe pas par ces sites.
 - Fait (18/10/2026) : caméra orbitale expérimentale (`[Camera] Mode=Orbit`, désactivée par défaut) : le stick droit
-  tourne la caméra autour du personnage ; en marche, il se tourne vers la caméra (`OrbitMove=Camera`) ou vers la
-  direction du stick (`OrbitMove=Stick`). Validé en jeu à la manette (`OrbitMove=Camera`).
+  tourne la caméra autour du personnage ; en marche, il se tourne vers la caméra. Validé en jeu à la manette.
+  Option `OrbitMove=Stick` (vers la direction du stick) retirée le 20/10/2026 : elle ne fonctionnait pas en jeu.
+- Fait (20/10/2026) : en orbite, le personnage ne se tournait plus vers la caméra après la scène des insectes
+  (contrôles « tank »). Cause (mesurée par un journal temporaire, retiré) : la lecture de l'entrée de chaque acteur
+  effaçait le cap voulu, y compris celle des insectes lue après celle du joueur dans la même image. Seule l'entrée
+  du personnage suivi y touche désormais. Validé en jeu par l'auteur.
+- Fait (20/10/2026) : `OrbitGuardFollow=1` (défaut) : gâchette gauche (L2) tenue, l'orbite est suspendue (caméra
+  derrière le personnage, stick droit qui le tourne). Non validée seule en jeu.
+- À voir : voix d'Alex uniquement dans l'oreillette gauche pendant la cinématique des insectes (tester
+  `[Audio] ChannelFix=0` pour savoir si c'est le mélange du mod ou le jeu d'origine).
 - Idée (option à ajouter) : suspendre l'orbite pendant la garde au couteau (L2, `COMMAND_STALK`), caméra remise
   derrière le personnage et stick droit qui le tourne. Aujourd'hui l'orbite reste active pendant la garde ; seule la
   visée aux armes à feu (caméra « Precision ») rend la main au jeu. Repérer la gâchette par la manette (XInput).

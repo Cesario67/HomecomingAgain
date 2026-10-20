@@ -67,7 +67,14 @@ std::uintptr_t g_orbitActor = 0;
 // (qui connaît la durée de l'image) ; remis à false une fois appliqué.
 bool g_moveActive = false;
 float g_moveHeading = 0.0f;
-camera::OrbitMove g_orbitMove = camera::OrbitMove::Camera;
+
+// Gâchette gauche (L2, garde au couteau) tenue, et option [Camera] OrbitGuardFollow : suspend l'orbite.
+volatile long g_guardHeld = 0;
+bool g_orbitGuardFollow = true;
+
+bool OrbitActive() {
+    return g_orbitMode && !(g_orbitGuardFollow && g_guardHeld != 0);
+}
 
 bool Matches(const Site& site) {
     return std::memcmp(reinterpret_cast<const void*>(site.address), site.original, site.length) == 0;
@@ -151,9 +158,9 @@ float OrbitStep(std::uint8_t* cameraComponent, const std::uint8_t* commands, flo
     return g_orbitYaw;
 }
 
-// Entrée du personnage suivi, mode orbite hors visée : le stick gauche (+0xAD8 avant, +0xADC côté) est lu comme une
-// direction à l'écran. Le cap voulu est gardé pour le hook du cap, et le moteur ne reçoit que la marche avant, réduite
-// tant que le personnage ne regarde pas encore cette direction.
+// Entrée du personnage suivi, mode orbite hors visée : tant que le stick gauche (+0xAD8 avant, +0xADC côté) est
+// incliné, le cap voulu (celui de la caméra) est gardé pour le hook du cap, qui tourne le personnage vers lui. Le
+// stick garde son effet d'origine pour le moteur.
 void ConvertMoveInput(std::uint8_t* input) {
     g_moveActive = false;
     float forward;
@@ -164,21 +171,9 @@ void ConvertMoveInput(std::uint8_t* input) {
     if (magnitude <= camera::kStickDeadzone || camera::OrbitNeedsReset(g_orbitLastMs, GetTickCount64())) {
         return;
     }
+    // Le personnage se tourne vers la caméra ; le stick garde son effet d'origine, par rapport à lui.
     g_moveActive = true;
-    if (g_orbitMove == camera::OrbitMove::Camera) {
-        // Le personnage se tourne vers la caméra ; le stick garde son effet d'origine, par rapport à lui.
-        g_moveHeading = g_orbitYaw;
-        return;
-    }
-    g_moveActive = false;
-    const auto* transform = reinterpret_cast<const std::uint8_t*>(g_orbitActor + 0x1A0);
-    g_moveHeading = camera::CameraRelativeHeading(forward, side, g_orbitYaw);
-    const float error = camera::SignedAngle(g_moveHeading - ActorHeading(transform));
-    const float walk = camera::ForwardAfterTurn(magnitude, error);
-    const float none = 0.0f;
-    std::memcpy(input + 0xAD8, &walk, sizeof(walk));
-    std::memcpy(input + 0xADC, &none, sizeof(none));
-    g_moveActive = true;
+    g_moveHeading = g_orbitYaw;
 }
 
 // Hook du cap, mode orbite : tourne le personnage vers le cap voulu, au plus kTurnRadiansPerSecond. La fonction de
@@ -208,7 +203,13 @@ extern "C" void __cdecl HcaCameraYaw(std::uint8_t* cameraComponent, std::uint8_t
     if (cameraComponent == nullptr || transform == nullptr || commands == nullptr) {
         return;
     }
-    if (g_orbitMode) {
+    if (g_orbitMode && !OrbitActive()) {
+        // Gâchette gauche tenue : l'orbite est suspendue, la caméra revient derrière le personnage et le stick droit
+        // le tourne (comme en mode Follow) ; au relâchement, l'orbite repart du cap du moteur.
+        g_orbitLastMs = 0;
+        g_moveActive = false;
+    }
+    if (OrbitActive()) {
         __try {
             *result = OrbitStep(cameraComponent, commands, *elapsed, nativeYaw);
             g_orbitActor = reinterpret_cast<std::uintptr_t>(transform) - 0x1A0;
@@ -254,10 +255,14 @@ extern "C" void __cdecl HcaCameraAimInput(std::uint8_t* actor) noexcept {
         // Mode orbite, hors visée : le moteur tourne aussi le personnage avec le stick droit, recopié ici en +0xAE8
         // (relevé du 18/10/2026 : son cap suivait celui de la caméra). Mis à 0 pour le seul personnage suivi par la
         // caméra ; les autres personnages et la visée gardent leur entrée.
-        if (g_orbitMode && !precision && IsOrbitActorInput(actor)) {
+        if (OrbitActive() && !precision && IsOrbitActorInput(actor)) {
             std::memset(actor + 0xAE8, 0, 4);
             ConvertMoveInput(actor);
-        } else {
+        } else if (IsOrbitActorInput(actor)) {
+            // Seul le personnage suivi annule la marche voulue (visée, suspension de l'orbite). Les entrées des autres
+            // acteurs (insectes, ennemis) sont lues après la sienne dans la même image : y toucher effaçait le cap voulu
+            // avant qu'il soit appliqué, et le personnage ne se tournait plus vers la caméra (contrôles « tank »,
+            // constaté en jeu le 20/10/2026 après la scène des insectes).
             g_moveActive = false;
         }
         if (g_cameraPadActive == 0 || !precision) {
@@ -400,6 +405,10 @@ void NoteRightStick(SHORT x, SHORT y) noexcept {
     g_cameraPadActive = camera::IsRawStickDeflected(x) || camera::IsRawStickDeflected(y) ? 1 : 0;
 }
 
+void NoteLeftTrigger(BYTE value) noexcept {
+    g_guardHeld = camera::IsTriggerPressed(value) ? 1 : 0;
+}
+
 void ApplyCameraFix(HMODULE engineModule) {
     const Config& config = GetConfig();
     if (!config.cameraFix) {
@@ -434,7 +443,7 @@ void ApplyCameraFix(HMODULE engineModule) {
     g_cameraAimOutputX = gains.aimOutputX;
     g_cameraAimOutputY = gains.aimOutputY;
     g_orbitMode = config.cameraMode == camera::CameraMode::Orbit;
-    g_orbitMove = config.cameraOrbitMove;
+    g_orbitGuardFollow = config.cameraOrbitGuardFollow;
 
     const struct {
         const Site* site;
@@ -455,7 +464,7 @@ void ApplyCameraFix(HMODULE engineModule) {
         }
     }
     log::Info("Correctif de caméra appliqué (mode {}) : horizontal {:.2f}, vertical {:.2f}, visée {:.2f} / {:.2f}",
-              !g_orbitMode ? "suivi" : g_orbitMove == camera::OrbitMove::Stick ? "orbite, marche vers le stick" : "orbite, marche vers la caméra", camera::ClampSpeed(config.cameraHorizontalSpeed), camera::ClampSpeed(config.cameraVerticalSpeed),
+              !g_orbitMode ? "suivi" : "orbite", camera::ClampSpeed(config.cameraHorizontalSpeed), camera::ClampSpeed(config.cameraVerticalSpeed),
               camera::ClampSpeed(config.cameraAimHorizontalSpeed), camera::ClampSpeed(config.cameraAimVerticalSpeed));
 }
 
