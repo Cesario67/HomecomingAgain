@@ -24,4 +24,17 @@ bool ExpandLegacyRect(long x, long y, long& width, long& height, long targetWidt
 // agrandie : `scaleX` = 1280 / largeur, `scaleY` = 720 / hauteur de la nouvelle zone.
 void CompensateProjection(float* rows, float scaleX, float scaleY) noexcept;
 
+// Perspective de la vue d'inspection des objets, cassée au-delà de 720p (signalé et mesuré le 20/10/2026, relevés
+// F11 en 1280x720 et 1920x1080, couteau de combat, 8 relevés). Même zone 1280x720 que la carte, mais le moteur
+// agrandit le modèle de hauteur / 720 (1,5 en 1080p) dans les quatre lignes de mWorldViewProj, sans éloigner la
+// caméra : la norme du bloc 3x3 de la ligne w (c3) vaut 1,000 en 720p et 1,500 en 1080p, quelles que soient
+// l'orientation et la distance. Le rapport taille / distance grimpe de 50 % et l'extrémité proche de l'objet
+// grossit démesurément. La carte porte la même échelle mais à une distance de 50 (objets : 10 à 17) : elle est
+// laissée telle quelle (hypothèse : sa perspective est faible et le joueur la juge correcte).
+// Si la norme de la ligne w vaut `scale` (à 1 % près, `scale` > 1) et que la distance (constante de w) est
+// inférieure à 30, divise par `scale` le bloc 3x3 des lignes z et w
+// (profondeur) : la taille et la position à l'écran (lignes x et y, constantes) restent celles du moteur, la
+// perspective redevient celle du 720p. Renvoie vrai si la matrice a été modifiée. À appeler avant CompensateProjection.
+bool RestoreObjectPerspective(float* rows, float scale) noexcept;
+
 }  // namespace hca::graphics::uiclip

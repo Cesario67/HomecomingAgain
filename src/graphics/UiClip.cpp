@@ -1,6 +1,7 @@
 #include "graphics/UiClip.h"
 
 #include <atomic>
+#include <cmath>
 #include <cstring>
 
 #include "core/Config.h"
@@ -31,6 +32,7 @@ float g_scaleX = 1.0f;
 float g_scaleY = 1.0f;
 std::atomic<bool> g_logged{false};
 std::atomic<bool> g_loggedPartial{false};
+std::atomic<bool> g_loggedObject{false};
 
 // Taille de la cible de dessin 0 ; faux si elle est illisible.
 bool TargetSize(IDirect3DDevice9* device, long& width, long& height) noexcept {
@@ -99,6 +101,11 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
     if (g_active && data != nullptr && start == 0 && count >= 4) {
         float rows[16];
         std::memcpy(rows, data, sizeof(rows));
+        if (GetConfig().objectViewPerspective && RestoreObjectPerspective(rows, 1.0f / g_scaleY) &&
+            !g_loggedObject.exchange(true)) {
+            log::Info("Interface : perspective de la vue d'inspection des objets rétablie (échelle {:.3f})",
+                      1.0f / g_scaleY);
+        }
         CompensateProjection(rows, g_scaleX, g_scaleY);
         if (count == 4) {
             return g_setVertexShaderConstantF(device, start, rows, count);
@@ -135,6 +142,26 @@ void CompensateProjection(float* rows, float scaleX, float scaleY) noexcept {
         rows[i] = scaleX * rows[i] + (scaleX - 1.0f) * w;
         rows[4 + i] = scaleY * rows[4 + i] + (1.0f - scaleY) * w;
     }
+}
+
+bool RestoreObjectPerspective(float* rows, float scale) noexcept {
+    if (scale <= 1.01f) {
+        return false;
+    }
+    const float norm = std::sqrt(rows[12] * rows[12] + rows[13] * rows[13] + rows[14] * rows[14]);
+    // La carte porte la même échelle (1,5 en 1080p, relevé du 16/10/2026) mais à une distance de 50 : elle est jugée
+    // correcte par le joueur et reste intacte. Les objets inspectés sont à 10 - 17 (relevés du 18 et 20/10/2026).
+    constexpr float kObjectMaxDistance = 30.0f;
+    if (std::fabs(norm - scale) > 0.01f * scale || rows[15] <= 0.0f || rows[15] >= kObjectMaxDistance) {
+        return false;
+    }
+    // Lignes z (c2) et w (c3) : seul le bloc 3x3 est remis à l'échelle, pas la constante de translation.
+    for (int row = 2; row < 4; ++row) {
+        for (int column = 0; column < 3; ++column) {
+            rows[row * 4 + column] /= scale;
+        }
+    }
+    return true;
 }
 
 void Install(IDirect3DDevice9* device) {

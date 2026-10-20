@@ -483,6 +483,32 @@ void TestUiClip() {
     pixel(compensated, 1920, 1080, x1080, y1080);
     Check(std::fabs(x720 - x1080) < 0.01f && std::fabs(y720 - y1080) < 0.01f && std::fabs(x720 - 640.0f) > 1.0f,
           "carte : même pixel après extension de la zone (projection compensée)");
+
+    // Couteau en inspection, relevé F11 en 1920x1080 (20/10/2026) : le moteur agrandit le modèle de 1,5 dans les
+    // quatre lignes sans éloigner la caméra. Après correction, la norme de la ligne w vaut 1, les lignes x et y et les
+    // constantes sont intactes.
+    const float knife[16] = {0.21838f, 0,       0.815f,   6.5468f, 0,        1.5f,    0,       -10.537f,
+                             -1.4489f, 0,       0.38823f, 12.045f, -1.4489f, 0,       0.38823f, 13.045f};
+    float fixed[16];
+    std::memcpy(fixed, knife, sizeof(fixed));
+    const bool changed = hca::graphics::uiclip::RestoreObjectPerspective(fixed, 1.5f);
+    const float wNorm = std::sqrt(fixed[12] * fixed[12] + fixed[13] * fixed[13] + fixed[14] * fixed[14]);
+    bool keptRows = true;
+    for (int i : {0, 1, 2, 3, 4, 5, 6, 7, 11, 15}) {
+        keptRows = keptRows && fixed[i] == knife[i];
+    }
+    Check(changed && std::fabs(wNorm - 1.0f) < 1e-3f && keptRows && std::fabs(fixed[12] - knife[12] / 1.5f) < 1e-5f,
+          "objets : perspective de l'inspection rétablie (échelle 1,5 retirée de z et w, x, y et constantes intacts)");
+    // La carte (norme 1,5 mais distance 50) et le 720p (échelle 1) ne bougent pas.
+    float map[16];
+    std::memcpy(map, original, sizeof(map));
+    float knife720[16] = {0.1456f, 0, 0.5433f, 0.0468f, 0, 1, 0, -4.037f, -0.966f, 0, 0.2588f, 12.045f, -0.966f, 0, 0.2588f, 13.045f};
+    float knife720Copy[16];
+    std::memcpy(knife720Copy, knife720, sizeof(knife720));
+    Check(!hca::graphics::uiclip::RestoreObjectPerspective(map, 1.5f) && std::memcmp(map, original, sizeof(map)) == 0 &&
+              !hca::graphics::uiclip::RestoreObjectPerspective(knife720, 1.0f) &&
+              std::memcmp(knife720, knife720Copy, sizeof(knife720)) == 0,
+          "objets : carte (distance 50) et 720p (échelle 1) intacts");
 }
 
 void TestJitter() {
