@@ -203,7 +203,11 @@ void TestChannelFix() {
     Check(side[0] == side[1], "son de l'avant droit centré");
     float std51[6] = {1, 0, 0, 0, 0, 1};
     hca::audio::DownmixSurroundToStereo(std51, 1, true);
-    Check(std51[0] == 1.0f && std51[1] > 0.7f && std51[1] < 0.71f, "mélange 5.1 habituel : avant gauche à gauche, arrière droit à droite");
+    Check(std51[0] > 0.7f && std51[0] < 0.71f && std51[1] > 1.4f && std51[1] < 1.42f,
+          "mélange 5.1 habituel : arrière droit à droite, avant gauche centré (piste de cinématique d'un seul côté)");
+    float frontLeft[6] = {1, 0, 0, 0, 0, 0};
+    hca::audio::DownmixSurroundToStereo(frontLeft, 1, true);
+    Check(frontLeft[0] == frontLeft[1] && frontLeft[0] > 0.7f, "canal avant gauche seul : égal des deux côtés");
 }
 
 void TestSharedFrames() {

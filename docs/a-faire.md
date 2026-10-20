@@ -57,8 +57,14 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
   du personnage suivi y touche désormais. Validé en jeu par l'auteur.
 - Fait (20/10/2026) : `OrbitGuardFollow=1` (défaut) : gâchette gauche (L2) tenue, l'orbite est suspendue (caméra
   derrière le personnage, stick droit qui le tourne). Non validée seule en jeu.
-- À voir : voix d'Alex uniquement dans l'oreillette gauche pendant la cinématique des insectes (tester
-  `[Audio] ChannelFix=0` pour savoir si c'est le mélange du mod ou le jeu d'origine).
+- Fait (20/10/2026) : une piste de la cinématique des insectes n'était entendue qu'à gauche. **Vérifié** par le
+  journal : le canal 0 (avant gauche) du flux 5.1 du moteur est vide en jeu courant (0,0000) et porte 0,08 à 0,11
+  pendant la scène. Il est maintenant envoyé à égalité des deux côtés (`DownmixSurroundToStereo`). Validé à
+  l'écoute par l'auteur.
+- À voir : léger décalage entre cette piste (ou la voix d'Alex) et l'image dans la même scène. **Hypothèse non
+  vérifiée** : la scène est calculée par le moteur et avance image par image, donc plus vite à `TargetFps=60` qu'à
+  30 (tester `TargetFps=0`). Piste : repasser à 30 i/s pendant les scènes du moteur, repère à trouver (nom de la
+  caméra active ? état du moteur ?).
 - Idée (option à ajouter) : suspendre l'orbite pendant la garde au couteau (L2, `COMMAND_STALK`), caméra remise
   derrière le personnage et stick droit qui le tourne. Aujourd'hui l'orbite reste active pendant la garde ; seule la
   visée aux armes à feu (caméra « Precision ») rend la main au jeu. Repérer la gâchette par la manette (XInput).
