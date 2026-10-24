@@ -62,6 +62,9 @@ public sealed record PatchSettings
     // --- Démarrage ([Movies]) : logos accélérés, touche pour passer les vidéos (code Windows, 0 = aucune).
     public bool SkipLogos { get; init; } = true;
 
+    // --- Accessibilité ([Input]) : maintenir le bouton pendant un QTE compte comme des appuis répétés.
+    public bool QteHold { get; init; }
+
     // --- Triches ([Cheats])
     public bool God { get; init; }
     public bool UnlimitedAmmo { get; init; }
@@ -116,6 +119,7 @@ public sealed record PatchSettings
             TargetFps = mod.GetInt("Frames", "TargetFps", defaults.TargetFps),
             PreciseTimer = mod.GetInt("Frames", "TimerResolutionMs", 1) > 0,
             SkipLogos = mod.GetBool("Movies", "SkipLogos", defaults.SkipLogos),
+            QteHold = mod.GetBool("Input", "QteHold", defaults.QteHold),
             God = mod.GetBool("Cheats", "God", defaults.God),
             UnlimitedAmmo = mod.GetBool("Cheats", "UnlimitedAmmo", defaults.UnlimitedAmmo),
             WindowThreadLock = mod.GetBool("Compat", "WindowThreadLock", defaults.WindowThreadLock),
@@ -158,6 +162,7 @@ public sealed record PatchSettings
         mod.SetInt("Frames", "TargetFps", Math.Clamp(TargetFps, 0, 1000));
         mod.SetInt("Frames", "TimerResolutionMs", PreciseTimer ? 1 : 0);
         mod.SetBool("Movies", "SkipLogos", SkipLogos);
+        mod.SetBool("Input", "QteHold", QteHold);
         mod.SetBool("Cheats", "God", God);
         mod.SetBool("Cheats", "UnlimitedAmmo", UnlimitedAmmo);
         mod.SetBool("Compat", "WindowThreadLock", WindowThreadLock);

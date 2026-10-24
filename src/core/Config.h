@@ -109,6 +109,10 @@ struct Config {
     // Manette PlayStation (DualShock 4, DualSense) présentée comme une manette Xbox 360 quand aucune manette XInput
     // n'est branchée (input/SonyPad.h).
     bool playStationPad = true;
+    // Accessibility: holding a button during a button-mashing prompt (QTE) counts as repeated presses
+    // (input/QteHold.h). Off by default: it changes the gameplay.
+    bool qteHold = false;
+    int qteHoldRate = 10;
 
     // [Camera]
     // Correctif de caméra à la manette, porté du Camera Fix d'Emertels (voir patches/CameraFix.h). Désactivé par

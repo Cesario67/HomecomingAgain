@@ -31,6 +31,10 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool SkipLogos { get; set; } = true;
 
+    /// <summary>Maintenir le bouton pendant un QTE compte comme des appuis répétés ([Input] QteHold).</summary>
+    [ObservableProperty]
+    public partial bool QteHold { get; set; }
+
     /// <summary>Mode dieu ([Cheats] God).</summary>
     [ObservableProperty]
     public partial bool God { get; set; }
@@ -77,6 +81,7 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
         AudioChannelFix = settings.AudioChannelFix;
         PreciseTimer = settings.PreciseTimer;
         SkipLogos = settings.SkipLogos;
+        QteHold = settings.QteHold;
         God = settings.God;
         UnlimitedAmmo = settings.UnlimitedAmmo;
         WindowThreadLock = settings.WindowThreadLock;
@@ -94,6 +99,7 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
         AudioChannelFix = AudioChannelFix,
         PreciseTimer = PreciseTimer,
         SkipLogos = SkipLogos,
+        QteHold = QteHold,
         God = God,
         UnlimitedAmmo = UnlimitedAmmo,
         WindowThreadLock = WindowThreadLock,

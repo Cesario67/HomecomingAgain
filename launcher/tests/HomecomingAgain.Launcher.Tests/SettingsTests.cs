@@ -45,7 +45,7 @@ public sealed class SettingsTests
         Assert.Equal(8192, settings.ShadowResolution);
         Assert.True(settings.WindowThreadLock && settings.D3DMultithreaded && settings.HangDetection);
         Assert.True(settings.SkipLogos);
-        Assert.False(settings.God || settings.UnlimitedAmmo);
+        Assert.False(settings.God || settings.UnlimitedAmmo || settings.QteHold);
         Assert.False(settings.CameraOrbit);
     }
 
@@ -97,7 +97,7 @@ public sealed class SettingsTests
             FullResolutionTextures = true, Smaa = false, Anisotropy = 4, TargetFps = 144, PreciseTimer = false,
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
-            FilmGrain = 0, SkipLogos = false, God = true, UnlimitedAmmo = true, CameraFix = true,
+            FilmGrain = 0, SkipLogos = false, QteHold = true, God = true, UnlimitedAmmo = true, CameraFix = true,
             CameraOrbit = true,
             FullScreenUiClip = false, ObjectViewPerspective = false,
             OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,

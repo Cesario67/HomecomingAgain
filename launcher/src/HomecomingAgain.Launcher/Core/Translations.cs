@@ -200,7 +200,13 @@ public static class Translations
                                  "5 s environ au lieu de 23. Le jeu a déjà fini de charger pendant ces logos.",
                                  "Konami, Double Helix and the legal screen play fast-forwarded: the title screen appears " +
                                  "in about 5 s instead of 23. The game has already finished loading during these logos."),
-            ["SecCheats"] = ("Triches", "Cheats"),
+            ["SecAccessibility"] = ("Accessibilité", "Accessibility"),
+            ["QteHold"] = ("QTE : maintenir le bouton suffit", "QTE: holding the button is enough"),
+            ["QteHoldHint"] = ("Pendant une invite à marteler un bouton, tenir le bouton compte comme des appuis répétés " +
+                               "(10 par seconde, réglable par QteHoldRate dans le .ini). Manette seulement.",
+                               "During a button-mashing prompt, holding the button counts as repeated presses " +
+                               "(10 per second, set with QteHoldRate in the .ini). Controller only."),
+            ["SecCheats"] =("Triches", "Cheats"),
             ["God"] = ("Mode dieu (le joueur ne perd plus de vie)", "God mode (the player loses no health)"),
             ["UnlimitedAmmo"] = ("Munitions illimitées", "Unlimited ammo"),
             ["CheatsHint"] = ("Variables de débogage du moteur, réactivées par le mod. Le mode dieu évite aussi de " +
