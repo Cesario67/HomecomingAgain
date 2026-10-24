@@ -7,6 +7,7 @@
 #include "core/Log.h"
 #include "input/InputLog.h"
 #include "input/MenuBridge.h"
+#include "input/QteHold.h"
 #include "input/SonyPad.h"
 #include "patches/CameraFix.h"
 
@@ -62,6 +63,7 @@ DWORD WINAPI HookGetState(DWORD user, XINPUT_STATE* state) {
         if (result == ERROR_SUCCESS && state != nullptr) {
             OnPadConnected();
             LogPadButtons(state->Gamepad.wButtons);
+            state->Gamepad.wButtons = FilterQteButtons(state->Gamepad.wButtons);
             patches::NoteRightStick(state->Gamepad.sThumbRX, state->Gamepad.sThumbRY);
             patches::NoteLeftTrigger(state->Gamepad.bLeftTrigger);
         } else {
@@ -102,7 +104,8 @@ DWORD WINAPI HookGetCapabilities(DWORD user, DWORD flags, XINPUT_CAPABILITIES* c
 void InstallXInputHooks(HMODULE engine) {
     const Config& config = GetConfig();
     g_playStationPad = config.playStationPad;
-    if ((config.buttonIcons != 0 && !config.cameraFix && !config.playStationPad) || engine == nullptr) {
+    if ((config.buttonIcons != 0 && !config.cameraFix && !config.playStationPad && !config.qteHold) ||
+        engine == nullptr) {
         return;
     }
     const bool get = hooking::PatchImportOrdinal(engine, kXInputDll, kGetStateOrdinal, &HookGetState, &g_getState);

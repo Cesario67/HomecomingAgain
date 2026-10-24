@@ -31,6 +31,7 @@
 #include "input/ButtonIcons.h"
 #include "input/ControllerNames.h"
 #include "input/MenuBridge.h"
+#include "input/QteHoldLogic.h"
 #include "input/SonyPad.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
@@ -747,6 +748,22 @@ void TestHangClock() {
     Check(HangElapsed(500, 600, 0) == 0, "blocage : image plus récente que la mesure");
 }
 
+void TestQteHold() {
+    namespace q = hca::input::qte;
+    const WORD held = XINPUT_GAMEPAD_A | XINPUT_GAMEPAD_DPAD_UP;
+    // 10 presses per second: period 100 ms, pressed for 0 to 49 ms, released for 50 to 99 ms.
+    Check(q::ApplyHold(held, true, 1000, 10) == held, "QTE : bouton tenu, première moitié de période : appuyé");
+    Check(q::ApplyHold(held, true, 1060, 10) == XINPUT_GAMEPAD_DPAD_UP,
+          "QTE : bouton tenu, seconde moitié : relâché, croix gardée");
+    Check(q::ApplyHold(held, true, 1100, 10) == held, "QTE : nouvel appui à la période suivante");
+    Check(q::ApplyHold(held, false, 1060, 10) == held, "QTE : sans invite, rien ne change");
+    Check(q::ApplyHold(0, true, 1060, 10) == 0, "QTE : rien de tenu, rien de simulé");
+    Check(q::ApplyHold(XINPUT_GAMEPAD_DPAD_UP, true, 1060, 10) == XINPUT_GAMEPAD_DPAD_UP,
+          "QTE : autres boutons inchangés");
+    Check(q::ClampRate(1) == q::kMinRate && q::ClampRate(99) == q::kMaxRate && q::ClampRate(10) == 10,
+          "QTE : cadence bornée");
+}
+
 int main() {
     TestHangClock();
     TestStrings();
@@ -775,6 +792,7 @@ int main() {
     TestCameraTuning();
     TestSonyPad();
     TestCheatPointers();
+    TestQteHold();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }
