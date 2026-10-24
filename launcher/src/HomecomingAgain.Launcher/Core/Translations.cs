@@ -282,6 +282,8 @@ public static class Translations
                                   "Another version.dll was set aside (version.dll.avant-hca)."),
             ["InstallModInstalled"] = ("Homecoming Again {0} installé.", "Homecoming Again {0} installed."),
             ["InstallFileKept"] = ("{0} existant conservé.", "Existing {0} kept."),
+            ["InstallIniMigrated"] = ("{0} mis à jour : vos réglages sont repris, les nouveaux sont ajoutés. Ancien fichier : {1}.",
+                                      "{0} updated: your settings are kept, new ones are added. Previous file: {1}."),
             ["InstallFileInstalled"] = ("{0} installé.", "{0} installed."),
             ["InstallLauncherCopied"] = ("Launcher copié dans Bin.", "Launcher copied to Bin."),
             ["InstallOldLauncherRemoved"] = (

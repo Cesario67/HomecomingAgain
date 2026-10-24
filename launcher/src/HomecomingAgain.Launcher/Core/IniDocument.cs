@@ -75,6 +75,31 @@ public sealed class IniDocument
 
     public void SetInt(string section, string key, int value) => Set(section, key, value.ToString());
 
+    /// <summary>Every Key=Value line (comments skipped) with its section; keys before any section have an empty one.</summary>
+    public IReadOnlyList<(string Section, string Key, string Value)> Entries()
+    {
+        List<(string, string, string)> entries = new();
+        string section = string.Empty;
+        foreach (string raw in _lines)
+        {
+            string line = raw.Trim();
+            if (IsSectionHeader(line))
+            {
+                section = line[1..^1].Trim();
+                continue;
+            }
+            int equals = line.IndexOf('=');
+            if (equals > 0 && !line.StartsWith(';') && !line.StartsWith('#'))
+            {
+                entries.Add((section, line[..equals].Trim(), ValueOf(line)));
+            }
+        }
+        return entries;
+    }
+
+    /// <summary>True when <paramref name="key"/> exists in <paramref name="section"/>.</summary>
+    public bool Has(string section, string key) => FindKey(section, key) >= 0;
+
     public void Save(string path) => File.WriteAllLines(path, _lines, new UTF8Encoding(false));
 
     public override string ToString() => string.Join("\n", _lines);
