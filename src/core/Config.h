@@ -109,6 +109,9 @@ struct Config {
     int buttonIcons = 0;
     // Icônes animées de l'invite à marteler (QTE) aux couleurs de la manette (voir graphics/FlashIcons.h).
     bool animatedIcons = true;
+    // Manette PlayStation (DualShock 4, DualSense) présentée comme une manette Xbox 360 quand aucune manette XInput
+    // n'est branchée (input/SonyPad.h).
+    bool playStationPad = true;
 
     // [Camera]
     // Correctif de caméra à la manette, porté du Camera Fix d'Emertels (voir patches/CameraFix.h). Désactivé par
@@ -123,6 +126,11 @@ struct Config {
     patches::camera::CameraMode cameraMode = patches::camera::CameraMode::Follow;
     bool cameraOrbitGuardFollow = true;
     // En orbite : le personnage se tourne vers la caméra quand il marche (Camera) ou vers la direction du stick (Stick).
+
+    // [Cheats]
+    // Mode dieu et munitions illimitées, par les variables de débogage du moteur (voir patches/Cheats.h).
+    bool cheatGod = false;
+    bool cheatUnlimitedAmmo = false;
 
 
     // [Debug]

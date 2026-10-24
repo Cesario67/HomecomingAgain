@@ -18,8 +18,39 @@ public static class Translations
             ["Save"] = ("Enregistrer", "Save"),
             ["Play"] = ("▶  Jouer", "▶  Play"),
             ["TabGraphics"] = ("Graphismes", "Graphics"),
+            ["TabController"] = ("Manette", "Controller"),
             ["TabPerformance"] = ("Performances et stabilité", "Performance and stability"),
             ["TabInstall"] = ("Installation", "Installation"),
+
+            // --- Réglages ajoutés en 0.9.8 (Graphismes, manette, son, cadence)
+            ["FullScreenUiClip"] = ("Carte et interface sur toute l'image (au-delà de 720p)",
+                                    "Map and interface across the whole image (above 720p)"),
+            ["FullScreenUiClipHint"] = ("Au-delà de 1280x720, le jeu coupe la carte : sa zone fixe est étendue à toute l'image.",
+                                        "Above 1280x720 the game cuts the map off: its fixed area is extended to the whole image."),
+            ["ObjectViewPerspective"] = ("Objets examinés sans déformation (au-delà de 720p)",
+                                         "Inspected items without distortion (above 720p)"),
+            ["ObjectViewPerspectiveHint"] = ("Au-delà de 720p, la perspective de la vue d'inspection (couteau...) est " +
+                                             "déformée : elle est rétablie.",
+                                             "Above 720p the perspective of the item inspection view (knife...) is " +
+                                             "distorted: it is restored."),
+            ["OrbitGuardFollow"] = ("Gâchette gauche (L2) : suspend l'orbite", "Left trigger (L2): suspends the orbit"),
+            ["OrbitGuardFollowHint"] = ("Tant que L2 (garde au couteau) est tenue, la caméra revient derrière le personnage " +
+                                        "et le stick droit le tourne. Exige la caméra orbitale.",
+                                        "While L2 (knife guard) is held, the camera comes back behind the character and the " +
+                                        "right stick turns him. Requires the orbit camera."),
+            ["CameraHorizontalSpeed"] = ("Caméra : vitesse horizontale", "Camera: horizontal speed"),
+            ["CameraVerticalSpeed"] = ("Caméra : vitesse verticale", "Camera: vertical speed"),
+            ["CameraAimHorizontalSpeed"] = ("Visée : vitesse horizontale", "Aiming: horizontal speed"),
+            ["CameraAimVerticalSpeed"] = ("Visée : vitesse verticale", "Aiming: vertical speed"),
+            ["CameraSpeedsHint"] = ("De 0,25 à 3 (1 = calibrage d'origine du correctif de caméra). Exige le correctif de caméra.",
+                                    "From 0.25 to 3 (1 = the camera fix's original calibration). Requires the camera fix."),
+            ["SecAudio"] = ("Son", "Sound"),
+            ["AudioChannelFix"] = ("Corriger les sons entendus d'un seul côté", "Fix sounds heard on one side only"),
+            ["AudioChannelFixHint"] = ("Mélange vers la stéréo fait par le mod (par exemple une piste de la cinématique des " +
+                                       "insectes n'était entendue qu'à gauche). Désactivé = jeu d'origine.",
+                                       "Mixing down to stereo done by the mod (for example a track of the insect cutscene was " +
+                                       "only heard on the left). Off = original game."),
+
             ["Yes"] = ("Oui", "Yes"),
             ["No"] = ("Non", "No"),
             ["FolderPickerTitle"] = ("Dossier de Silent Hill Homecoming (celui qui contient Bin et Engine)",
@@ -76,6 +107,10 @@ public static class Translations
                             "NVIDIA AI anti-aliasing, more stable and sharper than SMAA, which it replaces while active. " +
                             "NVIDIA RTX cards only; also installs DXVK (Direct3D 9 on Vulkan). Without a compatible card, " +
                             "the game keeps its normal image."),
+            ["DlssLinux"] = ("Indisponible sous Linux : Proton a déjà son propre DXVK, et le DLSS y demande des réglages " +
+                             "pas encore testés.",
+                             "Unavailable on Linux: Proton already has its own DXVK, and DLSS there needs settings that " +
+                             "have not been tested yet."),
             ["DlssCredit"] = ("NVIDIA DLSS : licence NVIDIA RTX SDKs. DXVK : licence zlib. Ce projet n'est ni soutenu ni " +
                               "approuvé par NVIDIA.",
                               "NVIDIA DLSS: NVIDIA RTX SDKs License. DXVK: zlib license. This project is not sponsored or " +
@@ -96,6 +131,13 @@ public static class Translations
                                    "A, B, X, Y button icons in menus, the inventory, the controls screen and in-game prompts " +
                                    "(Open, Save...). The original game shows the digits 1 to 4."),
             ["CameraFix"] = ("Correctif de caméra (stick droit)", "Camera fix (right stick)"),
+            ["CameraOrbit"] = ("Caméra orbitale (expérimental)", "Orbit camera (experimental)"),
+            ["CameraOrbitHint"] = ("Exige le correctif de caméra. Le stick droit fait tourner la caméra seule autour du " +
+                                     "personnage, sans la ramener derrière lui. La visée aux armes à feu garde la caméra " +
+                                     "du jeu. Gâchette gauche (L2) tenue : orbite suspendue, la caméra revient derrière lui.",
+                                     "Requires the camera fix. The right stick turns the camera alone around the " +
+                                     "character, without bringing it back behind him. Aiming with firearms keeps the " +
+                                     "game's camera. Left trigger (L2) held: orbit suspended, the camera returns behind him."),
             ["CameraFixHint"] = ("Le personnage tourne avec la caméra, le stick vertical répond de façon proportionnelle, et " +
                                  "la visée a sa propre sensibilité (vitesses dans la section [Camera] de HomecomingAgain.ini). " +
                                  "Le stick droit ne tourne plus le personnage dans Engine\\binds_pc_mjs.cfg (copie de " +
@@ -158,6 +200,13 @@ public static class Translations
                                  "5 s environ au lieu de 23. Le jeu a déjà fini de charger pendant ces logos.",
                                  "Konami, Double Helix and the legal screen play fast-forwarded: the title screen appears " +
                                  "in about 5 s instead of 23. The game has already finished loading during these logos."),
+            ["SecCheats"] = ("Triches", "Cheats"),
+            ["God"] = ("Mode dieu (le joueur ne perd plus de vie)", "God mode (the player loses no health)"),
+            ["UnlimitedAmmo"] = ("Munitions illimitées", "Unlimited ammo"),
+            ["CheatsHint"] = ("Variables de débogage du moteur, réactivées par le mod. Le mode dieu évite aussi de " +
+                               "consommer des munitions.",
+                               "The engine's debug variables, re-enabled by the mod. God mode also stops ammo " +
+                               "consumption."),
             ["SecCompatibility"] = ("Compatibilité", "Compatibility"),
             ["WindowThreadLock"] = ("Fenêtre réactive pendant les chargements (overlay Steam)",
                                     "Responsive window during loading (Steam overlay)"),
@@ -235,6 +284,9 @@ public static class Translations
             ["InstallFileKept"] = ("{0} existant conservé.", "Existing {0} kept."),
             ["InstallFileInstalled"] = ("{0} installé.", "{0} installed."),
             ["InstallLauncherCopied"] = ("Launcher copié dans Bin.", "Launcher copied to Bin."),
+            ["InstallOldLauncherRemoved"] = (
+                "Ancienne copie « Bin/HomecomingAgain » retirée (elle empêchait le mod de démarrer). Si l'option de lancement Steam la citait, recopiez la nouvelle ci-dessous.",
+                "Old copy \"Bin/HomecomingAgain\" removed (it prevented the mod from starting). If your Steam launch options pointed to it, copy the new line below."),
             ["UninstallDllRemoved"] = ("version.dll retirée.", "version.dll removed."),
             ["UninstallDllRestored"] = ("version.dll d'origine remise en place.", "Original version.dll restored."),
             ["UninstallKept"] = ("Réglages et journaux conservés.", "Settings and logs kept."),

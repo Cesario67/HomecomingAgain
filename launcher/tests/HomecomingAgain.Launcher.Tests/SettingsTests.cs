@@ -45,6 +45,30 @@ public sealed class SettingsTests
         Assert.Equal(8192, settings.ShadowResolution);
         Assert.True(settings.WindowThreadLock && settings.D3DMultithreaded && settings.HangDetection);
         Assert.True(settings.SkipLogos);
+        Assert.False(settings.God || settings.UnlimitedAmmo);
+        Assert.False(settings.CameraOrbit);
+    }
+
+    [Theory]
+    [InlineData("Orbit", true)]
+    [InlineData("orbit", true)]
+    [InlineData("Follow", false)]
+    [InlineData("autre", false)]
+    public void ReadsCameraModeLikeTheDll(string mode, bool orbit)
+    {
+        IniDocument mod = IniDocument.Parse($"[Camera]\nMode={mode}");
+        PatchSettings settings = PatchSettings.Read(mod, KeyValueDocument.Parse(OriginalGameSettings));
+        Assert.Equal(orbit, settings.CameraOrbit);
+    }
+
+    [Fact]
+    public void WritesCameraModeAsText()
+    {
+        IniDocument mod = IniDocument.Parse("");
+        (new PatchSettings() with { CameraOrbit = true }).WriteMod(mod);
+        Assert.Equal("Orbit", mod.Get("Camera", "Mode"));
+        (new PatchSettings()).WriteMod(mod);
+        Assert.Equal("Follow", mod.Get("Camera", "Mode"));
     }
 
     [Theory]
@@ -73,7 +97,11 @@ public sealed class SettingsTests
             FullResolutionTextures = true, Smaa = false, Anisotropy = 4, TargetFps = 144, PreciseTimer = false,
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
-            FilmGrain = 0, SkipLogos = false,
+            FilmGrain = 0, SkipLogos = false, God = true, UnlimitedAmmo = true, CameraFix = true,
+            CameraOrbit = true,
+            FullScreenUiClip = false, ObjectViewPerspective = false,
+            OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,
+            CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false,
         };
         IniDocument mod = IniDocument.Parse("");
         KeyValueDocument game = KeyValueDocument.Parse(OriginalGameSettings);
@@ -83,6 +111,99 @@ public sealed class SettingsTests
         Assert.Equal(written, PatchSettings.Read(mod, game));
         Assert.Equal("0", game.Get("AutoDownResTextures"));
         Assert.Equal("false", game.Get("LowQualityShaders"));
+    }
+
+    [Fact]
+    public void NewOptionsHaveTheDllDefaultsWhenTheIniIsEmpty()
+    {
+        PatchSettings read = PatchSettings.Read(IniDocument.Parse(""), KeyValueDocument.Parse(OriginalGameSettings));
+        Assert.True(read.FullScreenUiClip && read.ObjectViewPerspective && read.OrbitGuardFollow);
+        Assert.True(read.AudioChannelFix);
+        Assert.Equal((1.0, 1.0, 1.0, 1.0), (read.CameraHorizontalSpeed, read.CameraVerticalSpeed,
+                                           read.CameraAimHorizontalSpeed, read.CameraAimVerticalSpeed));
+    }
+
+    [Fact]
+    public void ViewModelsKeepEveryNewOptionBetweenLoadAndApply()
+    {
+        PatchSettings source = new()
+        {
+            FullScreenUiClip = false, ObjectViewPerspective = false,
+            OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,
+            CameraAimHorizontalSpeed = 2.5, CameraAimVerticalSpeed = 3.0, AudioChannelFix = false,
+        };
+        GraphicsViewModel graphics = new();
+        PerformanceViewModel performance = new();
+        graphics.Load(source);
+        performance.Load(source);
+
+        PatchSettings result = performance.ApplyTo(graphics.ApplyTo(new PatchSettings()));
+
+        Assert.Equal(source, result with { DisplayMode = source.DisplayMode, Width = source.Width, Height = source.Height,
+                                           TargetFps = source.TargetFps });
+    }
+
+    [Fact]
+    public void SettingsTheLauncherDoesNotExposeAreLeftAsTheyAre()
+    {
+        // Réglages du .ini sans case dans le launcher : l'enregistrement ne doit ni les remettre à leur défaut ni les retirer.
+        const string text = "[Graphics]\nSsaoRadius=2.25\nSsaoFadeStart=200\nSsaoFadeEnd=600\nD3D9On12=1\n" +
+                            "[Audio]\nChannelOrder=0,1,2,3,4,5\nChannels=6\n[Movies]\nSkipKey=27\n" +
+                            "[Frames]\nReportIntervalSeconds=30\nFrameLimitFps=90\n" +
+                            "[Crash]\nDumpKeepCount=5\n[Debug]\nLogKeepCount=100\nFrameCapture=1\nSkipMovies=1\n" +
+                            "[Input]\nMenuPad=1\nAnimatedIcons=0\nPlayStationPad=0";
+        IniDocument mod = IniDocument.Parse(text);
+        new PatchSettings().WriteMod(mod);
+        Assert.Equal(("2.25", "200", "600", "1"), (mod.Get("Graphics", "SsaoRadius"), mod.Get("Graphics", "SsaoFadeStart"),
+                                                    mod.Get("Graphics", "SsaoFadeEnd"), mod.Get("Graphics", "D3D9On12")));
+        Assert.Equal(("0,1,2,3,4,5", "27", "30", "5"), (mod.Get("Audio", "ChannelOrder"), mod.Get("Movies", "SkipKey"),
+                                                         mod.Get("Frames", "ReportIntervalSeconds"),
+                                                         mod.Get("Crash", "DumpKeepCount")));
+        Assert.Equal(("100", "1", "1"), (mod.Get("Debug", "LogKeepCount"), mod.Get("Debug", "FrameCapture"),
+                                         mod.Get("Debug", "SkipMovies")));
+        Assert.Equal(("1", "6", "90"), (mod.Get("Input", "MenuPad"), mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps")));
+        Assert.Equal(("0", "0"), (mod.Get("Input", "AnimatedIcons"), mod.Get("Input", "PlayStationPad")));
+    }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, false)]  // correctif décoché alors que l'orbite reste cochée : options grisées
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public void OrbitOptionsNeedBothTheCameraFixAndTheOrbit(bool cameraFix, bool orbit, bool enabled)
+    {
+        GraphicsViewModel graphics = new() { CameraFix = cameraFix, CameraOrbit = orbit };
+        Assert.Equal(enabled, graphics.OrbitOptionsEnabled);
+        List<string> changed = [];
+        graphics.PropertyChanged += (_, e) => changed.Add(e.PropertyName ?? "");
+        graphics.CameraFix = !cameraFix;
+        Assert.Contains(nameof(GraphicsViewModel.OrbitOptionsEnabled), changed);
+    }
+
+    [Fact]
+    public void NewOptionsAreClampedToWhatTheDllAccepts()
+    {
+        IniDocument mod = IniDocument.Parse("");
+        (new PatchSettings
+        {
+            CameraHorizontalSpeed = 9, CameraVerticalSpeed = 0.01,
+        }).WriteMod(mod);
+        Assert.Equal(("3.0", "0.25"), (mod.Get("Camera", "HorizontalSpeed"), mod.Get("Camera", "VerticalSpeed")));
+    }
+
+    [Theory]
+    [InlineData("1.5", 1.5)]
+    [InlineData("0.25", 0.25)]
+    [InlineData("abc", 7.0)]
+    [InlineData("", 7.0)]
+    [InlineData("1,5", 7.0)]
+    public void DecimalNumbersAreReadWithADotWhateverTheWindowsLanguage(string text, double expected)
+    {
+        IniDocument mod = IniDocument.Parse($"[Camera]\nHorizontalSpeed={text}");
+        Assert.Equal(expected, mod.GetDouble("Camera", "HorizontalSpeed", 7.0));
+        IniDocument written = IniDocument.Parse("");
+        written.SetDouble("Camera", "HorizontalSpeed", 1.5);
+        Assert.Equal("1.5", written.Get("Camera", "HorizontalSpeed"));
     }
 
     [Theory]

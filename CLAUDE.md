@@ -42,9 +42,10 @@ Reprise de DPStabilityFix, adaptée (espace de noms `hca`, projet `HomecomingAga
 
 ## État
 
-Version 0.9.2 publiée (préversion, 18/10/2026). Le mod est installé et testé en jeu à chaque modification : cadence,
-sans bordure, son, SMAA, SSAO, ombres 8192, DLSS, manette (menus, icônes, noms des boutons, zoom de la carte, caméra orbitale), carte
-entière au-delà du 720p, logos accélérés. Plan et points en attente : `docs/a-faire.md`. Les fonctionnalités et
+Version 0.9.6 publiée (préversion, 20/10/2026). Le mod est installé et testé en jeu à chaque modification : cadence,
+sans bordure, son, SMAA, SSAO, ombres 8192, DLSS, manette (menus, icônes, noms des boutons, zoom de la carte, caméra orbitale, manette
+PlayStation sans Steam Input), carte entière et objets examinés au-delà du 720p, logos accélérés, triches (mode dieu,
+munitions illimitées), launcher Linux expérimental (jeu dans Proton) et rapport de bogue en un clic. Plan et points en attente : `docs/a-faire.md`. Les fonctionnalités et
 réglages sont décrits dans les README.
 
 ## Commandes

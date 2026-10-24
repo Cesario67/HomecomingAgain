@@ -20,12 +20,24 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     [NotifyPropertyChangedFor(nameof(ShowHighFrameRateWarning))]
     public partial Choice<int> SelectedFrameRate { get; set; }
 
+    /// <summary>Sons envoyés d'un seul côté mélangés vers la stéréo par le mod ([Audio] ChannelFix).</summary>
+    [ObservableProperty]
+    public partial bool AudioChannelFix { get; set; } = true;
+
     [ObservableProperty]
     public partial bool PreciseTimer { get; set; } = true;
 
     /// <summary>Logos de démarrage accélérés jusqu'à l'écran titre ([Movies] SkipLogos).</summary>
     [ObservableProperty]
     public partial bool SkipLogos { get; set; } = true;
+
+    /// <summary>Mode dieu ([Cheats] God).</summary>
+    [ObservableProperty]
+    public partial bool God { get; set; }
+
+    /// <summary>Munitions illimitées ([Cheats] UnlimitedAmmo).</summary>
+    [ObservableProperty]
+    public partial bool UnlimitedAmmo { get; set; }
 
     [ObservableProperty]
     public partial bool WindowThreadLock { get; set; } = true;
@@ -62,8 +74,11 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     {
         SelectedFrameRate = FrameRates.FirstOrDefault(choice => choice.Value == settings.TargetFps)
                             ?? AddCustomFrameRate(settings.TargetFps);
+        AudioChannelFix = settings.AudioChannelFix;
         PreciseTimer = settings.PreciseTimer;
         SkipLogos = settings.SkipLogos;
+        God = settings.God;
+        UnlimitedAmmo = settings.UnlimitedAmmo;
         WindowThreadLock = settings.WindowThreadLock;
         D3DMultithreaded = settings.D3DMultithreaded;
         MissingTexts = settings.MissingTexts;
@@ -76,8 +91,11 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     public PatchSettings ApplyTo(PatchSettings settings) => settings with
     {
         TargetFps = SelectedFrameRate.Value,
+        AudioChannelFix = AudioChannelFix,
         PreciseTimer = PreciseTimer,
         SkipLogos = SkipLogos,
+        God = God,
+        UnlimitedAmmo = UnlimitedAmmo,
         WindowThreadLock = WindowThreadLock,
         D3DMultithreaded = D3DMultithreaded,
         MissingTexts = MissingTexts,
@@ -95,4 +113,5 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
         OnPropertyChanged(nameof(FrameRates));
         return choice;
     }
+
 }

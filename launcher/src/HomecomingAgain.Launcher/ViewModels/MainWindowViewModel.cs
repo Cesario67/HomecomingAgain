@@ -16,7 +16,8 @@ public sealed partial class MainWindowViewModel : LocalizedViewModel
     {
         _steamCommand = steamCommand;
         _packageDirectory = packageDirectory ?? launcherDirectory;
-        Graphics.DlssAvailable = DlssInstaller.IsAvailable(_packageDirectory);
+        Graphics.DlssAvailable = DlssInstaller.IsAvailable(_packageDirectory, OperatingSystem.IsWindows());
+        Graphics.DlssUnsupportedOnLinux = !OperatingSystem.IsWindows();
         SelectedLanguage = Languages.First(choice => choice.Value == Loc.Current);
         Loc.Instance.LanguageChanged += OnLanguageChanged;
         Status = new StatusViewModel(this, packageDirectory ?? launcherDirectory);
