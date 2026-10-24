@@ -143,8 +143,8 @@ struct Config {
     bool backBufferDump = false;
     // Option de test : le moteur ne lit plus ses vidéos (voir compat/SkipMovies.h).
     bool skipMovies = false;
-    // DIAGNOSTIC TEMPORAIRE : journal des entrées (manette, Entrée et Échap, état du moteur), voir input/InputLog.h.
-    bool inputLog = true;
+    // DIAGNOSTIC TEMPORAIRE : journal des entrées (manette, Entrée et Échap, état du moteur), voir input/InputLog.h. Coupé par défaut ([Debug] InputLog=1 pour l'activer).
+    bool inputLog = false;
 };
 
 // Retourne false si le fichier .ini est absent (les valeurs par défaut sont alors utilisées).
