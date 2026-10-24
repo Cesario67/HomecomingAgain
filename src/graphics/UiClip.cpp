@@ -15,16 +15,19 @@ namespace {
 constexpr size_t kSetViewportIndex = 47;
 constexpr size_t kSetScissorRectIndex = 75;
 constexpr size_t kSetVertexShaderConstantFIndex = 94;
+constexpr size_t kSetPixelShaderConstantFIndex = 109;
 constexpr long kLegacyWidth = 1280;
 constexpr long kLegacyHeight = 720;
 
 using SetViewportFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const D3DVIEWPORT9*);
 using SetScissorRectFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, const RECT*);
 using SetVertexShaderConstantFFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, UINT, const float*, UINT);
+using SetPixelShaderConstantFFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, UINT, const float*, UINT);
 
 SetViewportFn g_setViewport = nullptr;
 SetScissorRectFn g_setScissorRect = nullptr;
 SetVertexShaderConstantFFn g_setVertexShaderConstantF = nullptr;
+SetPixelShaderConstantFFn g_setPixelShaderConstantF = nullptr;
 
 // Zone 1280x720 étendue en vigueur : rapports 1280 / largeur et 720 / hauteur de la cible (thread de rendu seul).
 bool g_active = false;
@@ -33,6 +36,9 @@ float g_scaleY = 1.0f;
 std::atomic<bool> g_logged{false};
 std::atomic<bool> g_loggedPartial{false};
 std::atomic<bool> g_loggedObject{false};
+std::atomic<bool> g_loggedLight{false};
+long g_targetWidth = 0;
+long g_targetHeight = 0;
 
 // Taille de la cible de dessin 0 ; faux si elle est illisible.
 bool TargetSize(IDirect3DDevice9* device, long& width, long& height) noexcept {
@@ -68,6 +74,8 @@ HRESULT STDMETHODCALLTYPE HookSetViewport(IDirect3DDevice9* device, const D3DVIE
                      static_cast<long>(viewport->Width), static_cast<long>(viewport->Height), targetWidth,
                      targetHeight)) {
         g_active = true;
+        g_targetWidth = targetWidth;
+        g_targetHeight = targetHeight;
         g_scaleX = static_cast<float>(kLegacyWidth) / static_cast<float>(targetWidth);
         g_scaleY = static_cast<float>(kLegacyHeight) / static_cast<float>(targetHeight);
         D3DVIEWPORT9 expanded = *viewport;
@@ -124,6 +132,30 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
         log::Warn("Interface : projection envoyée en partie (c{} x{}), non compensée", start, count);
     }
     return g_setVertexShaderConstantF(device, start, data, count);
+}
+
+// Position of the first light (mLightPos_DPMin[0], c20) of the documents and photos shader: see
+// RestoreInspectionLight. Only inside the extended 1280x720 area.
+HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, UINT start, const float* data,
+                                                      UINT count) {
+    constexpr UINT kLightPositionRegister = 20;
+    if (g_active && data != nullptr && start == kLightPositionRegister && count >= 1 &&
+        GetConfig().objectViewPerspective) {
+        float rows[64];
+        const UINT copied = count < 16 ? count : 16;
+        std::memcpy(rows, data, copied * 4 * sizeof(float));
+        if (RestoreInspectionLight(rows, g_targetWidth, g_targetHeight)) {
+            if (!g_loggedLight.exchange(true)) {
+                log::Info("Interface : projecteur des documents et photos recentré (c20 ramenée à x = y = 0)");
+            }
+            if (count <= 16) {
+                return g_setPixelShaderConstantF(device, start, rows, count);
+            }
+            const HRESULT first = g_setPixelShaderConstantF(device, start, rows, 16);
+            return FAILED(first) ? first : g_setPixelShaderConstantF(device, start + 16, data + 64, count - 16);
+        }
+    }
+    return g_setPixelShaderConstantF(device, start, data, count);
 }
 
 }  // namespace
@@ -191,6 +223,23 @@ bool RestoreObjectPerspective(float* rows, float scale) noexcept {
     return true;
 }
 
+bool RestoreInspectionLight(float* position, long targetWidth, long targetHeight) noexcept {
+    // 28.8: measured constant (640 / 22.222 and 360 / 12.5), see UiClip.h.
+    constexpr float kPixelsPerUnit = 28.8f;
+    const float offsetX = -static_cast<float>(targetWidth - kLegacyWidth) / kPixelsPerUnit;
+    const float offsetY = static_cast<float>(targetHeight - kLegacyHeight) / kPixelsPerUnit;
+    if (offsetX >= -0.01f || offsetY <= 0.01f) {
+        return false;
+    }
+    if (std::fabs(position[0] - offsetX) > 0.01f * std::fabs(offsetX) ||
+        std::fabs(position[1] - offsetY) > 0.01f * offsetY) {
+        return false;
+    }
+    position[0] = 0.0f;
+    position[1] = 0.0f;
+    return true;
+}
+
 void Install(IDirect3DDevice9* device) {
     if (!GetConfig().fullScreenUiClip || device == nullptr) {
         return;
@@ -198,6 +247,8 @@ void Install(IDirect3DDevice9* device) {
     // La zone d'affichage en dernier : sans la compensation de projection, l'étendre agrandirait la carte.
     const bool ok = hooking::PatchVtable(device, kSetVertexShaderConstantFIndex, &HookSetVertexShaderConstantF,
                                          &g_setVertexShaderConstantF) &&
+                    hooking::PatchVtable(device, kSetPixelShaderConstantFIndex, &HookSetPixelShaderConstantF,
+                                         &g_setPixelShaderConstantF) &&
                     hooking::PatchVtable(device, kSetScissorRectIndex, &HookSetScissorRect, &g_setScissorRect) &&
                     hooking::PatchVtable(device, kSetViewportIndex, &HookSetViewport, &g_setViewport);
     log::Info("Interface : zone 1280x720 fixe du jeu {}", ok ? "étendue à toute l'image" : "non interceptée");

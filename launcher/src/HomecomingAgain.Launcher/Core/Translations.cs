@@ -211,6 +211,18 @@ public static class Translations
             ["WindowThreadLock"] = ("Fenêtre réactive pendant les chargements (overlay Steam)",
                                     "Responsive window during loading (Steam overlay)"),
             ["D3DMultithreaded"] = ("Direct3D protégé contre les accès simultanés", "Direct3D protected against concurrent access"),
+            ["MissingTexts"] = ("Textes manquants du jeu ajoutés (FR, DE, IT, ES)", "Add the game's missing texts (FR, DE, IT, ES)"),
+            ["MissingTextsHint"] = ("Le jeu n'a pas de texte pour certaines invites (par exemple « Examiner / Inventaire ») " +
+                                    "dans ses fichiers français, allemand, italien et espagnol : rien ne s'affiche. Le " +
+                                    "launcher ajoute des traductions, avec une copie des fichiers d'origine. Décocher puis " +
+                                    "enregistrer remet les fichiers d'origine. Traductions non relues, signalez les erreurs.",
+                                    "The game has no text for some prompts (for example \"Examine / Inventory\") in its French, " +
+                                    "German, Italian and Spanish files: nothing is shown. The launcher adds translations, with " +
+                                    "a copy of the original files. Unchecking then saving puts the original files back. " +
+                                    "Translations are not proofread, please report mistakes."),
+            ["InstallTextsAdded"] = ("{0} texte(s) manquant(s) ajouté(s) aux fichiers de langue du jeu.",
+                                     "{0} missing text(s) added to the game language files."),
+            ["UninstallTextsRestored"] = ("Fichiers de langue d'origine remis.", "Original language files restored."),
             ["CompatibilityHint"] = ("Corrigent les blocages au chargement en fenêtré ou sans bordure, surtout avec l'overlay " +
                                      "Steam. À laisser activés.",
                                      "Fix freezes during loading in windowed or borderless mode, especially with the Steam " +

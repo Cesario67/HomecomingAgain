@@ -70,6 +70,9 @@ public sealed record PatchSettings
     public bool WindowThreadLock { get; init; } = true;
     public bool D3DMultithreaded { get; init; } = true;
 
+    // --- Missing texts ([Compat] MissingTexts, read by the launcher only, see TextPatcher)
+    public bool MissingTexts { get; init; } = true;
+
     // --- Diagnostic ([Crash], [Frames])
     public bool CrashDumps { get; init; } = true;
     public bool FullMemoryDumps { get; init; }
@@ -117,6 +120,7 @@ public sealed record PatchSettings
             UnlimitedAmmo = mod.GetBool("Cheats", "UnlimitedAmmo", defaults.UnlimitedAmmo),
             WindowThreadLock = mod.GetBool("Compat", "WindowThreadLock", defaults.WindowThreadLock),
             D3DMultithreaded = mod.GetBool("Compat", "D3DMultithreaded", defaults.D3DMultithreaded),
+            MissingTexts = mod.GetBool("Compat", "MissingTexts", defaults.MissingTexts),
             CrashDumps = mod.GetBool("Crash", "CrashDumps", defaults.CrashDumps),
             FullMemoryDumps = mod.GetBool("Crash", "FullMemoryDumps", defaults.FullMemoryDumps),
             HangDetection = mod.GetInt("Crash", "HangSeconds", 3) > 0,
@@ -158,6 +162,7 @@ public sealed record PatchSettings
         mod.SetBool("Cheats", "UnlimitedAmmo", UnlimitedAmmo);
         mod.SetBool("Compat", "WindowThreadLock", WindowThreadLock);
         mod.SetBool("Compat", "D3DMultithreaded", D3DMultithreaded);
+        mod.SetBool("Compat", "MissingTexts", MissingTexts);
         mod.SetBool("Crash", "CrashDumps", CrashDumps);
         mod.SetBool("Crash", "FullMemoryDumps", FullMemoryDumps);
         mod.SetInt("Crash", "HangSeconds", HangDetection ? 3 : 0);

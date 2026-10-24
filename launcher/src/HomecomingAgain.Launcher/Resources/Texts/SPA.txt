@@ -1,0 +1,32 @@
+[IDS_SHELL_WALK]Caminar
+[IDS_SHELL_MISSION_EIGHT_B]Lápidas
+[IDS_SHELL_SWAP_STICK_CONTROLS_XBOX360]Intercambiar LS y RS
+[IDS_SHELL_SWAP_STICK_CONTROLS_PS3]Intercambiar sticks izquierdo/derecho
+[IDS_SHELL_USE_MANDK]Usar el ratón y el teclado
+[IDS_SHELL_USE_JOYSTICK]Usar joystick
+[IDS_IMS_REMOVE_SWARM_PC]Pulsa esquivar para eliminar el enjambre.
+[IDS_PICKUP_SHOTGUN_AMMO_DESC]Perdigones del calibre 12 para escopeta.
+[IDS_PICKUP_M03_CASSETTE_USED]He utilizado la <COLOR,155,255,155>cinta de casete<CLEARCOLOR>.
+[IDS_PICKUP_M04_GATEPUZZLE_1_PLACED]He colocado el <COLOR,155,255,155>plato de piedra insólito<CLEARCOLOR>.
+[IDS_PICKUP_M04_GATEPUZZLE_2_PLACED]He colocado el <COLOR,155,255,155>plato de piedra extraño<CLEARCOLOR>.
+[IDS_INVESTIGATION_INVITE_WOF_CLOCK]<COMMAND_LEFT_STICK_LEFTRIGHT> Seleccionar    <COMMAND_LEFT_STICK_UPDOWN> Girar   <COMMAND_JUMP> Atrás
+[IDS_INVESTIGATION_INVITE_CUT]<COMMAND_KICK> Cortar   <COMMAND_JUMP> Atrás
+[IDS_INVESTIGATION_KEYPAD]<COMMAND_JUMP> Atrás
+[M00_QuickInventory_01]<COMMAND_KICK> Examinar   <INVENTORY_WHEEL> Inventario
+[M00_QuickInventory_02]<COMMAND_KICK> Abrir   <INVENTORY_WHEEL> Inventario
+[M01_XRAY2_USED]He utilizado la <COLOR,155,240,155>placa de rayos X<CLEARCOLOR>.
+[M01_LightHint_3]<COLOR,195,188,228>Si quieres seguir viviendo, será mejor que te quedes sentado en la oscuridad sin hacer ruido. Pero es probable que ni siquiera eso te salve.<CLEARCOLOR>
+[M01_2award]<COLOR,195,188,228>2A - WARD <CLEARCOLOR>
+[M01_Oldmags_1]Solo unas revistas viejas.
+[M01_Oldmags_2]Es solo una revista vieja. Ahora mismo no me interesa.
+[M01_NoInterest_1]Ahora mismo no me interesa.
+[M04_Interest_51_Front_Door_to_Sheriff_Station_M08b]Ya he estado dentro, todos los policías se han ido.
+[M04_Interest_90_Big_Sitting_Crypts10b]<COLOR,195,188,228>En memoria de\nMary Bartlett\nFallecida el 4 de agosto de 1917\na los 24 años de edad.<CLEARCOLOR>
+[M04_Interest_92_Big_Sitting_Crypts4]<COLOR,195,188,228>Todos debemos recorrer algún día el camino de la muerte.<CLEARCOLOR>
+[M10_OldJanus_1]Es una estatua con dos caras que miran en direcciones opuestas.
+[M10_OldJanus_2]La inscripción dice: <COLOR,195,188,228>Jano: dios del término medio entre la barbarie y la civilización, la juventud y la edad adulta.<CLEARCOLOR>
+[M13_Interest_25_Painting_Group_3]Son iguales que ese cuadro que corté en el hotel. Quizá alguno de ellos también esconde algo...
+[M14_Interest_18_Order_Conversion_B1]La nota dice:
+[IDS_MOV_M14_025_18]Sabiendo que su muerte protegería a nuestra familia, protegería a Shepherd's Glen.
+[IDS_CIN_M04_010_ALX_13]Gracias, Elle.
+[M09_Objective_EscapeHouse]- Escapar de la casa.

@@ -12,6 +12,7 @@
 #include "graphics/FlashIcons.h"
 #include "input/ControllerNames.h"
 #include "input/EngineUiState.h"
+#include "input/InputLog.h"  // DIAGNOSTIC TEMPORAIRE
 #include "input/MenuBridge.h"
 #include "input/SonyPad.h"
 
@@ -87,6 +88,9 @@ void __fastcall SetTextureHook(void* item, void* /*edx*/, void* nameObject) {
     char name[96]{};
     const bool named = ReadEngineString(nameObject, name);
     const char* replacement = named ? ReplacementIconName(name, g_iconType.load(std::memory_order_relaxed)) : nullptr;
+    if (named) {
+        LogTextureApplied(name, replacement);  // DIAGNOSTIC TEMPORAIRE
+    }
     if (replacement == nullptr) {
         original(item, nameObject);
     } else {
@@ -105,6 +109,8 @@ void __fastcall SetTextureHook(void* item, void* /*edx*/, void* nameObject) {
 // par nos fonctions, qui changent le nom pour la clé seulement (la recherche par balise garde le nom PC). La
 // libération réutilise le nom choisi au chargement de la même entrée, pour garder le compte des références juste
 // même si le type d'icônes a changé entre-temps.
+bool EnginePadMode() noexcept;
+
 constexpr std::uintptr_t kMakeKey = 0x1000E3F9;
 constexpr std::uintptr_t kInlineLoadOne = 0x109070F0;
 constexpr std::uintptr_t kInlineLoadAll = 0x10907173;
@@ -118,9 +124,12 @@ std::unordered_map<std::uintptr_t, const char*> g_inlineNames;
 void* __fastcall InlineLoadKey(void* key, void* /*edx*/, const void* nameObject, int flag) {
     const auto original = reinterpret_cast<MakeKeyFunction>(kMakeKey);
     char name[96]{};
-    const char* replacement = ReadEngineString(nameObject, name)
-                                  ? ReplacementIconName(name, g_iconType.load(std::memory_order_relaxed))
-                                  : nullptr;
+    const int type = g_iconType.load(std::memory_order_relaxed);
+    const char* replacement = ReadEngineString(nameObject, name) ? ReplacementIconName(name, type) : nullptr;
+    // "Inventory" prompt: the text only lists the PC name (shv_buttonactionpc), the pad icon replaces it for the key.
+    if (replacement == nullptr && name[0] != '\0' && EnginePadMode()) {
+        replacement = PadActionIconName(name, type);
+    }
     try {
         std::lock_guard<std::mutex> lock(g_inlineLock);
         if (replacement != nullptr) {
@@ -203,7 +212,9 @@ bool EnginePadMode() noexcept {
 const char* __fastcall IconNameHook(void* self, void* /*edx*/, std::uint32_t command, std::uint32_t animated) {
     const char* name = reinterpret_cast<IconNameFunction>(kIconName)(self, command, animated);
     const char* extra = ExtraCommandIconName(command & 0xFF, g_iconType.load(std::memory_order_relaxed));
-    if (extra != nullptr && EnginePadMode()) {
+    const bool padMode = EnginePadMode();
+    LogIconRequest(command & 0xFF, name, extra != nullptr && padMode ? extra : name, padMode);  // DIAGNOSTIC TEMPORAIRE
+    if (extra != nullptr && padMode) {
         return extra;
     }
     return name;
@@ -252,11 +263,6 @@ const char* ExtraCommandIconName(std::uint32_t command, int type) noexcept {
     constexpr std::uint32_t kCameraX = 0x13;
     constexpr std::uint32_t kCameraY = 0x14;
     constexpr std::uint32_t kRightThumbstickButton = 0x44;
-    // Commande 8 : la table manette du moteur lui donne l'icône d'action du clavier (shv_buttonactionpc, case 2 de
-    // 0x10986360, seule commande concernée d'après les octets de la table en 0x1098656C), d'où « Inventory » avec
-    // une icône de clavier en mode manette (signalé le 17/10/2026). L'inventaire est lié à Button 6, LB (écran des
-    // commandes, et conversion XInput en 0x10A40AB0).
-    constexpr std::uint32_t kInventory = 8;
     if (type != 1 && type != 2) {
         return nullptr;
     }
@@ -264,10 +270,18 @@ const char* ExtraCommandIconName(std::uint32_t command, int type) noexcept {
     if (command == kCameraX || command == kCameraY || command == kRightThumbstickButton) {
         return xbox ? "shv_buttonstickx360_r" : "shv_buttonps3stickr";
     }
-    if (command == kInventory) {
-        return xbox ? "shv_buttonxboxlb" : "shv_buttonps3l1";
-    }
     return nullptr;
+}
+
+const char* PadActionIconName(const char* name, int type) noexcept {
+    // Command 8 (inventory wheel): the engine pad table gives it the keyboard action icon (case 2 of 0x10986360, only
+    // command concerned according to the bytes of the table at 0x1098656C). The text lists only that PC name (log of
+    // 24/10/2026: returning shv_buttonxboxlb directly displayed nothing), so the icon is swapped under that name.
+    // The inventory is bound to Button 6, LB (commands screen, XInput conversion at 0x10A40AB0).
+    if (name == nullptr || (type != 1 && type != 2) || std::strcmp(name, "shv_buttonactionpc") != 0) {
+        return nullptr;
+    }
+    return type == 1 ? "shv_buttonxboxlb" : "shv_buttonps3l1";
 }
 
 const char* ReplacementIconName(const char* name, int type) noexcept {

@@ -45,6 +45,10 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
     [ObservableProperty]
     public partial bool D3DMultithreaded { get; set; } = true;
 
+    /// <summary>Missing texts added to the game string tables ([Compat] MissingTexts, see TextPatcher).</summary>
+    [ObservableProperty]
+    public partial bool MissingTexts { get; set; } = true;
+
     [ObservableProperty]
     public partial bool CrashDumps { get; set; } = true;
 
@@ -77,6 +81,7 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
         UnlimitedAmmo = settings.UnlimitedAmmo;
         WindowThreadLock = settings.WindowThreadLock;
         D3DMultithreaded = settings.D3DMultithreaded;
+        MissingTexts = settings.MissingTexts;
         CrashDumps = settings.CrashDumps;
         FullMemoryDumps = settings.FullMemoryDumps;
         HangDetection = settings.HangDetection;
@@ -93,6 +98,7 @@ public sealed partial class PerformanceViewModel : LocalizedViewModel
         UnlimitedAmmo = UnlimitedAmmo,
         WindowThreadLock = WindowThreadLock,
         D3DMultithreaded = D3DMultithreaded,
+        MissingTexts = MissingTexts,
         CrashDumps = CrashDumps,
         FullMemoryDumps = FullMemoryDumps,
         HangDetection = HangDetection,

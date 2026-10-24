@@ -1,0 +1,28 @@
+[IDS_SHELL_WALK]Marcher
+[IDS_SHELL_MISSION_EIGHT_B]Pierres tombales
+[IDS_SHELL_USE_MANDK]Utilise la souris et le clavier
+[IDS_SHELL_USE_JOYSTICK]Utilise le joystick
+[IDS_IMS_REMOVE_SWARM_PC]Appuyez sur esquiver pour retirer l'Essaim.
+[IDS_PICKUP_SHOTGUN_AMMO_DESC]Chevrotine de calibre 12 pour fusil de chasse.
+[IDS_PICKUP_M03_CASSETTE_USED]J'ai utilisé la <COLOR,155,255,155>cassette<CLEARCOLOR>.
+[IDS_PICKUP_M04_GATEPUZZLE_1_PLACED]J'ai placé la <COLOR,155,255,155>plaque de pierre bizarre<CLEARCOLOR>.
+[IDS_PICKUP_M04_GATEPUZZLE_2_PLACED]J'ai placé la <COLOR,155,255,155>plaque de pierre étrange<CLEARCOLOR>.
+[IDS_INVESTIGATION_INVITE_INSPECT]<COMMAND_KICK> Inspecter   <COMMAND_JUMP> Retour
+[IDS_INVESTIGATION_INVITE_WOF_CLOCK]<COMMAND_LEFT_STICK_LEFTRIGHT> Sélectionner    <COMMAND_LEFT_STICK_UPDOWN> Tourner   <COMMAND_JUMP> Retour
+[IDS_INVESTIGATION_INVITE_CUT]<COMMAND_KICK> Couper   <COMMAND_JUMP> Retour
+[IDS_INVESTIGATION_KEYPAD]<COMMAND_JUMP> Retour
+[M00_QuickInventory_01]<COMMAND_KICK> Examiner   <INVENTORY_WHEEL> Inventaire
+[M00_QuickInventory_02]<COMMAND_KICK> Ouvrir   <INVENTORY_WHEEL> Inventaire
+[M01_XRAY2_USED]J'ai utilisé la <COLOR,155,240,155>radiographie<CLEARCOLOR>.
+[M01_Oldmags_1]Juste de vieux magazines.
+[M01_Oldmags_2]Ce n'est qu'un vieux magazine. Ça ne m'intéresse pas pour le moment.
+[M01_NoInterest_1]Ça ne m'intéresse pas pour le moment.
+[M02_Interest_Quarterly1]<COLOR,195,188,228>Abonnez-vous à notre Clock Tower Quarterly !\nNotre publication locale regorge d'histoires instructives et intéressantes, d'hier et d'aujourd'hui.\nCette édition spéciale contient aussi tous les détails de la célébration du 150e anniversaire de la ville. À ne pas manquer !<CLEARCOLOR>
+[M04_Interest_51_Front_Door_to_Sheriff_Station_M08b]J'y suis déjà entré, tous les policiers sont partis.
+[M04_Interest_90_Big_Sitting_Crypts10b]<COLOR,195,188,228>À la mémoire de\nMary Bartlett\nMorte le 4 août 1917\nà 24 ans.<CLEARCOLOR>
+[M04_Interest_92_Big_Sitting_Crypts4]<COLOR,195,188,228>Tous doivent un jour emprunter le chemin de la mort.<CLEARCOLOR>
+[M10_OldJanus_1]C'est une statue à deux visages tournés dans des directions opposées.
+[M10_OldJanus_2]L'inscription dit : <COLOR,195,188,228>Janus : dieu du juste milieu entre la barbarie et la civilisation, la jeunesse et l'âge adulte.<CLEARCOLOR>
+[M13_Interest_25_Painting_Group_3]Elles ressemblent à ce tableau que j'ai tailladé à l'hôtel. L'une d'elles cache peut-être aussi quelque chose...
+[M14_Interest_18_Order_Conversion_B1]La note dit :
+[M09_Objective_EscapeHouse]- Sortir de la maison.

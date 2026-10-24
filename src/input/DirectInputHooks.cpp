@@ -9,6 +9,7 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "input/InputLog.h"
 #include "input/MenuBridge.h"
 
 namespace hca::input {
@@ -54,6 +55,7 @@ HRESULT STDMETHODCALLTYPE HookGetDeviceState(IDirectInputDevice8A* device, DWORD
             state[key] |= 0x80;
         }
     }
+    LogKeyboardRead(state, keys);
     return result;
 }
 
@@ -91,6 +93,7 @@ HRESULT STDMETHODCALLTYPE HookGetDeviceData(IDirectInputDevice8A* device, DWORD 
 HRESULT STDMETHODCALLTYPE HookCreateDevice(IDirectInput8A* input, REFGUID guid, LPDIRECTINPUTDEVICE8A* device,
                                            LPUNKNOWN outer) {
     const HRESULT result = g_createDevice(input, guid, device, outer);
+    LogDirectInputDevice(guid, result);
     if (FAILED(result) || device == nullptr || *device == nullptr || !IsEqualGUID(guid, kSysKeyboard)) {
         return result;
     }

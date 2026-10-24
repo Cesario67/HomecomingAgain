@@ -87,6 +87,11 @@ bool InMenu() noexcept {
     return MenuActive(GetTickCount64(), g_lastSceneMs.load());
 }
 
+std::uint64_t SceneAgeMs() noexcept {
+    const std::uint64_t last = g_lastSceneMs.load();
+    return last == 0 ? 0 : GetTickCount64() - last;
+}
+
 KeySet CurrentKeys() noexcept {
     if (!GetConfig().menuPad || !InMenu()) {
         g_stickHeld = {};

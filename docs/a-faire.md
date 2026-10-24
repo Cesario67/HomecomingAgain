@@ -30,7 +30,17 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
   confirmation. Message d'erreur clair si `d3dx9_38`, `xinput1_3` ou le CRT VC80 manquent.
 - Verrou 30 i/s : le trouver, puis limiteur propre (QueryPerformanceCounter + minuteur haute résolution, déjà dans
   `framepacing/`). Vérifier que la logique (timeSetEvent), les animations, la physique et les dialogues suivent.
-- Windows 11, GPU récents, Steam Deck / Proton : tester et consigner.
+- Windows 11, GPU récents : tester et consigner.
+- Steam Deck / Proton (19/10/2026) : **vérifié** par un joueur (CachyOS, CachyOS Proton) que le mod ne se charge pas
+  sans l'option de lancement `WINEDLLOVERRIDES="version=n,b" %command%` (Wine prend sa `version.dll` intégrée).
+  Documenté dans les README ; le launcher détecte Wine (`wine_get_version` dans ntdll) et affiche l'option. Reste à
+  confirmer qu'avec l'option tout fonctionne (journal dans `Bin\HomecomingAgain\logs`, SMAA, cadence, DXVK et DLSS).
+  - Manette intégrée du Steam Deck qui ne marche que sur l'écran « appuyez sur une touche » (rapport d'un joueur).
+    **Hypothèse non vérifiée** : la variable `inputstream` de `Engine\vars_pc.cfg` choisit le jeu de commandes de
+    `binds_pc_mjs.cfg` (0 = clavier et souris, `setbind 0` ; 1 = manette, `setbind 1`). Elle valait 0 au premier
+    lancement et 1 plus tard sur le PC de l'auteur ; l'écran « appuyez sur une touche » réagirait à toute entrée
+    alors que le reste suivrait `inputstream`. `targetinputstream` existe aussi dans `g_SilentHill.sgl`. À vérifier :
+    valeur de `inputstream` dans le `vars_pc.cfg` du joueur, puis désassembler qui lit et écrit ces deux variables.
 
 ### 2. Graphismes (objectif 2)
 - Résolution et ratio : constantes 720p, interface, carte, objets, photos ; 16:9, 21:9, 32:9.

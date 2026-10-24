@@ -5,6 +5,7 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "input/InputLog.h"
 #include "input/MenuBridge.h"
 #include "input/SonyPad.h"
 #include "patches/CameraFix.h"
@@ -60,11 +61,14 @@ DWORD WINAPI HookGetState(DWORD user, XINPUT_STATE* state) {
         NoteSonyPadInUse(sony);
         if (result == ERROR_SUCCESS && state != nullptr) {
             OnPadState(state->Gamepad.wButtons, state->Gamepad.sThumbLX, state->Gamepad.sThumbLY);
+            LogPadButtons(state->Gamepad.wButtons);
             patches::NoteRightStick(state->Gamepad.sThumbRX, state->Gamepad.sThumbRY);
+            patches::NoteLeftTrigger(state->Gamepad.bLeftTrigger);
         } else {
             OnPadDisconnected();
             patches::NoteLeftTrigger(state->Gamepad.bLeftTrigger);
             patches::NoteRightStick(0, 0);
+            patches::NoteLeftTrigger(0);
         }
     }
             patches::NoteLeftTrigger(0);
