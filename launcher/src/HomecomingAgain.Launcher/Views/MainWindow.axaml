@@ -138,6 +138,8 @@
             <CheckBox Content="{Binding L[WindowThreadLock]}" IsChecked="{Binding WindowThreadLock}" />
             <CheckBox Content="{Binding L[D3DMultithreaded]}" IsChecked="{Binding D3DMultithreaded}" />
             <TextBlock Classes="hint" Text="{Binding L[CompatibilityHint]}" />
+            <CheckBox Content="{Binding L[MissingTexts]}" IsChecked="{Binding MissingTexts}" />
+            <TextBlock Classes="hint" Text="{Binding L[MissingTextsHint]}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecDiagnostics]}" />
             <CheckBox Content="{Binding L[CrashDumps]}" IsChecked="{Binding CrashDumps}" />

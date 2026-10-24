@@ -1,0 +1,65 @@
+[IDS_SHELL_WALK]Cammina
+[IDS_SHELL_AUDIO]Audio
+[IDS_SHELL_AUDIO_TITLE]AUDIO
+[IDS_SHELL_VIDEO]Video
+[IDS_SHELL_VIDEO_TITLE]VIDEO
+[IDS_SHELL_RESOLUTION]Risoluzione
+[IDS_SHELL_REFRESH]Frequenza di aggiornamento
+[IDS_SHELL_QUALITY]Qualità
+[IDS_SHELL_QUALITY_MEDIUM]Media
+[IDS_SHELL_QUALITY_HIGH]Alta
+[IDS_SHELL_CONTROLLER_CONFIG_TITLE_PC]COMANDI
+[IDS_SHELL_CONTROLLER_CONFIG_PC]Comandi
+[IDS_SHELL_USE_MOUSE]Usa mouse e tastiera
+[IDS_SHELL_USE_CONTROLLER]Usa il controller
+[IDS_SHELL_MOUSE_CONTROLS_TITLE]MOUSE E TASTIERA
+[IDS_SHELL_CONTROLLER_CONTROLS_TITLE]CONTROLLER
+[IDS_SHELL_MOUSE_SENSITIVITY]Sensibilità del mouse
+[IDS_SHELL_MISSION_EIGHT_B]Lapidi
+[IDS_SHELL_USE_MANDK]Usa mouse e tastiera
+[IDS_SHELL_USE_JOYSTICK]Usa il joystick
+[IDS_SHELL_MOVE_FORWARD]Avanza
+[IDS_SHELL_MOVE_BACK]Indietreggia
+[IDS_SHELL_STRAFE_LEFT]Spostati a sinistra
+[IDS_SHELL_STRAFE_RIGHT]Spostati a destra
+[IDS_SHELL_RELOAD]Ricarica
+[IDS_SHELL_DODGE]Schiva
+[IDS_SHELL_TARGET]Mira
+[IDS_SHELL_FIRE]Spara
+[IDS_SHELL_WEAPONS]Armi
+[IDS_SHELL_INVENTORY]Inventario
+[IDS_SHELL_LOOK]Guarda intorno
+[IDS_SHELL_MAP]Mappa
+[IDS_SHELL_NEXT_WEAPON]Arma successiva
+[IDS_SHELL_PREV_WEAPON]Arma precedente
+[IDS_SHELL_TURN_LEFT]Gira a sinistra
+[IDS_SHELL_TURN_RIGHT]Gira a destra
+[IDS_SHELL_LOOK_UP]Guarda in alto
+[IDS_SHELL_LOOK_DOWN]Guarda in basso
+[IDS_IMS_REMOVE_SWARM_PC]Premere schiva per rimuovere Swarm.
+[IDS_PICKUP_M03_CASSETTE_USED]Ho usato la <COLOR,155,255,155>Musicassetta<CLEARCOLOR>.
+[IDS_PICKUP_M04_GATEPUZZLE_1_PLACED]Ho sistemato la <COLOR,155,255,155>Lastra di pietra irregolare<CLEARCOLOR>.
+[IDS_PICKUP_M04_GATEPUZZLE_2_PLACED]Ho sistemato la <COLOR,155,255,155>Strana lastra di pietra<CLEARCOLOR>.
+[IDS_PICKUP_M09_MASK_04_DESC]Questa maschera somiglia proprio a mia madre. Sembra delusa da me.
+[IDS_INVESTIGATION_INVITE_WOF_CLOCK]<COMMAND_LEFT_STICK_LEFTRIGHT> Seleziona    <COMMAND_LEFT_STICK_UPDOWN> Ruota   <COMMAND_JUMP> Indietro
+[IDS_INVESTIGATION_INVITE_CUT]<COMMAND_KICK> Taglia   <COMMAND_JUMP> Indietro
+[IDS_INVESTIGATION_KEYPAD]<COMMAND_JUMP> Indietro
+[M00_QuickInventory_01]<COMMAND_KICK> Esaminare   <INVENTORY_WHEEL> Inventario
+[M00_QuickInventory_02]<COMMAND_KICK> Aprire   <INVENTORY_WHEEL> Inventario
+[M01_XRAY2_USED]Ho usato la <COLOR,155,240,155>Radiografia<CLEARCOLOR>.
+[M01_LightHint_3]<COLOR,195,188,228>Se vuoi continuare a vivere, faresti meglio a restare seduto al buio in silenzio. Ma probabilmente nemmeno questo ti salverà.<CLEARCOLOR>
+[M01_Oldmags_1]Solo qualche vecchia rivista.
+[M01_Oldmags_2]È solo una vecchia rivista. Per ora non mi interessa.
+[M01_NoInterest_1]Per ora non mi interessa.
+[M04_Interest_51_Front_Door_to_Sheriff_Station_M08b]Sono già stato dentro, tutti i poliziotti se ne sono andati.
+[M04_Interest_90_Big_Sitting_Crypts10b]<COLOR,195,188,228>In memoria di\nMary Bartlett\nmorta il 4 agosto 1917\nall'età di 24 anni.<CLEARCOLOR>
+[M04_Interest_92_Big_Sitting_Crypts4]<COLOR,195,188,228>Prima o poi tutti devono percorrere la via della morte.<CLEARCOLOR>
+[M10_OldJanus_1]Una statua con due volti che guardano in direzioni opposte.
+[M10_OldJanus_2]L'iscrizione dice: <COLOR,195,188,228>Giano: dio della via di mezzo tra barbarie e civiltà, giovinezza ed età adulta.<CLEARCOLOR>
+[M13_Interest_25_Painting_Group_3]Sono identici a quel quadro che ho tagliato all'hotel. Forse anche uno di loro nasconde qualcosa...
+[M14_Interest_18_Order_Conversion_B1]La nota dice:
+[IDS_MOV_M01_010_SFX_08]<COLOR,208,144,53>SUONO<CLEARCOLOR> <COLOR,255,255,255>Urla<CLEARCOLOR>
+[IDS_MOV_M09_050B_33]Che cosa facciamo?
+[IDS_CIN_M04_010_ALX_13]Grazie, Elle.
+[IDS_CIN_M06_050_ALX_4]Dai, dai!!
+[M09_Objective_EscapeHouse]- Fuggire dalla casa.

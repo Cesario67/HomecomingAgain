@@ -85,6 +85,15 @@ public static class ModInstaller
             report.Add(Loc.Get("InstallFileInstalled", SettingsFile));
         }
 
+        if (IniDocument.Load(paths.ModIni).GetBool("Compat", "MissingTexts", true))
+        {
+            int added = TextPatcher.Apply(paths);
+            if (added > 0)
+            {
+                report.Add(Loc.Get("InstallTextsAdded", added));
+            }
+        }
+
         foreach (string license in LicenseFiles)
         {
             string source = Path.Combine(packageDirectory, license);
@@ -135,6 +144,10 @@ public static class ModInstaller
             ExePatcher.RestoreOriginal(paths.GameExe);
             report.Add(Loc.Get("UninstallExeRestored"));
         }
+        if (TextPatcher.Restore(paths) > 0)
+        {
+            report.Add(Loc.Get("UninstallTextsRestored"));
+        }
         // Sans le mod, le stick droit doit de nouveau tourner le personnage.
         if (ControllerBinds.Save(paths, cameraFix: false))
         {
@@ -165,6 +178,32 @@ public static class ModInstaller
         {
             EnsureGameNotRunning(paths);
             ControllerBinds.Save(paths, cameraFix);
+        }
+    }
+
+    /// <summary>
+    /// Adds the game's missing texts (<paramref name="enabled"/>) or puts the original language files back (see
+    /// <see cref="TextPatcher"/>). Does nothing when the game files are already in the requested state.
+    /// </summary>
+    public static void SaveMissingTexts(GamePaths paths, bool enabled)
+    {
+        bool backedUp = TextPatcher.Languages.Any(language => File.Exists(TextPatcher.BackupPath(paths, language)));
+        bool missing = TextPatcher.Languages.Any(language =>
+            File.Exists(TextPatcher.FilePath(paths, language)) &&
+            TextPatcher.CountMissing(File.ReadAllText(TextPatcher.FilePath(paths, language), System.Text.Encoding.Latin1),
+                                     TextPatcher.EmbeddedLines(language)) > 0);
+        if (enabled ? !missing : !backedUp)
+        {
+            return;
+        }
+        EnsureGameNotRunning(paths);
+        if (enabled)
+        {
+            TextPatcher.Apply(paths);
+        }
+        else
+        {
+            TextPatcher.Restore(paths);
         }
     }
 

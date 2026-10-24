@@ -1,0 +1,28 @@
+[IDS_SHELL_WALK]Gehen
+[IDS_SHELL_MISSION_EIGHT_B]Grabsteine
+[IDS_SHELL_USE_MANDK]Maus und Tastatur verwenden
+[IDS_SHELL_USE_JOYSTICK]Joystick verwenden
+[IDS_IMS_REMOVE_SWARM_PC]Drücken Sie Ausweichen, um den Schwarm abzuschütteln.
+[IDS_PICKUP_M03_CASSETTE_USED]Ich habe das <COLOR,155,255,155>Kassettenband<CLEARCOLOR> benutzt.
+[IDS_PICKUP_M04_GATEPUZZLE_1_PLACED]Ich habe die <COLOR,155,255,155>sonderbare Steinplatte<CLEARCOLOR> platziert.
+[IDS_PICKUP_M04_GATEPUZZLE_2_PLACED]Ich habe die <COLOR,155,255,155>seltsame Steinplatte<CLEARCOLOR> platziert.
+[IDS_INVESTIGATION_INVITE_WOF_CLOCK]<COMMAND_LEFT_STICK_LEFTRIGHT> Auswählen    <COMMAND_LEFT_STICK_UPDOWN> Drehen   <COMMAND_JUMP> Zurück
+[IDS_INVESTIGATION_INVITE_CUT]<COMMAND_KICK> Schneiden   <COMMAND_JUMP> Zurück
+[IDS_INVESTIGATION_KEYPAD]<COMMAND_JUMP> Zurück
+[M00_QuickInventory_01]<COMMAND_KICK> Begutachten   <INVENTORY_WHEEL> Ausrüstung
+[M00_QuickInventory_02]<COMMAND_KICK> Öffnen   <INVENTORY_WHEEL> Ausrüstung
+[M01_XRAY2_USED]Ich habe den <COLOR,155,240,155>Röntgenfilm<CLEARCOLOR> benutzt.
+[M01_Oldmags_1]Nur ein paar alte Zeitschriften.
+[M01_Oldmags_2]Nur eine alte Zeitschrift. Das interessiert mich im Moment nicht.
+[M01_NoInterest_1]Das interessiert mich im Moment nicht.
+[M04_Interest_51_Front_Door_to_Sheriff_Station_M08b]Ich war schon drinnen, die Polizisten sind alle weg.
+[M04_Interest_90_Big_Sitting_Crypts10b]<COLOR,195,188,228>Zum Gedenken an\nMary Bartlett\nGestorben am 4. August 1917\nim Alter von 24 Jahren.<CLEARCOLOR>
+[M04_Interest_92_Big_Sitting_Crypts4]<COLOR,195,188,228>Den Pfad des Todes muss einmal jeder beschreiten.<CLEARCOLOR>
+[M10_OldJanus_1]Eine Statue mit zwei Gesichtern, die in entgegengesetzte Richtungen blicken.
+[M10_OldJanus_2]Die Inschrift lautet: <COLOR,195,188,228>Janus: Gott der Mitte zwischen Barbarei und Zivilisation, Jugend und Erwachsenenalter.<CLEARCOLOR>
+[M13_Interest_25_Painting_Group_3]Sie sind genau wie das Gemälde, das ich im Hotel aufgeschnitten habe. Vielleicht versteckt auch eines von ihnen etwas...
+[M14_Interest_18_Order_Conversion_B1]Auf der Notiz steht:
+[IDS_CIN_M06_050_ALX_3]Komm, wir müssen Doktor Fitch finden.
+[IDS_CIN_M06_050_ALX_4]Komm schon, komm schon!!
+[IDS_NOTES_Birth_Cirtificate_Rebecca_Shepherd_2]<COLOR,195,188,228>Gegeben unter meiner Hand und meinem Amtssiegel, am 15. Dezember 195-.\nEingetragen im Geburtenregister	(gez.) Shelly Naseman  Gerichtssekretärin, Landgericht\nNr. 1904, Seite "F"		Landkreis Toluca	<CLEARCOLOR>
+[M09_Objective_EscapeHouse]- Das Haus verlassen.

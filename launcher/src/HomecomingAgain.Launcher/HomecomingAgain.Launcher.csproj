@@ -55,6 +55,11 @@
     <EmbeddedResource Include="$(PayloadDir)\LICENSE-NVIDIA-DLSS.txt" LogicalName="payload/LICENSE-NVIDIA-DLSS.txt" />
   </ItemGroup>
 
+  <!-- Missing translated texts added to the game string tables (Core/TextPatcher). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Texts\*.txt" LogicalName="texts/%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="HomecomingAgain.Launcher.Tests" />
   </ItemGroup>

@@ -160,6 +160,7 @@ public sealed partial class MainWindowViewModel : LocalizedViewModel
         settings.WriteMod(mod);
         mod.Save(Paths.ModIni);
         ModInstaller.SaveControllerBinds(Paths, settings.CameraFix);
+        ModInstaller.SaveMissingTexts(Paths, settings.MissingTexts);
         if (!File.Exists(Paths.GameSettings))
         {
             return string.Join(" ", dlss.Prepend(Loc.Get("SettingsSavedModOnly")));
