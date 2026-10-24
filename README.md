@@ -113,7 +113,6 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Movies]` | `SkipKey=46` | Key to skip cutscenes (46 = Delete, 0 = none) |
 | `[Movies]` | `SkipLogos=1` | Fast-forward the startup logos (0 = original) |
 | `[Input]` | `ButtonIcons=0` | Button icons: 0 = auto (Xbox if a controller is plugged in), 1 = PC (original), 2 = Xbox, 3 = PlayStation |
-| `[Input]` | `MenuPad=0` | Translate the controller into keyboard keys in menus (D-pad, left stick, Start); off by default, the game handles the controller itself |
 | `[Camera]` | `CameraFix=0` | Controller camera fix (based on Emertels' Camera Fix): the character turns with the right stick, proportional vertical response, separate aim sensitivity. Speeds `HorizontalSpeed`, `VerticalSpeed`, `AimHorizontalSpeed`, `AimVerticalSpeed` (0.25 to 3.0). The launcher also frees the right stick in `Engine\binds_pc_mjs.cfg` |
 | `[Camera]` | `Mode=Follow` | With `CameraFix=1`: `Follow` = the character turns and the camera follows; `Orbit` (experimental) = the right stick turns the camera around the character, who stays put |
 | `[Camera]` | `OrbitGuardFollow=1` | With `Mode=Orbit`: `1` = while the left trigger (L2, knife guard) is held, the orbit is suspended (camera back behind the character, right stick turns him); `0` = the orbit stays active |

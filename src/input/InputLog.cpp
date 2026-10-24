@@ -23,8 +23,6 @@ std::atomic<int> g_lastState{-2};
 std::atomic<int> g_lastPadFlag{-2};
 std::atomic<bool> g_lastMenu{false};
 std::atomic<bool> g_lastScene{false};
-bool g_lastReturn = false;
-bool g_lastEscape = false;
 
 bool Enabled() noexcept {
     return GetConfig().inputLog && g_lines.load() < kMaxLines;
@@ -60,34 +58,6 @@ void LogPadButtons(WORD buttons) noexcept {
         }
     } catch (...) {
     }
-}
-
-void LogKeyboardRead(const BYTE* state, const std::array<bool, 256>& injected) noexcept {
-    if (state == nullptr || !Enabled()) {
-        return;
-    }
-    const bool returnDown = (state[0x1C] & 0x80) != 0;
-    const bool escapeDown = (state[0x01] & 0x80) != 0;
-    if (returnDown != g_lastReturn) {
-        ++g_lines;
-        log::Info("Entrées : Entrée {} pour le moteur ({})", returnDown ? "enfoncée" : "relâchée",
-                  injected[0x1C] ? "ajoutée par le mod" : "vrai clavier");
-    }
-    if (escapeDown != g_lastEscape) {
-        ++g_lines;
-        log::Info("Entrées : Échap {} pour le moteur ({})", escapeDown ? "enfoncée" : "relâchée",
-                  injected[0x01] ? "ajoutée par le mod" : "vrai clavier");
-    }
-    g_lastReturn = returnDown;
-    g_lastEscape = escapeDown;
-}
-
-void LogDirectInputDevice(REFGUID guid, HRESULT result) noexcept {
-    if (!GetConfig().inputLog) {
-        return;
-    }
-    log::Info("Entrées : le jeu crée un périphérique DirectInput {{{:08X}-{:04X}-{:04X}}} -> 0x{:08X}", guid.Data1,
-              guid.Data2, guid.Data3, static_cast<unsigned long>(result));
 }
 
 void LogEngineState() noexcept {
