@@ -151,7 +151,7 @@ public sealed class SettingsTests
                             "[Audio]\nChannelOrder=0,1,2,3,4,5\nChannels=6\n[Movies]\nSkipKey=27\n" +
                             "[Frames]\nReportIntervalSeconds=30\nFrameLimitFps=90\n" +
                             "[Crash]\nDumpKeepCount=5\n[Debug]\nLogKeepCount=100\nFrameCapture=1\nSkipMovies=1\n" +
-                            "[Input]\nMenuPad=1\nAnimatedIcons=0\nPlayStationPad=0";
+                            "[Input]\nAnimatedIcons=0\nPlayStationPad=0";
         IniDocument mod = IniDocument.Parse(text);
         new PatchSettings().WriteMod(mod);
         Assert.Equal(("2.25", "200", "600", "1"), (mod.Get("Graphics", "SsaoRadius"), mod.Get("Graphics", "SsaoFadeStart"),
@@ -161,7 +161,7 @@ public sealed class SettingsTests
                                                          mod.Get("Crash", "DumpKeepCount")));
         Assert.Equal(("100", "1", "1"), (mod.Get("Debug", "LogKeepCount"), mod.Get("Debug", "FrameCapture"),
                                          mod.Get("Debug", "SkipMovies")));
-        Assert.Equal(("1", "6", "90"), (mod.Get("Input", "MenuPad"), mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps")));
+        Assert.Equal(("6", "90"), (mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps")));
         Assert.Equal(("0", "0"), (mod.Get("Input", "AnimatedIcons"), mod.Get("Input", "PlayStationPad")));
     }
 

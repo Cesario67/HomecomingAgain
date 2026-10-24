@@ -119,7 +119,6 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
 | `[Movies]` | `SkipLogos=1` | Logos de démarrage accélérés (0 = d'origine) |
 | `[Input]` | `ButtonIcons=0` | Icônes de boutons : 0 = auto (Xbox si une manette est branchée), 1 = PC (d'origine), 2 = Xbox, 3 = PlayStation |
-| `[Input]` | `MenuPad=0` | Traduire la manette en touches du clavier dans les menus (croix, stick gauche, Start) ; désactivé par défaut, le jeu gère la manette lui-même |
 | `[Camera]` | `CameraFix=0` | Correctif de caméra à la manette (d'après le Camera Fix d'Emertels) : le personnage tourne avec le stick droit, réponse verticale proportionnelle, sensibilité de visée séparée. Vitesses `HorizontalSpeed`, `VerticalSpeed`, `AimHorizontalSpeed`, `AimVerticalSpeed` (0,25 à 3,0). Le launcher libère aussi le stick droit dans `Engine\binds_pc_mjs.cfg` |
 | `[Camera]` | `Mode=Follow` | Avec `CameraFix=1` : `Follow` = le personnage tourne et la caméra le suit ; `Orbit` (expérimental) = le stick droit tourne la caméra autour du personnage, qui ne bouge pas |
 | `[Camera]` | `OrbitGuardFollow=1` | Avec `Mode=Orbit` : `1` = tant que la gâchette gauche (L2, garde au couteau) est tenue, l'orbite est suspendue (caméra derrière le personnage, stick droit qui le tourne) ; `0` = l'orbite reste active |

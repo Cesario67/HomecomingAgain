@@ -81,7 +81,6 @@ add_library(HomecomingAgain SHARED
     src/input/XInputHooks.cpp
     src/input/MenuBridge.cpp
     src/input/SonyPad.cpp
-    src/input/DirectInputHooks.cpp
     src/input/ButtonIcons.cpp
     src/input/ControllerNames.cpp
     src/input/EngineUiState.cpp

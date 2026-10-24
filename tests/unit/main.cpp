@@ -329,28 +329,11 @@ void TestSceneEnd() {
 }
 
 
-void TestMenuPadKeys() {
+void TestMenuDetection() {
     using namespace hca::input;
-    KeySet held{};
-    // Croix bas + Start : flèche bas et Entrée ; A et B ne sont plus traduits.
-    KeySet keys = KeysForPad(0x0002 | 0x0010, 0, 0, held);
-    Check(keys[kKeyDown] && keys[kKeyReturn] && !keys[kKeyUp] && !keys[kKeyEscape], "croix et Start traduits en touches");
-    keys = KeysForPad(0x1000 | 0x2000, 0, 0, held);
-    Check(!keys[kKeyEscape] && !keys[kKeyReturn], "A et B non traduits");
-    // Stick : enfoncé au-delà de la moitié, relâché seulement sous un tiers (pas de rebond autour du seuil).
-    keys = KeysForPad(0, 0, 20000, held);
-    const bool pressed = keys[kKeyUp];
-    keys = KeysForPad(0, 0, 14000, held);
-    const bool stillHeld = keys[kKeyUp];
-    keys = KeysForPad(0, 0, 9000, held);
-    Check(pressed && stillHeld && !keys[kKeyUp], "stick vers le haut avec hystérésis");
-    KeySet fresh{};
-    keys = KeysForPad(0, -20000, 0, fresh);
-    Check(keys[kKeyLeft] && !keys[kKeyRight] && !KeysForPad(0, 14000, 0, fresh)[kKeyRight],
-          "stick à gauche, et à droite sous le seuil d'appui");
-    // Menu avant toute scène 3D, puis seulement après 5 s sans scène : un décrochage d'une seconde en jeu ne suffit pas.
+    // Menu before any 3D scene, then only after 5 s without a scene: a one-second hiccup in game is not enough.
     Check(MenuActive(1000, 0) && !MenuActive(11000, 10000) && !MenuActive(15000, 10000) && MenuActive(15001, 10000),
-          "menu détecté après 5 s sans scène 3D seulement");
+          "menu detected only after 5 s without a 3D scene");
 }
 
 void TestControllerNames() {
@@ -782,7 +765,7 @@ int main() {
     TestCameraMath();
     TestCameraCut();
     TestSceneEnd();
-    TestMenuPadKeys();
+    TestMenuDetection();
     TestButtonIcons();
     TestControllerNames();
     TestDepthEncoding();

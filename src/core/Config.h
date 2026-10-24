@@ -102,9 +102,6 @@ struct Config {
     bool skipLogos = true;
 
     // [Input]
-    // Dans les menus, croix, stick gauche et Start traduits en touches du clavier (input/MenuBridge.h). Désactivé par
-    // défaut : le jeu gère lui-même la manette dans ses menus (vérifié le 17/10/2026).
-    bool menuPad = false;
     // Icônes de boutons : 0 = auto (Xbox 360 si une manette est branchée), 1 = PC, 2 = Xbox 360, 3 = PS3.
     int buttonIcons = 0;
     // Icônes animées de l'invite à marteler (QTE) aux couleurs de la manette (voir graphics/FlashIcons.h).
@@ -116,7 +113,7 @@ struct Config {
     // [Camera]
     // Correctif de caméra à la manette, porté du Camera Fix d'Emertels (voir patches/CameraFix.h). Désactivé par
     // défaut : il faut aussi retirer COMMAND_TURNLEFT et COMMAND_TURNRIGHT du stick droit dans binds_pc_mjs.cfg.
-    bool cameraFix = false;
+    bool cameraFix = true;
     // Vitesses de 0,25 à 3 (1 = calibrage du Camera Fix), voir patches/CameraTuning.h.
     float cameraHorizontalSpeed = 1.0f;
     float cameraVerticalSpeed = 1.0f;
