@@ -7,6 +7,7 @@
 #include "core/Log.h"
 #include "input/InputLog.h"
 #include "input/MenuBridge.h"
+#include "input/QteHold.h"
 #include "input/SonyPad.h"
 #include "patches/CameraFix.h"
 
@@ -52,7 +53,7 @@ bool SubstituteSonyPad(XINPUT_STATE* state) noexcept {
 
 DWORD WINAPI HookGetState(DWORD user, XINPUT_STATE* state) {
     DWORD result = g_getState(user, state);
-    // Première manette : son état sert à la traduction en touches dans les menus (input/MenuBridge.h).
+    // Première manette : son état sert au choix automatique des icônes (input/MenuBridge.h).
     if (user == 0) {
         const bool sony = result != ERROR_SUCCESS && SubstituteSonyPad(state);
         if (sony) {
@@ -60,8 +61,9 @@ DWORD WINAPI HookGetState(DWORD user, XINPUT_STATE* state) {
         }
         NoteSonyPadInUse(sony);
         if (result == ERROR_SUCCESS && state != nullptr) {
-            OnPadState(state->Gamepad.wButtons, state->Gamepad.sThumbLX, state->Gamepad.sThumbLY);
+            OnPadConnected();
             LogPadButtons(state->Gamepad.wButtons);
+            state->Gamepad.wButtons = FilterQteButtons(state->Gamepad.wButtons);
             patches::NoteRightStick(state->Gamepad.sThumbRX, state->Gamepad.sThumbRY);
             patches::NoteLeftTrigger(state->Gamepad.bLeftTrigger);
         } else {
@@ -102,7 +104,8 @@ DWORD WINAPI HookGetCapabilities(DWORD user, DWORD flags, XINPUT_CAPABILITIES* c
 void InstallXInputHooks(HMODULE engine) {
     const Config& config = GetConfig();
     g_playStationPad = config.playStationPad;
-    if ((!config.menuPad && config.buttonIcons != 0 && !config.cameraFix && !config.playStationPad) || engine == nullptr) {
+    if ((config.buttonIcons != 0 && !config.cameraFix && !config.playStationPad && !config.qteHold) ||
+        engine == nullptr) {
         return;
     }
     const bool get = hooking::PatchImportOrdinal(engine, kXInputDll, kGetStateOrdinal, &HookGetState, &g_getState);

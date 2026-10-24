@@ -101,10 +101,11 @@ bool LoadConfig(const std::wstring& iniPath) {
 
     config.movieSkipKey = ReadInt(iniPath, L"Movies", L"SkipKey", defaults.movieSkipKey, 0, 254);
     config.skipLogos = ReadBool(iniPath, L"Movies", L"SkipLogos", defaults.skipLogos);
-    config.menuPad = ReadBool(iniPath, L"Input", L"MenuPad", defaults.menuPad);
     config.buttonIcons = ReadInt(iniPath, L"Input", L"ButtonIcons", defaults.buttonIcons, 0, 3);
     config.animatedIcons = ReadBool(iniPath, L"Input", L"AnimatedIcons", defaults.animatedIcons);
     config.playStationPad = ReadBool(iniPath, L"Input", L"PlayStationPad", defaults.playStationPad);
+    config.qteHold = ReadBool(iniPath, L"Input", L"QteHold", defaults.qteHold);
+    config.qteHoldRate = ReadInt(iniPath, L"Input", L"QteHoldRate", defaults.qteHoldRate, 4, 15);
 
     config.cameraFix = ReadBool(iniPath, L"Camera", L"CameraFix", defaults.cameraFix);
     config.cameraHorizontalSpeed =

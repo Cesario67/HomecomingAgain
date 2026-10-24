@@ -26,6 +26,36 @@ public sealed class InstallTests : IDisposable
     }
 
     [Fact]
+    public void MigratesTheIniKeepingUserValuesAndAddingNewKeys()
+    {
+        GamePaths paths = new(_root);
+        string package = Path.Combine(_root, "pkg.ini");
+        File.WriteAllText(package, "; header\n[Video]\nWidth=1280\nSMAA=1\nNewKey=5\n[Extra]\nFoo=1\n");
+        File.WriteAllText(paths.ModIni, "[Video]\nWidth=3440\nObsolete=9\n");
+
+        ModInstaller.MigrateSettings(package, paths);
+
+        IniDocument merged = IniDocument.Load(paths.ModIni);
+        Assert.Equal("3440", merged.Get("Video", "Width"));
+        Assert.Equal("1", merged.Get("Video", "SMAA"));
+        Assert.Equal("5", merged.Get("Video", "NewKey"));
+        Assert.Equal("1", merged.Get("Extra", "Foo"));
+        Assert.Null(merged.Get("Video", "Obsolete"));
+        Assert.Contains("Obsolete=9", File.ReadAllText(paths.ModIniOld));
+    }
+
+    [Fact]
+    public void LeavesTheIniAloneWhenNothingChanged()
+    {
+        GamePaths paths = new(_root);
+        string package = Path.Combine(_root, "pkg.ini");
+        File.WriteAllText(package, "[Video]\nWidth=1280\n");
+        ModInstaller.MigrateSettings(package, paths);
+        ModInstaller.MigrateSettings(package, paths);
+        Assert.False(File.Exists(paths.ModIniOld));
+    }
+
+    [Fact]
     public void FindsTheGameFromItsRootOrItsBinFolder()
     {
         Assert.Equal(_root, GamePaths.ResolveRoot(_root));

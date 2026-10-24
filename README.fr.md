@@ -61,6 +61,9 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Manette PlayStation sans Steam Input** (DualShock 4, DualSense, en test) : le jeu ne connaît que les manettes
   Xbox ; sans manette Xbox branchée, la manette PlayStation lui est présentée comme une manette Xbox, avec les icônes
   PlayStation en mode auto (`[Input] PlayStationPad`, activé par défaut).
+- **QTE en maintenant le bouton** (accessibilité, désactivé par défaut) : pendant une invite à marteler un bouton, tenir
+  le bouton compte comme des appuis répétés (`[Input] QteHold=1`, vitesse `QteHoldRate`, case dans le launcher).
+  Manette seulement.
 - **Caméra orbitale** (expérimental) : avec le correctif de caméra, le stick droit fait tourner la caméra seule autour
   du personnage. À cocher dans le launcher (onglet Manette). La gâchette gauche (L2) tenue suspend l'orbite
   (`OrbitGuardFollow`).
@@ -119,7 +122,6 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
 | `[Movies]` | `SkipLogos=1` | Logos de démarrage accélérés (0 = d'origine) |
 | `[Input]` | `ButtonIcons=0` | Icônes de boutons : 0 = auto (Xbox si une manette est branchée), 1 = PC (d'origine), 2 = Xbox, 3 = PlayStation |
-| `[Input]` | `MenuPad=0` | Traduire la manette en touches du clavier dans les menus (croix, stick gauche, Start) ; désactivé par défaut, le jeu gère la manette lui-même |
 | `[Camera]` | `CameraFix=0` | Correctif de caméra à la manette (d'après le Camera Fix d'Emertels) : le personnage tourne avec le stick droit, réponse verticale proportionnelle, sensibilité de visée séparée. Vitesses `HorizontalSpeed`, `VerticalSpeed`, `AimHorizontalSpeed`, `AimVerticalSpeed` (0,25 à 3,0). Le launcher libère aussi le stick droit dans `Engine\binds_pc_mjs.cfg` |
 | `[Camera]` | `Mode=Follow` | Avec `CameraFix=1` : `Follow` = le personnage tourne et la caméra le suit ; `Orbit` (expérimental) = le stick droit tourne la caméra autour du personnage, qui ne bouge pas |
 | `[Camera]` | `OrbitGuardFollow=1` | Avec `Mode=Orbit` : `1` = tant que la gâchette gauche (L2, garde au couteau) est tenue, l'orbite est suspendue (caméra derrière le personnage, stick droit qui le tourne) ; `0` = l'orbite reste active |

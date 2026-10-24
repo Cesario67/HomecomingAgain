@@ -31,6 +31,7 @@
 #include "input/ButtonIcons.h"
 #include "input/ControllerNames.h"
 #include "input/MenuBridge.h"
+#include "input/QteHoldLogic.h"
 #include "input/SonyPad.h"
 #include "graphics/FilmGrain.h"
 #include "graphics/Projection.h"
@@ -329,28 +330,11 @@ void TestSceneEnd() {
 }
 
 
-void TestMenuPadKeys() {
+void TestMenuDetection() {
     using namespace hca::input;
-    KeySet held{};
-    // Croix bas + Start : flèche bas et Entrée ; A et B ne sont plus traduits.
-    KeySet keys = KeysForPad(0x0002 | 0x0010, 0, 0, held);
-    Check(keys[kKeyDown] && keys[kKeyReturn] && !keys[kKeyUp] && !keys[kKeyEscape], "croix et Start traduits en touches");
-    keys = KeysForPad(0x1000 | 0x2000, 0, 0, held);
-    Check(!keys[kKeyEscape] && !keys[kKeyReturn], "A et B non traduits");
-    // Stick : enfoncé au-delà de la moitié, relâché seulement sous un tiers (pas de rebond autour du seuil).
-    keys = KeysForPad(0, 0, 20000, held);
-    const bool pressed = keys[kKeyUp];
-    keys = KeysForPad(0, 0, 14000, held);
-    const bool stillHeld = keys[kKeyUp];
-    keys = KeysForPad(0, 0, 9000, held);
-    Check(pressed && stillHeld && !keys[kKeyUp], "stick vers le haut avec hystérésis");
-    KeySet fresh{};
-    keys = KeysForPad(0, -20000, 0, fresh);
-    Check(keys[kKeyLeft] && !keys[kKeyRight] && !KeysForPad(0, 14000, 0, fresh)[kKeyRight],
-          "stick à gauche, et à droite sous le seuil d'appui");
-    // Menu avant toute scène 3D, puis seulement après 5 s sans scène : un décrochage d'une seconde en jeu ne suffit pas.
+    // Menu before any 3D scene, then only after 5 s without a scene: a one-second hiccup in game is not enough.
     Check(MenuActive(1000, 0) && !MenuActive(11000, 10000) && !MenuActive(15000, 10000) && MenuActive(15001, 10000),
-          "menu détecté après 5 s sans scène 3D seulement");
+          "menu detected only after 5 s without a 3D scene");
 }
 
 void TestControllerNames() {
@@ -764,6 +748,22 @@ void TestHangClock() {
     Check(HangElapsed(500, 600, 0) == 0, "blocage : image plus récente que la mesure");
 }
 
+void TestQteHold() {
+    namespace q = hca::input::qte;
+    const WORD held = XINPUT_GAMEPAD_A | XINPUT_GAMEPAD_DPAD_UP;
+    // 10 presses per second: period 100 ms, pressed for 0 to 49 ms, released for 50 to 99 ms.
+    Check(q::ApplyHold(held, true, 1000, 10) == held, "QTE : bouton tenu, première moitié de période : appuyé");
+    Check(q::ApplyHold(held, true, 1060, 10) == XINPUT_GAMEPAD_DPAD_UP,
+          "QTE : bouton tenu, seconde moitié : relâché, croix gardée");
+    Check(q::ApplyHold(held, true, 1100, 10) == held, "QTE : nouvel appui à la période suivante");
+    Check(q::ApplyHold(held, false, 1060, 10) == held, "QTE : sans invite, rien ne change");
+    Check(q::ApplyHold(0, true, 1060, 10) == 0, "QTE : rien de tenu, rien de simulé");
+    Check(q::ApplyHold(XINPUT_GAMEPAD_DPAD_UP, true, 1060, 10) == XINPUT_GAMEPAD_DPAD_UP,
+          "QTE : autres boutons inchangés");
+    Check(q::ClampRate(1) == q::kMinRate && q::ClampRate(99) == q::kMaxRate && q::ClampRate(10) == 10,
+          "QTE : cadence bornée");
+}
+
 int main() {
     TestHangClock();
     TestStrings();
@@ -782,7 +782,7 @@ int main() {
     TestCameraMath();
     TestCameraCut();
     TestSceneEnd();
-    TestMenuPadKeys();
+    TestMenuDetection();
     TestButtonIcons();
     TestControllerNames();
     TestDepthEncoding();
@@ -792,6 +792,7 @@ int main() {
     TestCameraTuning();
     TestSonyPad();
     TestCheatPointers();
+    TestQteHold();
     std::printf(g_failures == 0 ? "Tous les tests unitaires passent.\n" : "%d test(s) unitaire(s) en échec.\n", g_failures);
     return g_failures;
 }

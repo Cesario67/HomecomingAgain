@@ -80,15 +80,9 @@ public static class ModInstaller
         report.Add(Loc.Get("InstallModInstalled", version));
 
         string sourceIni = Path.Combine(packageDirectory, SettingsFile);
-        if (File.Exists(paths.ModIni))
-        {
-            report.Add(Loc.Get("InstallFileKept", SettingsFile));
-        }
-        else if (File.Exists(sourceIni))
-        {
-            File.Copy(sourceIni, paths.ModIni);
-            report.Add(Loc.Get("InstallFileInstalled", SettingsFile));
-        }
+        report.Add(MigrateSettings(sourceIni, paths));
+        // CameraFix is on by default: the right stick must be freed in the game's binds, or the character turns twice.
+        SaveControllerBinds(paths, IniDocument.Load(paths.ModIni).GetBool("Camera", "CameraFix", true));
 
         if (IniDocument.Load(paths.ModIni).GetBool("Compat", "MissingTexts", true))
         {
@@ -110,6 +104,42 @@ public static class ModInstaller
 
         report.AddRange(CopyLauncher(paths, launcherExecutable, OperatingSystem.IsWindows()));
         return report;
+    }
+
+    /// <summary>
+    /// Installs the packaged HomecomingAgain.ini. When the user already has one, it is saved as HomecomingAgain.old.ini
+    /// and a fresh file is generated from the package: the user's values are carried over for every key the new file
+    /// knows, and keys added by the new version appear with their defaults. Nothing changes when the result is identical
+    /// to the existing file. Returns the report line.
+    /// </summary>
+    public static string MigrateSettings(string sourceIni, GamePaths paths)
+    {
+        if (!File.Exists(sourceIni))
+        {
+            return Loc.Get("InstallFileKept", SettingsFile);
+        }
+        if (!File.Exists(paths.ModIni))
+        {
+            File.Copy(sourceIni, paths.ModIni);
+            return Loc.Get("InstallFileInstalled", SettingsFile);
+        }
+
+        IniDocument user = IniDocument.Load(paths.ModIni);
+        IniDocument merged = IniDocument.Load(sourceIni);
+        foreach ((string section, string key, string value) in user.Entries())
+        {
+            if (merged.Has(section, key))
+            {
+                merged.Set(section, key, value);
+            }
+        }
+        if (merged.ToString() == user.ToString())
+        {
+            return Loc.Get("InstallFileKept", SettingsFile);
+        }
+        File.Copy(paths.ModIni, paths.ModIniOld, overwrite: true);
+        merged.Save(paths.ModIni);
+        return Loc.Get("InstallIniMigrated", SettingsFile, Path.GetFileName(paths.ModIniOld));
     }
 
     /// <summary>

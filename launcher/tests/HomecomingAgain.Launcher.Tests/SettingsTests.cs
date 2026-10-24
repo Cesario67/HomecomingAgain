@@ -45,7 +45,7 @@ public sealed class SettingsTests
         Assert.Equal(8192, settings.ShadowResolution);
         Assert.True(settings.WindowThreadLock && settings.D3DMultithreaded && settings.HangDetection);
         Assert.True(settings.SkipLogos);
-        Assert.False(settings.God || settings.UnlimitedAmmo);
+        Assert.False(settings.God || settings.UnlimitedAmmo || settings.QteHold);
         Assert.False(settings.CameraOrbit);
     }
 
@@ -97,7 +97,7 @@ public sealed class SettingsTests
             FullResolutionTextures = true, Smaa = false, Anisotropy = 4, TargetFps = 144, PreciseTimer = false,
             WindowThreadLock = false, D3DMultithreaded = false, CrashDumps = false, FullMemoryDumps = true,
             HangDetection = false, FrameStats = false, Ssao = false, SsaoStrength = 150, ShadowResolution = 8192,
-            FilmGrain = 0, SkipLogos = false, God = true, UnlimitedAmmo = true, CameraFix = true,
+            FilmGrain = 0, SkipLogos = false, QteHold = true, God = true, UnlimitedAmmo = true, CameraFix = true,
             CameraOrbit = true,
             FullScreenUiClip = false, ObjectViewPerspective = false,
             OrbitGuardFollow = false, CameraHorizontalSpeed = 0.5, CameraVerticalSpeed = 1.25,
@@ -151,7 +151,7 @@ public sealed class SettingsTests
                             "[Audio]\nChannelOrder=0,1,2,3,4,5\nChannels=6\n[Movies]\nSkipKey=27\n" +
                             "[Frames]\nReportIntervalSeconds=30\nFrameLimitFps=90\n" +
                             "[Crash]\nDumpKeepCount=5\n[Debug]\nLogKeepCount=100\nFrameCapture=1\nSkipMovies=1\n" +
-                            "[Input]\nMenuPad=1\nAnimatedIcons=0\nPlayStationPad=0";
+                            "[Input]\nAnimatedIcons=0\nPlayStationPad=0";
         IniDocument mod = IniDocument.Parse(text);
         new PatchSettings().WriteMod(mod);
         Assert.Equal(("2.25", "200", "600", "1"), (mod.Get("Graphics", "SsaoRadius"), mod.Get("Graphics", "SsaoFadeStart"),
@@ -161,7 +161,7 @@ public sealed class SettingsTests
                                                          mod.Get("Crash", "DumpKeepCount")));
         Assert.Equal(("100", "1", "1"), (mod.Get("Debug", "LogKeepCount"), mod.Get("Debug", "FrameCapture"),
                                          mod.Get("Debug", "SkipMovies")));
-        Assert.Equal(("1", "6", "90"), (mod.Get("Input", "MenuPad"), mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps")));
+        Assert.Equal(("6", "90"), (mod.Get("Audio", "Channels"), mod.Get("Frames", "FrameLimitFps")));
         Assert.Equal(("0", "0"), (mod.Get("Input", "AnimatedIcons"), mod.Get("Input", "PlayStationPad")));
     }
 

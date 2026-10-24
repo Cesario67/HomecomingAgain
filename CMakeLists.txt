@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(HomecomingAgain VERSION 0.9.8 LANGUAGES C CXX RC)
+project(HomecomingAgain VERSION 0.9.9 LANGUAGES C CXX RC)
 
 if(NOT MSVC)
     message(FATAL_ERROR "HomecomingAgain se compile avec MSVC (Build Tools for Visual Studio).")
@@ -81,8 +81,9 @@ add_library(HomecomingAgain SHARED
     src/input/XInputHooks.cpp
     src/input/MenuBridge.cpp
     src/input/SonyPad.cpp
-    src/input/DirectInputHooks.cpp
     src/input/ButtonIcons.cpp
+    src/input/QteHold.cpp
+    src/input/QteHoldLogic.cpp
     src/input/ControllerNames.cpp
     src/input/EngineUiState.cpp
     src/input/InputLog.cpp
@@ -182,7 +183,7 @@ add_custom_command(TARGET HomecomingAgain POST_BUILD
 # Tests unitaires des fonctions pures, sans jeu ni matériel (tests/run-tests.ps1).
 option(HCA_BUILD_TESTS "Compiler les tests" ON)
 if(HCA_BUILD_TESTS)
-    add_executable(HomecomingAgainUnitTests tests/unit/main.cpp src/patches/CameraTuning.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp src/patches/FrameRateCap.cpp src/core/Config.cpp src/core/Hooking.cpp src/graphics/ShaderConstantTable.cpp src/graphics/ShadowResolution.cpp src/graphics/Projection.cpp src/graphics/FilmGrain.cpp src/compat/SkipMovies.cpp src/compat/MovieSkip.cpp src/compat/StartupLogos.cpp src/audio/AudioProbe.cpp src/graphics/CameraMath.cpp src/graphics/CameraTracker.cpp src/graphics/DepthEncoding.cpp src/graphics/Jitter.cpp src/input/MenuBridge.cpp src/input/SonyPad.cpp src/input/ButtonIcons.cpp src/input/ControllerNames.cpp src/input/EngineUiState.cpp src/input/InputLog.cpp src/core/Paths.cpp src/crash/HangClock.cpp src/graphics/UiClip.cpp src/graphics/Dxt3.cpp src/graphics/FlashIconArt.cpp src/graphics/FlashIcons.cpp)
+    add_executable(HomecomingAgainUnitTests tests/unit/main.cpp src/patches/CameraTuning.cpp src/core/Strings.cpp src/graphics/BorderlessWindow.cpp src/core/Log.cpp src/patches/FrameRateCap.cpp src/core/Config.cpp src/core/Hooking.cpp src/graphics/ShaderConstantTable.cpp src/graphics/ShadowResolution.cpp src/graphics/Projection.cpp src/graphics/FilmGrain.cpp src/compat/SkipMovies.cpp src/compat/MovieSkip.cpp src/compat/StartupLogos.cpp src/audio/AudioProbe.cpp src/graphics/CameraMath.cpp src/graphics/CameraTracker.cpp src/graphics/DepthEncoding.cpp src/graphics/Jitter.cpp src/input/MenuBridge.cpp src/input/SonyPad.cpp src/input/ButtonIcons.cpp src/input/QteHoldLogic.cpp src/input/ControllerNames.cpp src/input/EngineUiState.cpp src/input/InputLog.cpp src/core/Paths.cpp src/crash/HangClock.cpp src/graphics/UiClip.cpp src/graphics/Dxt3.cpp src/graphics/FlashIconArt.cpp src/graphics/FlashIcons.cpp)
     target_include_directories(HomecomingAgainUnitTests PRIVATE src)
     target_compile_features(HomecomingAgainUnitTests PRIVATE cxx_std_20)
     target_compile_definitions(HomecomingAgainUnitTests PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX UNICODE _UNICODE)

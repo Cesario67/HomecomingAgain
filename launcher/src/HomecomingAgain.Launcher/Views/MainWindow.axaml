@@ -177,6 +177,10 @@
             <CheckBox Content="{Binding L[AudioChannelFix]}" IsChecked="{Binding AudioChannelFix}" />
             <TextBlock Classes="hint" Text="{Binding L[AudioChannelFixHint]}" />
 
+            <TextBlock Classes="section" Text="{Binding L[SecAccessibility]}" />
+            <CheckBox Content="{Binding L[QteHold]}" IsChecked="{Binding QteHold}" />
+            <TextBlock Classes="hint" Text="{Binding L[QteHoldHint]}" />
+
             <TextBlock Classes="section" Text="{Binding L[SecCheats]}" />
             <CheckBox Content="{Binding L[God]}" IsChecked="{Binding God}" />
             <CheckBox Content="{Binding L[UnlimitedAmmo]}" IsChecked="{Binding UnlimitedAmmo}" />

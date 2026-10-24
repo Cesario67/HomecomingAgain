@@ -15,6 +15,7 @@ public sealed record GamePaths(string GameDirectory)
     public string ModDll => Path.Combine(BinDirectory, ModDllName);
     public string ModDllBackup => ModDll + ".avant-hca";
     public string ModIni => Path.Combine(BinDirectory, "HomecomingAgain.ini");
+    public string ModIniOld => Path.Combine(BinDirectory, "HomecomingAgain.old.ini");
 
     /// <summary>Réglages du jeu (résolution, plein écran, qualité), créés par le jeu à son premier lancement.</summary>
     public string GameSettings => Path.Combine(GameDirectory, "Engine", "vars_pc.cfg");
