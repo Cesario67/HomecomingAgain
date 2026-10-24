@@ -116,7 +116,7 @@ struct Config {
     // [Camera]
     // Correctif de caméra à la manette, porté du Camera Fix d'Emertels (voir patches/CameraFix.h). Désactivé par
     // défaut : il faut aussi retirer COMMAND_TURNLEFT et COMMAND_TURNRIGHT du stick droit dans binds_pc_mjs.cfg.
-    bool cameraFix = false;
+    bool cameraFix = true;
     // Vitesses de 0,25 à 3 (1 = calibrage du Camera Fix), voir patches/CameraTuning.h.
     float cameraHorizontalSpeed = 1.0f;
     float cameraVerticalSpeed = 1.0f;

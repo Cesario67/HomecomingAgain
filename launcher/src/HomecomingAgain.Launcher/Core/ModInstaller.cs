@@ -81,6 +81,8 @@ public static class ModInstaller
 
         string sourceIni = Path.Combine(packageDirectory, SettingsFile);
         report.Add(MigrateSettings(sourceIni, paths));
+        // CameraFix is on by default: the right stick must be freed in the game's binds, or the character turns twice.
+        SaveControllerBinds(paths, IniDocument.Load(paths.ModIni).GetBool("Camera", "CameraFix", true));
 
         if (IniDocument.Load(paths.ModIni).GetBool("Compat", "MissingTexts", true))
         {

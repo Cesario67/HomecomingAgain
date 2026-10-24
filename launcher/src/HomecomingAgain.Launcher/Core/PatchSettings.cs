@@ -41,7 +41,7 @@ public sealed record PatchSettings
     public int ButtonIcons { get; init; }
 
     // --- Caméra à la manette ([Camera] CameraFix, plus les commandes du stick droit, voir ControllerBinds).
-    public bool CameraFix { get; init; }
+    public bool CameraFix { get; init; } = true;
     // Caméra orbitale ([Camera] Mode=Orbit, sinon Follow), effective seulement avec CameraFix.
     public bool CameraOrbit { get; init; }
     // Orbite suspendue tant que la gâchette gauche (L2) est tenue ([Camera] OrbitGuardFollow).
