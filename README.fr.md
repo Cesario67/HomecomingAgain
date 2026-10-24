@@ -61,6 +61,9 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Manette PlayStation sans Steam Input** (DualShock 4, DualSense, en test) : le jeu ne connaît que les manettes
   Xbox ; sans manette Xbox branchée, la manette PlayStation lui est présentée comme une manette Xbox, avec les icônes
   PlayStation en mode auto (`[Input] PlayStationPad`, activé par défaut).
+- **QTE en maintenant le bouton** (accessibilité, désactivé par défaut) : pendant une invite à marteler un bouton, tenir
+  le bouton compte comme des appuis répétés (`[Input] QteHold=1`, vitesse `QteHoldRate`, case dans le launcher).
+  Manette seulement.
 - **Caméra orbitale** (expérimental) : avec le correctif de caméra, le stick droit fait tourner la caméra seule autour
   du personnage. À cocher dans le launcher (onglet Manette). La gâchette gauche (L2) tenue suspend l'orbite
   (`OrbitGuardFollow`).

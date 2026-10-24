@@ -58,6 +58,8 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
 - **PlayStation controller without Steam Input** (DualShock 4, DualSense, being tested): the game only knows Xbox
   controllers; with no Xbox controller plugged in, the PlayStation controller is presented to it as an Xbox one, with
   PlayStation icons in auto mode (`[Input] PlayStationPad`, on by default).
+- **Hold-to-mash QTE** (accessibility, off by default): during a button-mashing prompt, holding the button counts as
+  repeated presses (`[Input] QteHold=1`, speed `QteHoldRate`, checkbox in the launcher). Controller only.
 - **Orbit camera** (experimental): with the camera fix, the right stick turns the camera alone around the character.
   Enabled in the launcher (Controller tab). Holding the left trigger (L2) suspends the orbit (`OrbitGuardFollow`).
 
