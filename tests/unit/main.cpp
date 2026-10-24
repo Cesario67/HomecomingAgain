@@ -428,7 +428,9 @@ void TestButtonIcons() {
     using hca::input::ExtraCommandIconName;
     Check(same(ExtraCommandIconName(0x44, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x44, 2), "shv_buttonps3stickr") &&
               ExtraCommandIconName(0x44, 0) == nullptr && ExtraCommandIconName(0x36, 1) == nullptr &&
-              same(ExtraCommandIconName(8, 1), "shv_buttonxboxlb") && same(ExtraCommandIconName(8, 2), "shv_buttonps3l1") && ExtraCommandIconName(8, 0) == nullptr &&
+              ExtraCommandIconName(8, 1) == nullptr && same(hca::input::PadActionIconName("shv_buttonactionpc", 1), "shv_buttonxboxlb") &&
+              same(hca::input::PadActionIconName("shv_buttonactionpc", 2), "shv_buttonps3l1") &&
+              hca::input::PadActionIconName("shv_buttonactionpc", 0) == nullptr && hca::input::PadActionIconName("shv_buttonpccontrol1", 1) == nullptr &&
               same(ExtraCommandIconName(0x13, 1), "shv_buttonstickx360_r") && same(ExtraCommandIconName(0x14, 2), "shv_buttonps3stickr"),
           "icône du stick droit pour le zoom de la carte (axes et R3), rien pour le type PC ni les autres commandes");
 }
@@ -513,6 +515,21 @@ void TestUiClip() {
               !hca::graphics::uiclip::RestoreObjectPerspective(knife720, 1.0f) &&
               std::memcmp(knife720, knife720Copy, sizeof(knife720)) == 0,
           "objets : carte (distance 50) et 720p (échelle 1) intacts");
+
+    // Projecteur des photos du journal, relevés F11 du 24/10/2026 : position c20 en 1080p, 1440p et 720p.
+    using hca::graphics::uiclip::RestoreInspectionLight;
+    float light1080[4] = {-22.222f, 12.5f, -25.0f, 1.0071e-28f};
+    float light1440[4] = {-44.444f, 25.0f, -25.0f, 1.0071e-28f};
+    float light720[4] = {-0.0f, -0.0f, -25.0f, 1.0071e-28f};
+    float lightOther[4] = {-3.0f, 2.0f, -25.0f, 0.0f};
+    const bool fixed1080 = RestoreInspectionLight(light1080, 1920, 1080);
+    const bool fixed1440 = RestoreInspectionLight(light1440, 2560, 1440);
+    Check(fixed1080 && fixed1440 && light1080[0] == 0.0f && light1080[1] == 0.0f && light1080[2] == -25.0f &&
+              light1440[0] == 0.0f && light1440[1] == 0.0f && light1440[2] == -25.0f,
+          "photos : projecteur recentré en 1080p et 1440p (z intact)");
+    Check(!RestoreInspectionLight(light720, 1280, 720) && !RestoreInspectionLight(lightOther, 1920, 1080) &&
+              lightOther[0] == -3.0f && lightOther[1] == 2.0f,
+          "photos : 720p et autre lumière intacts");
 }
 
 void TestJitter() {

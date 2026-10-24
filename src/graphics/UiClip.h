@@ -37,4 +37,14 @@ void CompensateProjection(float* rows, float scaleX, float scaleY) noexcept;
 // perspective redevient celle du 720p. Renvoie vrai si la matrice a été modifiée. À appeler avant CompensateProjection.
 bool RestoreObjectPerspective(float* rows, float scale) noexcept;
 
+// Journal documents and photos render black above 720p (reported by a player: fine at 1080p for them, dark at 1440p,
+// black at 4K; black at 1080p here too). F11 captures of 24/10/2026 at 1280x720, 1920x1080 and 2560x1440 (verified):
+// the picture is a lit quad (ps_1BE99E50, 4 vertices, 1280x720 viewport) with no ambient light (c8..c13 and c97 at 0)
+// and a single spotlight whose position (c20) is (0, 0, -25) at 720p, (-22.222, 12.5, -25) at 1080p and
+// (-44.444, 25, -25) at 1440p, i.e. (-(W - 1280) / 28.8, (H - 720) / 28.8, -25). Hypothesis: the light is pushed
+// away from the picture and no longer lights it (checked in game only after this fix).
+// If the c20 position carries exactly that offset for a `targetWidth` x `targetHeight` target (within 1 %), puts x and
+// y back to 0 (the 720p value). Returns true if the position was changed.
+bool RestoreInspectionLight(float* position, long targetWidth, long targetHeight) noexcept;
+
 }  // namespace hca::graphics::uiclip

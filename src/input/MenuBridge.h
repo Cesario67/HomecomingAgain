@@ -48,6 +48,8 @@ bool MenuActive(std::uint64_t nowMs, std::uint64_t lastSceneMs) noexcept;
 void OnSceneDrawn() noexcept;
 void OnPresent() noexcept;
 bool InMenu() noexcept;
+// DIAGNOSTIC TEMPORAIRE : millisecondes depuis la dernière scène 3D dessinée (0 : jamais).
+std::uint64_t SceneAgeMs() noexcept;
 // Touches à ajouter au clavier maintenant (aucune en jeu ou si la fonction est désactivée).
 KeySet CurrentKeys() noexcept;
 

@@ -81,6 +81,17 @@ réglages sont décrits dans les README.
 - Chaque adresse, offset ou signature issu de la rétro-ingénierie est documenté en commentaire :
   ce que fait le code ciblé, comment il a été identifié, version de `SilentHill.exe` concernée.
 
+## Langue des commentaires
+
+- **Tous les commentaires sont écrits en anglais** : code C++ (DLL) et C# (launcher), XAML, scripts, et commentaires de
+  `HomecomingAgain.ini`. Les nouveaux commentaires, et ceux qu'on modifie, sont en anglais.
+- Les commentaires français existants sont traduits au fil des modifications (traduire ceux du fichier qu'on touche).
+  Une traduction de tout le dépôt d'un coup est un travail à part, à ne faire que sur demande.
+- Cela ne change pas : les textes affichés au joueur (launcher en français et en anglais, `Core/Translations.cs`), la
+  documentation du dépôt (`CLAUDE.md`, `docs/`, README) et les messages de commit, qui restent comme ils sont
+  aujourd'hui. Les règles existantes valent aussi pour les commentaires anglais (pas de tiret cadratin, hypothèse
+  distinguée du vérifié).
+
 ## Licence
 
 - Projet sous **GPL-3.0-or-later** (`LICENSE`, copyright Cesar Schaal). Le paquet distribué doit contenir

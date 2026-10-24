@@ -127,6 +127,7 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.frameCaptureKey = ReadInt(iniPath, L"Debug", L"FrameCaptureKey", defaults.frameCaptureKey, 1, 254);
     config.backBufferDump = ReadBool(iniPath, L"Debug", L"BackBufferDump", defaults.backBufferDump);
     config.skipMovies = ReadBool(iniPath, L"Debug", L"SkipMovies", defaults.skipMovies);
+    config.inputLog = ReadBool(iniPath, L"Debug", L"InputLog", defaults.inputLog);
 
     g_config = config;
     return GetFileAttributesW(iniPath.c_str()) != INVALID_FILE_ATTRIBUTES;

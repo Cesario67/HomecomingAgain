@@ -38,8 +38,11 @@ const char* FaceIconName(int type, int button) noexcept;
 const char* ReplacementIconName(const char* name, int type) noexcept;
 // Fonction pure (testée) : icône d'une commande que la table manette du jeu ne couvre pas, pour le type 1 (Xbox 360)
 // ou 2 (PS3), ou mal choisie par elle ; nullptr sinon. Stick droit : axes 0x13 et 0x14 (invite « Zoom » de la carte) et
-// clic R3 (0x44) ; LB / L1 : commande 8 (invite « Inventaire »).
+// clic R3 (0x44).
 const char* ExtraCommandIconName(std::uint32_t command, int type) noexcept;
+// Pure function (tested): pad icon swapped under the PC name `shv_buttonactionpc` (inventory prompt, command 8) for type 1
+// (LB) or 2 (L1); nullptr for any other name or type 0.
+const char* PadActionIconName(const char* name, int type) noexcept;
 // Met à jour le type d'icônes selon le réglage et la manette (appelé à chaque Present).
 void RefreshButtonIcons() noexcept;
 
