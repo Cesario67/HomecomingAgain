@@ -45,6 +45,21 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
 ### 2. Graphismes (objectif 2)
 - Résolution et ratio : constantes 720p, interface, carte, objets, photos ; 16:9, 21:9, 32:9.
 - Champ de vision réglable (Hor+ en ultra-large).
+  - Fait (27/10/2026) : écran noir hors 16:9 corrigé (`graphics/ClipCopy`, `ClipFinalCopy=1`). Vérifié en jeu en
+    1920x810. Cause **vérifiée** : la dernière copie du moteur (`StretchRect` de la cible de scène vers le tampon
+    arrière) vise le rectangle (0,-135,1920,945) qui dépasse le tampon 1920x810 ; Direct3D 9 répond
+    `D3DERR_INVALIDCALL`. Le mod rogne la destination et la source de la même quantité.
+  - Mesures **vérifiées** (relevés F11 du 27/10/2026, menu principal, 1920x810 et 1920x1080) : le moteur dessine
+    tout (monde 3D et interface) dans des cibles 16:9 de largeur égale à la résolution (1920x1080 ; 3840x2160 pour un
+    tampon 3840x1080), viewport plein cible, puis centre cette image sur le tampon arrière en rognant haut et bas.
+    Le champ de vision horizontal reste donc celui du 16:9 : un écran ultra-large perd de la hauteur au lieu de
+    gagner de la largeur. La projection du monde (mWorldViewProj, c0..c3) a un rapport échelle y / échelle x de 16/9
+    (1,6406 et 2,9163 relevés), identique à 1920x810 et à 1920x1080 : le ratio est fixé à 16:9 par le moteur.
+  - Reste (**hypothèse de conception, non vérifiée**) : Hor+ demande trois changements ensemble : cibles de dessin à la
+    taille du tampon arrière (au lieu de largeur x 9/16), échelle x de la projection du monde multipliée par
+    (16/9) / (L/H), et interface limitée à la zone 16:9 centrale. Les modules SMAA, SSAO, vecteurs de mouvement et DLSS
+    lisent les tailles des cibles : à revoir avec. La construction de la projection dans le moteur n'est pas encore
+    trouvée (aucune constante 1,7777778 en flottant ; 0,5625 référencé une fois, en 0x10B9C55B, sans rapport établi).
 - Anticrénelage : MSAA via les paramètres de présentation, puis post-traitement (SMAA) à la manière de DPfix
   (DPfix est GPL : réutilisable avec ses crédits, voir `E:\DeadlyPremonitionFix\third_party\dpfix`).
 - Qualité : suppression optionnelle du grain, filtre de tonalité, gamma, ombres (résolution), distance d'affichage.
