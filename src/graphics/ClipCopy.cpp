@@ -30,6 +30,11 @@ HRESULT RetryClipped(IDirect3DDevice9* device, IDirect3DSurface9* source, const 
     if (FAILED(source->GetDesc(&sourceDesc)) || FAILED(dest->GetDesc(&destDesc))) {
         return original;
     }
+    if (sourceDesc.Width == destDesc.Width && sourceDesc.Height == destDesc.Height) {
+        // Same size (Hor+ reshapes the scene target to the back buffer): the whole picture, no centring.
+        const HRESULT whole = g_stretchRect(device, source, nullptr, dest, nullptr, filter);
+        return SUCCEEDED(whole) ? whole : original;
+    }
     Rect clippedSource = sourceRect != nullptr
                              ? Rect{sourceRect->left, sourceRect->top, sourceRect->right, sourceRect->bottom}
                              : Rect{0, 0, static_cast<long>(sourceDesc.Width), static_cast<long>(sourceDesc.Height)};

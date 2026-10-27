@@ -41,6 +41,8 @@ struct Config {
     bool fullScreenUiClip = true;
     // Clips the engine's final StretchRect rectangle to the surface (non 16:9 resolutions: black screen).
     bool clipFinalCopy = true;
+    // Hor+ prototype for back buffers wider than 16:9 (see graphics/HorPlus.h).
+    bool horPlus = false;
     // Perspective de la vue d'inspection des objets rétablie au-delà de 720p (voir graphics/UiClip.h).
     bool objectViewPerspective = true;
     // Jeu exécuté par D3D9On12 (Direct3D 12), préparation du DLSS, expérimental (voir graphics/D3D9On12.h).

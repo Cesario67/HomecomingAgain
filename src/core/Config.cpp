@@ -62,6 +62,7 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.filmGrain = ReadInt(iniPath, L"Graphics", L"FilmGrain", defaults.filmGrain, 0, 100);
     config.fullScreenUiClip = ReadBool(iniPath, L"Graphics", L"FullScreenUiClip", defaults.fullScreenUiClip);
     config.clipFinalCopy = ReadBool(iniPath, L"Graphics", L"ClipFinalCopy", defaults.clipFinalCopy);
+    config.horPlus = ReadBool(iniPath, L"Graphics", L"HorPlus", defaults.horPlus);
     config.objectViewPerspective =
         ReadBool(iniPath, L"Graphics", L"ObjectViewPerspective", defaults.objectViewPerspective);
     config.d3d9On12 = ReadBool(iniPath, L"Graphics", L"D3D9On12", defaults.d3d9On12);

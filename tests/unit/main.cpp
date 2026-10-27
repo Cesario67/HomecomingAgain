@@ -26,6 +26,7 @@
 #include "graphics/FlashIcons.h"
 #include "graphics/Jitter.h"
 #include "graphics/ClipCopyRules.h"
+#include "graphics/HorPlusRules.h"
 #include "graphics/UiClip.h"
 #include "graphics/SceneEnd.h"
 #include "crash/HangClock.h"
@@ -500,6 +501,35 @@ void TestClipCopy() {
     Check(!ClipToSurface(outside, away, 1920, 1080), "copie finale : rectangle entièrement hors de la surface refusé");
 }
 
+void TestHorPlus() {
+    using namespace hca::graphics::horplus;
+    Check(IsWiderThanSixteenNine(1920, 810) && IsWiderThanSixteenNine(3840, 1080) && IsWiderThanSixteenNine(3440, 1440),
+          "Hor+ : 21:9 et 32:9 concernés");
+    Check(!IsWiderThanSixteenNine(1920, 1080) && !IsWiderThanSixteenNine(2560, 1440) && !IsWiderThanSixteenNine(1280, 800),
+          "Hor+ : 16:9 et 16:10 non concernés");
+    Check(IsSixteenNineTarget(1920, 1080) && IsSixteenNineTarget(3840, 2160) && !IsSixteenNineTarget(1024, 1024) &&
+              !IsSixteenNineTarget(320, 180),
+          "Hor+ : cibles 16:9 reconnues, ombres et petites tailles laissées");
+    Check(ReshapedHeight(1920, 1920, 810) == 810 && ReshapedHeight(3840, 3840, 1080) == 1080 &&
+              ReshapedHeight(960, 1920, 810) == 405,
+          "Hor+ : hauteur des cibles remise au ratio du tampon");
+    // Camera projection measured on 27/10/2026 (c0..c3 of the world, 1.6406 and 2.9163): 16:9, and scaled so that the
+    // x scale falls to (16/9) / (1920/810) of its value.
+    float world[16] = {1.6406f, -0.0f, -0.0095467f, -9.5398f, 0.00029406f, 2.9163f, 0.050536f, -182.49f,
+                       0.005819f, -0.01733f, 1.0f, 138.1f, 0.0058179f, -0.017326f, 0.99983f, 141.07f};
+    Check(IsSixteenNineProjection(world), "Hor+ : projection du monde (relevé) reconnue");
+    const float factor = ProjectionXFactor(1920, 810);
+    Check(std::fabs(factor - 0.75f) < 1e-4f, "Hor+ : facteur 0,75 pour 1920x810 (21:9 = 2,370 contre 1,778)");
+    ScaleProjectionX(world, factor);
+    Check(std::fabs(world[0] - 1.6406f * 0.75f) < 1e-5f && std::fabs(world[3] + 9.5398f * 0.75f) < 1e-4f &&
+              world[5] == 2.9163f && world[8] == 0.005819f,
+          "Hor+ : seule la ligne x est modifiée");
+    const float ortho[16] = {2.0f / 1280.0f, 0, 0, -1, 0, -2.0f / 720.0f, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1};
+    Check(IsSixteenNineProjection(ortho), "Hor+ : une projection orthographique 1280x720 est aussi 16:9");
+    const float square[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+    Check(!IsSixteenNineProjection(square), "Hor+ : matrice identité ignorée");
+}
+
 void TestUiClipItem() {
     using hca::graphics::uiclip::LooksStraightDown;
     // Carte (relevés du 16/10/2026) : caméra verticale, compensée.
@@ -821,6 +851,7 @@ int main() {
     TestJitter();
     TestUiClip();
     TestClipCopy();
+    TestHorPlus();
     TestUiClipItem();
     TestCameraTuning();
     TestSonyPad();
