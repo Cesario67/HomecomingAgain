@@ -25,6 +25,7 @@
 #include "graphics/FlashIconArt.h"
 #include "graphics/FlashIcons.h"
 #include "graphics/Jitter.h"
+#include "graphics/ClipCopyRules.h"
 #include "graphics/UiClip.h"
 #include "graphics/SceneEnd.h"
 #include "crash/HangClock.h"
@@ -468,6 +469,37 @@ void TestDepthEncoding() {
     Check(!ParseEncoding(98, zero, 1, untouched), "facteur nul refusé");
 }
 
+void TestClipCopy() {
+    using hca::graphics::clipcopy::ClipToSurface;
+    using hca::graphics::clipcopy::Rect;
+    // Measured 27/10/2026: source 1920x1080 to a 1920x810 back buffer with destination (0,-135,1920,945), refused.
+    Rect source{0, 0, 1920, 1080};
+    Rect dest{0, -135, 1920, 945};
+    Check(ClipToSurface(source, dest, 1920, 810), "copie finale : rectangle hors de la surface rogné");
+    Check(dest.left == 0 && dest.top == 0 && dest.right == 1920 && dest.bottom == 810,
+          "copie finale : destination = toute la surface 1920x810");
+    Check(source.left == 0 && source.top == 135 && source.right == 1920 && source.bottom == 945,
+          "copie finale : source rognée de la même quantité (135 en haut et en bas)");
+    // 3840x1080 back buffer, scene target 3840x2160 centred: (0,-540,3840,1620).
+    Rect wideSource{0, 0, 3840, 2160};
+    Rect wideDest{0, -540, 3840, 1620};
+    Check(ClipToSurface(wideSource, wideDest, 3840, 1080) && wideSource.top == 540 && wideSource.bottom == 1620 &&
+              wideDest.top == 0 && wideDest.bottom == 1080,
+          "copie finale : 3840x1080, 540 pixels rognés en haut et en bas");
+    // Scaled copy: the source moves in proportion (destination twice as tall as the source).
+    Rect scaledSource{0, 0, 100, 50};
+    Rect scaledDest{0, -20, 200, 80};
+    Check(ClipToSurface(scaledSource, scaledDest, 200, 60) && scaledSource.top == 10 && scaledSource.bottom == 40 &&
+              scaledDest.top == 0 && scaledDest.bottom == 60,
+          "copie finale : source rognée en proportion quand la copie change d'échelle");
+    Rect inside{0, 0, 1920, 1080};
+    Rect fits{0, 0, 1920, 1080};
+    Check(!ClipToSurface(inside, fits, 1920, 1080), "copie finale : rectangle dans la surface, rien à rogner");
+    Rect outside{0, 0, 100, 100};
+    Rect away{0, 2000, 100, 2100};
+    Check(!ClipToSurface(outside, away, 1920, 1080), "copie finale : rectangle entièrement hors de la surface refusé");
+}
+
 void TestUiClipItem() {
     using hca::graphics::uiclip::LooksStraightDown;
     // Carte (relevés du 16/10/2026) : caméra verticale, compensée.
@@ -788,6 +820,7 @@ int main() {
     TestDepthEncoding();
     TestJitter();
     TestUiClip();
+    TestClipCopy();
     TestUiClipItem();
     TestCameraTuning();
     TestSonyPad();

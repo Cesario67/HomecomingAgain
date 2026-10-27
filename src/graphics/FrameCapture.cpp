@@ -258,11 +258,15 @@ HRESULT STDMETHODCALLTYPE HookCreateDepthStencilSurface(IDirect3DDevice9* device
 
 HRESULT STDMETHODCALLTYPE HookStretchRect(IDirect3DDevice9* device, IDirect3DSurface9* source, const RECT* sourceRect,
                                           IDirect3DSurface9* dest, const RECT* destRect, D3DTEXTUREFILTERTYPE filter) {
+    const HRESULT result = g_stretchRect(device, source, sourceRect, dest, destRect, filter);
     if (Recording()) {
-        Record("StretchRect {} -> {} filtre {}", DescribeSurface(source), DescribeSurface(dest),
-               static_cast<int>(filter));
+        // The result and the rectangles are logged because a scaled copy (source and destination sizes differ) can
+        // fail or come out black while an equal-size copy works (ultrawide investigation, 27/10/2026).
+        Record("StretchRect {} -> {} filtre {} rects {} {} -> 0x{:08X}", DescribeSurface(source),
+               DescribeSurface(dest), static_cast<int>(filter), sourceRect != nullptr ? "source" : "source entière",
+               destRect != nullptr ? "destination" : "destination entière", static_cast<unsigned long>(result));
     }
-    return g_stretchRect(device, source, sourceRect, dest, destRect, filter);
+    return result;
 }
 
 HRESULT STDMETHODCALLTYPE HookSetRenderTarget(IDirect3DDevice9* device, DWORD index, IDirect3DSurface9* surface) {

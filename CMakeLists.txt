@@ -119,6 +119,7 @@ add_library(HomecomingAgain SHARED
     src/graphics/MotionVectors.cpp
     src/graphics/Projection.cpp
     src/graphics/SceneHooks.cpp
+    src/graphics/ClipCopy.cpp
     src/graphics/Dxt3.cpp
     src/graphics/FlashIconArt.cpp
     src/graphics/FlashIcons.cpp

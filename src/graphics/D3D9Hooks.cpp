@@ -27,6 +27,7 @@
 #include "graphics/FrameCapture.h"
 #include "graphics/InternalDraw.h"
 #include "graphics/MotionVectors.h"
+#include "graphics/ClipCopy.h"
 #include "graphics/SceneHooks.h"
 #include "graphics/UiClip.h"
 #include "graphics/Ssao.h"
@@ -187,6 +188,8 @@ void PatchDevice(IDirect3DDevice9* device) {
     scene::Install(device);
     uiclip::Install(device);
     flashicons::Install(device);
+    // Before the frame capture, which chains to whatever StretchRect it finds.
+    clipcopy::Install(device);
     if (GetConfig().frameCapture) {
         capture::Install(device);
     }

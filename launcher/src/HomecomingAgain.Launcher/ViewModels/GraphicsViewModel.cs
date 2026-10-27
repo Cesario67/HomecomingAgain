@@ -224,7 +224,9 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     private static IReadOnlyList<Choice<(int Width, int Height)>> BuildResolutions(int currentWidth, int currentHeight)
     {
         List<(int Width, int Height)> sizes =
-            [(1280, 720), (1600, 900), (1920, 1080), (2560, 1080), (2560, 1440), (3440, 1440), (3840, 2160)];
+            [(1280, 720), (1600, 900), (1920, 1080),
+             // Common ultrawide sizes: 21:9 (2560x1080, 3440x1440, 3840x1600, 5120x2160) and 32:9 (3840x1080, 5120x1440).
+             (2560, 1080), (2560, 1440), (3440, 1440), (3840, 1080), (3840, 1600), (3840, 2160), (5120, 1440), (5120, 2160)];
         if (!sizes.Contains((currentWidth, currentHeight)))
         {
             sizes.Add((currentWidth, currentHeight));
