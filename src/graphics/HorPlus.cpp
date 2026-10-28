@@ -113,6 +113,25 @@ HRESULT STDMETHODCALLTYPE HookSetScissorRect(IDirect3DDevice9* device, const REC
     return g_setScissorRect(device, rect);
 }
 
+// The pause menu dims the whole picture with a full-screen interface quad textured with a 32x32 image (captured
+// 28/10/2026, ortho projection 2/1280 x 2/720). Compressed to the central 16:9 like the rest of the interface, it left
+// the sides of an ultrawide picture undimmed. Hypothesis: any 32x32 texture on a full-screen interface quad is such a
+// veil; checked on the pause menu only.
+bool BoundTextureIsOverlay(IDirect3DDevice9* device) noexcept {
+    IDirect3DBaseTexture9* bound = nullptr;
+    if (FAILED(device->GetTexture(0, &bound)) || bound == nullptr) {
+        return false;
+    }
+    bool overlay = false;
+    if (bound->GetType() == D3DRTYPE_TEXTURE) {
+        D3DSURFACE_DESC desc{};
+        overlay = SUCCEEDED(static_cast<IDirect3DTexture9*>(bound)->GetLevelDesc(0, &desc)) && desc.Width == 32 &&
+                  desc.Height == 32;
+    }
+    bound->Release();
+    return overlay;
+}
+
 HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device, UINT start, const float* data,
                                                        UINT count) {
     if (count == 1 && data != nullptr && Active() && IsHalfPixelOffsetConstant(data)) {
@@ -124,6 +143,9 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
     }
     // c0 x4: mWorldViewProj of the world camera (any rotation). Elsewhere: only a bare 16:9 projection (c222 x4).
     const bool world = start == 0 && IsSixteenNineProjection(data);
+    if (world && BoundTextureIsOverlay(device)) {
+        return g_setVertexShaderConstantF(device, start, data, count);
+    }
     if (!world && !IsBareSixteenNineProjection(data)) {
         return g_setVertexShaderConstantF(device, start, data, count);
     }

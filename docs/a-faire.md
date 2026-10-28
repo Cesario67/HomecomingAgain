@@ -64,7 +64,15 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
     shader) et échelle écran c111 ([1/L, 1/H], pixel shader de la lumière volumétrique `ps_1C62CA10`, qui lit la
     profondeur R32F par `vPos` x c111 et reconstruit la position monde). Sans la correction de c111, des taches noires
     à bords en escalier apparaissaient sur les personnages (les cibles pleine résolution redimensionnées sans elle).
-    Reste à tester : cinématiques, carte, objets, DLSS, 2560x1080 / 3440x1440 / 3840x1080 sur un vrai écran ultra-large,
+    Vérifié en jeu en 1920x810 (28/10/2026) : cinématique des insectes, menus, pause (le voile du menu pause, un quad
+    d'interface à texture 32x32, n'est plus comprimé au centre : `BoundTextureIsOverlay`, hypothèse valable pour ce
+    seul menu).
+    **Bug signalé par l'auteur (28/10/2026), non traité** : des éléments (cercles de sauvegarde) disparaissent quand
+    ils sortent du champ de la caméra d'origine. **Hypothèse non vérifiée** : le moteur élimine les objets avec un
+    frustum calculé sur le ratio 16:9 ; Hor+ élargit l'image sans élargir ce frustum, donc les objets du bord sont
+    éliminés. Il faut trouver dans `g_SilentHill.sgl` où le frustum est construit (champ de vision et ratio) et
+    l'élargir comme la projection.
+    Reste à tester : carte, objets examinés, DLSS, 2560x1080 / 3440x1440 / 3840x1080 sur un vrai écran ultra-large,
     et d'autres constantes à 1080 que le moteur pourrait envoyer en blocs de plusieurs registres.
   - Reste (**hypothèse de conception, non vérifiée**) : Hor+ demande trois changements ensemble : cibles de dessin à la
     taille du tampon arrière (au lieu de largeur x 9/16), échelle x de la projection du monde multipliée par
