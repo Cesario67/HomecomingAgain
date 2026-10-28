@@ -1,4 +1,4 @@
-namespace HomecomingAgain.Launcher.Core;
+﻿namespace HomecomingAgain.Launcher.Core;
 
 public enum DisplayMode
 {
@@ -32,6 +32,10 @@ public sealed record PatchSettings
     // Carte et interface étendues au-delà de 1280x720 ; perspective de la vue d'inspection des objets rétablie.
     public bool FullScreenUiClip { get; init; } = true;
     public bool ObjectViewPerspective { get; init; } = true;
+
+    // Wider field of view on screens wider than 16:9 ([Graphics] HorPlus). Only written as enabled when the chosen size
+    // really is wider than 16:9 (the mod does nothing otherwise).
+    public bool HorPlus { get; init; }
 
     // --- DLSS ([DLSS]) : ShareFrames, Jitter et Apply ensemble. Désactivé par défaut (NVIDIA RTX et DXVK nécessaires).
     public bool Dlss { get; init; }
@@ -105,6 +109,7 @@ public sealed record PatchSettings
             FilmGrain = mod.GetInt("Graphics", "FilmGrain", defaults.FilmGrain),
             FullScreenUiClip = mod.GetBool("Graphics", "FullScreenUiClip", defaults.FullScreenUiClip),
             ObjectViewPerspective = mod.GetBool("Graphics", "ObjectViewPerspective", defaults.ObjectViewPerspective),
+            HorPlus = mod.GetBool("Graphics", "HorPlus", defaults.HorPlus),
             Dlss = mod.GetBool("DLSS", "ShareFrames", false) && mod.GetBool("DLSS", "Apply", false),
             ButtonIcons = Math.Clamp(mod.GetInt("Input", "ButtonIcons", 0), 0, 3),
             CameraFix = mod.GetBool("Camera", "CameraFix", defaults.CameraFix),
@@ -147,6 +152,7 @@ public sealed record PatchSettings
         mod.SetInt("Graphics", "FilmGrain", Math.Clamp(FilmGrain, 0, 100));
         mod.SetBool("Graphics", "FullScreenUiClip", FullScreenUiClip);
         mod.SetBool("Graphics", "ObjectViewPerspective", ObjectViewPerspective);
+        mod.SetBool("Graphics", "HorPlus", HorPlus && AspectRatios.IsWiderThanSixteenByNine(Width, Height));
         mod.SetBool("DLSS", "ShareFrames", Dlss);
         mod.SetInt("DLSS", "Jitter", Dlss ? 1 : 0);
         mod.SetBool("DLSS", "Apply", Dlss);

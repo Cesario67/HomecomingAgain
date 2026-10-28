@@ -34,15 +34,20 @@
         <ScrollViewer>
           <StackPanel Spacing="6" Margin="0,8" DataContext="{Binding Graphics}" x:DataType="vm:GraphicsViewModel">
             <TextBlock Classes="section" Text="{Binding L[SecDisplay]}" />
-            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto" RowSpacing="6">
+            <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
               <TextBlock Grid.Row="0" Text="{Binding L[Mode]}" VerticalAlignment="Center" />
               <ComboBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
                         ItemsSource="{Binding DisplayModes}" SelectedItem="{Binding SelectedDisplayMode}" />
-              <TextBlock Grid.Row="1" Text="{Binding L[Resolution]}" VerticalAlignment="Center" />
+              <TextBlock Grid.Row="1" Text="{Binding L[AspectRatio]}" VerticalAlignment="Center" />
               <ComboBox Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding AspectRatioChoices}" SelectedItem="{Binding SelectedAspectRatio}" />
+              <TextBlock Grid.Row="2" Text="{Binding L[Resolution]}" VerticalAlignment="Center" />
+              <ComboBox Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch"
                         ItemsSource="{Binding Resolutions}" SelectedItem="{Binding SelectedResolution}" />
             </Grid>
             <TextBlock Classes="hint" Text="{Binding L[DisplayHint]}" />
+            <CheckBox Content="{Binding L[HorPlus]}" IsChecked="{Binding HorPlus}" IsEnabled="{Binding HorPlusAvailable}" />
+            <TextBlock Classes="hint" Text="{Binding L[HorPlusHint]}" />
             <TextBlock Classes="warning" Text="{Binding L[FullscreenWarning]}" IsVisible="{Binding ShowFullscreenWarning}" />
 
             <TextBlock Classes="section" Text="{Binding L[SecImage]}" />

@@ -43,6 +43,12 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   à toute l'image (1080p, 1440p, 4K...) en gardant la carte à sa taille et à sa place d'origine.
 - **Objets examinés au-delà du 720p** : l'objet qu'on vient de ramasser (couteau, trousse...) était coupé dans le coin
   de l'écran, ou étiré. Il est maintenant centré, entier et bien proportionné, comme en 720p.
+- **Ultra-large (21:9)** : le launcher propose un format d'image (4:3, 16:9, 21:9) et une résolution. Sur un
+  écran plus large que 16:9, le jeu d'origine dessinait une image 16:9 et rognait le haut et le bas (ou affichait un
+  écran noir). Le mod corrige l'écran noir et, avec **Hor+**, élargit le champ de vision au lieu de rogner : plus de
+  décor sur les côtés, sans étirement, ombres et effets intacts, et des objets qui restent visibles jusqu'au bord de
+  l'image. Les menus et le HUD restent centrés en 16:9. Testé sur une image 21:9 ; les ratios plus larges (32:9)
+  attendent des retours.
 - **DLSS (DLAA, expérimental)** : anticrénelage par l'IA de NVIDIA, plus stable et plus net que le SMAA, à la
   résolution d'origine. Cartes NVIDIA RTX uniquement ; l'option du launcher installe aussi DXVK (Direct3D 9 sur
   Vulkan). Le jeu étant 32 bits et le DLSS 64 bits, un petit programme 64 bits (`HomecomingAgain.Dlss.exe`) reçoit les
@@ -77,7 +83,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Logos de démarrage accélérés** : l'écran titre arrive au bout de 5 s environ au lieu de 23. Les logos (Konami,
   Double Helix, mentions légales) défilent en accéléré ; le jeu a déjà fini de charger pendant qu'ils s'affichent.
 - **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par
-  défaut) et en français.
+  défaut) et en français. L'affichage propose un format d'image (4:3, 16:9, 21:9) dont le choix pilote la liste des
+  résolutions, et la case Hor+.
 
 ## Installation
 
@@ -117,6 +124,7 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Occlusion ambiante et son intensité |
 | `[Graphics]` | `ShadowResolution=8192` | Taille de la carte d'ombres (2048 d'origine, 4096 ou 8192) |
 | `[Graphics]` | `FilmGrain=100` | Grain de pellicule en % (0 = aucun) |
+| `[Graphics]` | `HorPlus=0` | Champ de vision élargi sur les écrans plus larges que 16:9 (le launcher le coche à partir du format 21:9) ; `HorPlusEngine=1` laisse le moteur construire sa projection et son élimination, `ClipFinalCopy=1` corrige l'écran noir hors 16:9 |
 | `[Graphics]` | `FullScreenUiClip=1` | Carte entière au-delà du 720p (0 = d'origine) |
 | `[Audio]` | `ChannelFix=1` | Son corrigé (0 = son d'origine) |
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |
@@ -134,6 +142,7 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
   caméra et vibrations restent celles d'origine.
 - DLSS : expérimental. Seul le mouvement de la caméra est transmis : de légères traînées sont possibles sur les
   personnages en mouvement rapide.
+- Ultra-large : le HUD reste centré en 16:9 (non ancré aux bords de l'écran). Testé sur une image 21:9 seulement ; la carte, les objets examinés et le DLSS avec Hor+ ont été peu testés.
 
 ## Compilation
 

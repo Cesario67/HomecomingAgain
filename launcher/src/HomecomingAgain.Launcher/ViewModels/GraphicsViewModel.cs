@@ -59,14 +59,38 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
     /// <summary>Aperçu des icônes A, B, X, Y du choix courant.</summary>
     public IReadOnlyList<ButtonGlyph> ButtonIconPreview => ButtonGlyph.For(SelectedButtonIcons.Value);
 
-    public IReadOnlyList<Choice<(int Width, int Height)>> Resolutions { get; private set; } = BuildResolutions(1920, 1080);
+    /// <summary>Picture formats (the labels are the same in every language).</summary>
+    public IReadOnlyList<Choice<AspectRatio>> AspectRatioChoices { get; } =
+    [
+        new(AspectRatio.FourByThree, "4:3"),
+        new(AspectRatio.SixteenByNine, "16:9"),
+        new(AspectRatio.TwentyOneByNine, "21:9"),
+    ];
+
+    /// <summary>Sizes of the selected format (see <see cref="AspectRatios"/>).</summary>
+    public IReadOnlyList<Choice<(int Width, int Height)>> Resolutions { get; private set; } = BuildResolutions(AspectRatio.SixteenByNine, 1920, 1080);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowFullscreenWarning))]
     public partial Choice<DisplayMode> SelectedDisplayMode { get; set; }
 
     [ObservableProperty]
+    public partial Choice<AspectRatio> SelectedAspectRatio { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HorPlusAvailable))]
     public partial Choice<(int Width, int Height)> SelectedResolution { get; set; }
+
+    /// <summary>Wider field of view ([Graphics] HorPlus), checked by default when the format changes to 21:9.</summary>
+    [ObservableProperty]
+    public partial bool HorPlus { get; set; }
+
+    /// <summary>Hor+ only does something above 16:9: the box is greyed out for the other sizes.</summary>
+    public bool HorPlusAvailable =>
+        AspectRatios.IsWiderThanSixteenByNine(SelectedResolution.Value.Width, SelectedResolution.Value.Height);
+
+    // True while the constructor or Load sets the format and the size together (no automatic size choice then).
+    private bool _applyingSettings;
 
     [ObservableProperty]
     public partial bool Smaa { get; set; } = true;
@@ -150,8 +174,11 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
 
     public GraphicsViewModel()
     {
+        _applyingSettings = true;
         SelectedDisplayMode = DisplayModes[0];
+        SelectedAspectRatio = AspectRatioChoices[1];
         SelectedResolution = Resolutions.First(choice => choice.Value == (1920, 1080));
+        _applyingSettings = false;
         SelectedAnisotropy = AnisotropyLevels[^1];
         SelectedSsaoStrength = SsaoStrengths[1];
         SelectedShadowResolution = ShadowResolutions[^1];
@@ -170,10 +197,15 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
 
     public void Load(PatchSettings settings)
     {
-        Resolutions = BuildResolutions(settings.Width, settings.Height);
+        _applyingSettings = true;
+        AspectRatio ratio = AspectRatios.Classify(settings.Width, settings.Height);
+        Resolutions = BuildResolutions(ratio, settings.Width, settings.Height);
         OnPropertyChanged(nameof(Resolutions));
         SelectedDisplayMode = DisplayModes.First(choice => choice.Value == settings.DisplayMode);
+        SelectedAspectRatio = AspectRatioChoices.First(choice => choice.Value == ratio);
         SelectedResolution = Resolutions.First(choice => choice.Value == (settings.Width, settings.Height));
+        HorPlus = settings.HorPlus;
+        _applyingSettings = false;
         Smaa = settings.Smaa;
         Dlss = settings.Dlss;
         SelectedAnisotropy = AnisotropyLevels.LastOrDefault(choice => choice.Value <= settings.Anisotropy) ?? AnisotropyLevels[0];
@@ -217,20 +249,31 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         CameraAimVerticalSpeed = PatchSettings.ClampSpeed(CameraAimVerticalSpeed),
         FullScreenUiClip = FullScreenUiClip,
         ObjectViewPerspective = ObjectViewPerspective,
+        HorPlus = HorPlus && HorPlusAvailable,
         HighQualityShaders = HighQualityShaders,
         FullResolutionTextures = FullResolutionTextures,
     };
 
-    private static IReadOnlyList<Choice<(int Width, int Height)>> BuildResolutions(int currentWidth, int currentHeight)
+    /// <summary>
+    /// A new format replaces the size list and picks the size whose height is the closest to the previous one. Hor+ is
+    /// checked for 21:9 and unchecked for the other formats (the user can still change it afterwards).
+    /// </summary>
+    partial void OnSelectedAspectRatioChanged(Choice<AspectRatio> value)
     {
-        List<(int Width, int Height)> sizes =
-            [(1280, 720), (1600, 900), (1920, 1080), (2560, 1080), (2560, 1440), (3440, 1440), (3840, 2160)];
-        if (!sizes.Contains((currentWidth, currentHeight)))
+        if (_applyingSettings)
         {
-            sizes.Add((currentWidth, currentHeight));
+            return;
         }
-        return sizes.OrderBy(size => size.Width * size.Height)
+        int previousHeight = SelectedResolution.Value.Height;
+        Resolutions = BuildResolutions(value.Value, 0, 0);
+        OnPropertyChanged(nameof(Resolutions));
+        (int Width, int Height) closest = AspectRatios.Closest(AspectRatios.SizesFor(value.Value), previousHeight);
+        SelectedResolution = Resolutions.First(choice => choice.Value == closest);
+        HorPlus = value.Value == AspectRatio.TwentyOneByNine;
+    }
+
+    private static IReadOnlyList<Choice<(int Width, int Height)>> BuildResolutions(AspectRatio ratio, int currentWidth, int currentHeight) =>
+        AspectRatios.SizesIncluding(ratio, currentWidth, currentHeight)
                     .Select(size => new Choice<(int Width, int Height)>(size, $"{size.Width} × {size.Height}"))
                     .ToList();
-    }
 }

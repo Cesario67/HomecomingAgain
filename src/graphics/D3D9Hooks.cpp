@@ -27,6 +27,8 @@
 #include "graphics/FrameCapture.h"
 #include "graphics/InternalDraw.h"
 #include "graphics/MotionVectors.h"
+#include "graphics/ClipCopy.h"
+#include "graphics/HorPlus.h"
 #include "graphics/SceneHooks.h"
 #include "graphics/UiClip.h"
 #include "graphics/Ssao.h"
@@ -120,6 +122,9 @@ HRESULT STDMETHODCALLTYPE HookReset(IDirect3DDevice9* device, D3DPRESENT_PARAMET
     g_smaa.OnBeforeReset();
     GetSsao().OnBeforeReset();
     GetMotionVectors().OnBeforeReset();
+    if (params != nullptr) {
+        horplus::SetBackBufferSize(params->BackBufferWidth, params->BackBufferHeight);
+    }
     const HRESULT result = g_reset(device, params);
     if (SUCCEEDED(result) && params != nullptr && params->Windowed && GetConfig().borderless) {
         // Un Reset (changement de mode) peut rendre son cadre à la fenêtre.
@@ -187,6 +192,9 @@ void PatchDevice(IDirect3DDevice9* device) {
     scene::Install(device);
     uiclip::Install(device);
     flashicons::Install(device);
+    // Before the frame capture, which chains to whatever StretchRect it finds.
+    clipcopy::Install(device);
+    horplus::Install(device);
     if (GetConfig().frameCapture) {
         capture::Install(device);
     }
@@ -210,6 +218,9 @@ HRESULT STDMETHODCALLTYPE HookCreateDevice(IDirect3D9* direct3d, UINT adapter, D
     if (GetConfig().d3dMultithreaded && (behaviorFlags & D3DCREATE_MULTITHREADED) == 0) {
         behaviorFlags |= D3DCREATE_MULTITHREADED;
         log::Info("D3DCREATE_MULTITHREADED ajouté : appels Direct3D des threads de chargement et principal sérialisés");
+    }
+    if (params != nullptr) {
+        horplus::SetBackBufferSize(params->BackBufferWidth, params->BackBufferHeight);
     }
     const HRESULT result = g_createDevice(direct3d, adapter, deviceType, window, behaviorFlags, params, device);
     log::Info("CreateDevice (adaptateur {}, type {}, comportement 0x{:08X}) -> 0x{:08X}", adapter,

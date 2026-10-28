@@ -45,6 +45,63 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
 ### 2. Graphismes (objectif 2)
 - Résolution et ratio : constantes 720p, interface, carte, objets, photos ; 16:9, 21:9, 32:9.
 - Champ de vision réglable (Hor+ en ultra-large).
+  - Fait (27/10/2026) : écran noir hors 16:9 corrigé (`graphics/ClipCopy`, `ClipFinalCopy=1`). Vérifié en jeu en
+    1920x810. Cause **vérifiée** : la dernière copie du moteur (`StretchRect` de la cible de scène vers le tampon
+    arrière) vise le rectangle (0,-135,1920,945) qui dépasse le tampon 1920x810 ; Direct3D 9 répond
+    `D3DERR_INVALIDCALL`. Le mod rogne la destination et la source de la même quantité.
+  - Mesures **vérifiées** (relevés F11 du 27/10/2026, menu principal, 1920x810 et 1920x1080) : le moteur dessine
+    tout (monde 3D et interface) dans des cibles 16:9 de largeur égale à la résolution (1920x1080 ; 3840x2160 pour un
+    tampon 3840x1080), viewport plein cible, puis centre cette image sur le tampon arrière en rognant haut et bas.
+    Le champ de vision horizontal reste donc celui du 16:9 : un écran ultra-large perd de la hauteur au lieu de
+    gagner de la largeur. La projection du monde (mWorldViewProj, c0..c3) a un rapport échelle y / échelle x de 16/9
+    (1,6406 et 2,9163 relevés), identique à 1920x810 et à 1920x1080 : le ratio est fixé à 16:9 par le moteur.
+  - Fait (28/10/2026) : prototype Hor+ (`graphics/HorPlus`, `[Graphics] HorPlus`, désactivé par défaut), **vérifié en
+    jeu en 1920x810** (menu, save point, scène de la table de la nouvelle partie : plus d'ombres cassées). Le moteur
+    envoie des constantes pour du 16:9 qu'il faut corriger avec la projection (relevés F11, **vérifié** par
+    élimination avec des réglages de debug, depuis retirés) : projection du monde c0 x4 (ligne x multipliée par
+    (16/9)/(L/H)), projection seule c222 x4, inverse des échelles c117 ([1/sx, 1/sy], pixel shader), conversion
+    position pixel vers écran c116 ([2/L, -2/H, -L/2, -H/2], pixel shader), décalage d'un demi-pixel c194 (vertex
+    shader) et échelle écran c111 ([1/L, 1/H], pixel shader de la lumière volumétrique `ps_1C62CA10`, qui lit la
+    profondeur R32F par `vPos` x c111 et reconstruit la position monde). Sans la correction de c111, des taches noires
+    à bords en escalier apparaissaient sur les personnages (les cibles pleine résolution redimensionnées sans elle).
+    Vérifié en jeu en 1920x810 (28/10/2026) : cinématique des insectes, menus, pause (le voile du menu pause, un quad
+    d'interface à texture 32x32, n'est plus comprimé au centre : `BoundTextureIsOverlay`, hypothèse valable pour ce
+    seul menu).
+    **Bug signalé par l'auteur (28/10/2026), non traité** : des éléments (cercles de sauvegarde) disparaissent quand
+    ils sortent du champ de la caméra d'origine. **Hypothèse non vérifiée** : le moteur élimine les objets avec un
+    frustum calculé sur le ratio 16:9 ; Hor+ élargit l'image sans élargir ce frustum, donc les objets du bord sont
+    éliminés. Il faut trouver dans `g_SilentHill.sgl` où le frustum est construit (champ de vision et ratio) et
+    l'élargir comme la projection.
+    **Corrigé le 28/10/2026 (vérifié en jeu en 1920x810)** : un point d'arrêt matériel d'écriture sur la matrice de
+    projection CPU (outil du scratchpad, `DebugActiveProcess` + registres de débogage Wow64) a donné la fonction du
+    moteur qui la construit, `0x10B29100` : `m00 = [caméra+0x94] / tan(...)`, `m11 = 1 / tan(...)`. Le champ
+    `[caméra+0x94]` est l'inverse du ratio (0,5625). Il est recalculé par un setter (`0x10B2952C`) comme hauteur / largeur
+    du rectangle de vue que le moteur lui passe (1080 / 1920) : remplacer la constante `0x1109615C` lue par le
+    constructeur de la caméra ne change donc rien (essai retiré). La fonction du frustum (`0x10B2B6E0`) lit le même
+    champ. Le mod redirige les trois lectures (`0x10B29209`, `0x10B292A6` dans la projection, `0x10B2B75A` dans le
+    frustum, octets vérifiés avant d'écrire) vers une valeur à lui, H/L du tampon arrière (`[Graphics] HorPlusEngine=1`,
+    défaut, actif avec `HorPlus=1`) : projection, frustum de culling et matrices du GPU sont cohérents quelle que soit
+    la date de création de la caméra. **Vérifié en jeu en 1920x810** : matrice du moteur mesurée en mémoire m00 = 1,2305,
+    m11 = 2,9167 (ratio 2,37, calculée par le moteur), et le cercle de sauvegarde reste entier au bord de l'image. La
+    correction par constantes du monde (c0) ne s'applique plus à ces caméras (leur ratio n'est plus 16:9) ; les autres
+    corrections (c116, c111, c194, voile de pause, cibles) restent.
+    Pistes explorées le 28/10/2026 (résultats **vérifiés** sauf mention) : (1) le moteur a un champ `AspectRatio` dans
+    un objet caméra (chaîne `AspectRatio` en 0x11080548, sérialiseur en 0x109A5890) et une option `TOption_AspectRatio` ;
+    (2) la mémoire du jeu contient, pour la caméra de rendu, une structure avec 0,5625, la taille 1920 / 1080 en flottants
+    (offset +0x58 / +0x5C avant la matrice) puis la projection CPU (1,64067 et 2,91675), les matrices vue et vue-projection
+    et d'autres (relevé mémoire, adresses variables d'une exécution à l'autre) ; (3) remplacer la constante 0,5625 du
+    moteur (0x1109615C, une seule référence, un constructeur) par H/L ne change pas les cibles : le moteur crée
+    toujours du 1920x1080, donc cette constante ne fixe pas le ratio (essai retiré). Prochaine étape envisagée :
+    un point d'arrêt matériel sur l'écriture de la matrice de projection CPU pour trouver la fonction qui la calcule et
+    celle qui construit le frustum de culling (les appels passent par la surcouche Steam : l'adresse de retour ne donne
+    pas l'appelant du moteur).
+    Reste à tester : carte, objets examinés, DLSS, 2560x1080 / 3440x1440 / 3840x1080 sur un vrai écran ultra-large,
+    et d'autres constantes à 1080 que le moteur pourrait envoyer en blocs de plusieurs registres.
+  - Reste (**hypothèse de conception, non vérifiée**) : Hor+ demande trois changements ensemble : cibles de dessin à la
+    taille du tampon arrière (au lieu de largeur x 9/16), échelle x de la projection du monde multipliée par
+    (16/9) / (L/H), et interface limitée à la zone 16:9 centrale. Les modules SMAA, SSAO, vecteurs de mouvement et DLSS
+    lisent les tailles des cibles : à revoir avec. La construction de la projection dans le moteur n'est pas encore
+    trouvée (aucune constante 1,7777778 en flottant ; 0,5625 référencé une fois, en 0x10B9C55B, sans rapport établi).
 - Anticrénelage : MSAA via les paramètres de présentation, puis post-traitement (SMAA) à la manière de DPfix
   (DPfix est GPL : réutilisable avec ses crédits, voir `E:\DeadlyPremonitionFix\third_party\dpfix`).
 - Qualité : suppression optionnelle du grain, filtre de tonalité, gamma, ombres (résolution), distance d'affichage.

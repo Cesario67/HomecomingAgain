@@ -25,6 +25,8 @@
 #include "graphics/FlashIconArt.h"
 #include "graphics/FlashIcons.h"
 #include "graphics/Jitter.h"
+#include "graphics/ClipCopyRules.h"
+#include "graphics/HorPlusRules.h"
 #include "graphics/UiClip.h"
 #include "graphics/SceneEnd.h"
 #include "crash/HangClock.h"
@@ -468,6 +470,94 @@ void TestDepthEncoding() {
     Check(!ParseEncoding(98, zero, 1, untouched), "facteur nul refusé");
 }
 
+void TestClipCopy() {
+    using hca::graphics::clipcopy::ClipToSurface;
+    using hca::graphics::clipcopy::Rect;
+    // Measured 27/10/2026: source 1920x1080 to a 1920x810 back buffer with destination (0,-135,1920,945), refused.
+    Rect source{0, 0, 1920, 1080};
+    Rect dest{0, -135, 1920, 945};
+    Check(ClipToSurface(source, dest, 1920, 810), "copie finale : rectangle hors de la surface rogné");
+    Check(dest.left == 0 && dest.top == 0 && dest.right == 1920 && dest.bottom == 810,
+          "copie finale : destination = toute la surface 1920x810");
+    Check(source.left == 0 && source.top == 135 && source.right == 1920 && source.bottom == 945,
+          "copie finale : source rognée de la même quantité (135 en haut et en bas)");
+    // 3840x1080 back buffer, scene target 3840x2160 centred: (0,-540,3840,1620).
+    Rect wideSource{0, 0, 3840, 2160};
+    Rect wideDest{0, -540, 3840, 1620};
+    Check(ClipToSurface(wideSource, wideDest, 3840, 1080) && wideSource.top == 540 && wideSource.bottom == 1620 &&
+              wideDest.top == 0 && wideDest.bottom == 1080,
+          "copie finale : 3840x1080, 540 pixels rognés en haut et en bas");
+    // Scaled copy: the source moves in proportion (destination twice as tall as the source).
+    Rect scaledSource{0, 0, 100, 50};
+    Rect scaledDest{0, -20, 200, 80};
+    Check(ClipToSurface(scaledSource, scaledDest, 200, 60) && scaledSource.top == 10 && scaledSource.bottom == 40 &&
+              scaledDest.top == 0 && scaledDest.bottom == 60,
+          "copie finale : source rognée en proportion quand la copie change d'échelle");
+    Rect inside{0, 0, 1920, 1080};
+    Rect fits{0, 0, 1920, 1080};
+    Check(!ClipToSurface(inside, fits, 1920, 1080), "copie finale : rectangle dans la surface, rien à rogner");
+    Rect outside{0, 0, 100, 100};
+    Rect away{0, 2000, 100, 2100};
+    Check(!ClipToSurface(outside, away, 1920, 1080), "copie finale : rectangle entièrement hors de la surface refusé");
+}
+
+void TestHorPlus() {
+    using namespace hca::graphics::horplus;
+    Check(IsWiderThanSixteenNine(1920, 810) && IsWiderThanSixteenNine(3840, 1080) && IsWiderThanSixteenNine(3440, 1440),
+          "Hor+ : 21:9 et 32:9 concernés");
+    Check(!IsWiderThanSixteenNine(1920, 1080) && !IsWiderThanSixteenNine(2560, 1440) && !IsWiderThanSixteenNine(1280, 800),
+          "Hor+ : 16:9 et 16:10 non concernés");
+    Check(IsSixteenNineTarget(1920, 1080) && IsSixteenNineTarget(3840, 2160) && !IsSixteenNineTarget(1024, 1024) &&
+              !IsSixteenNineTarget(320, 180),
+          "Hor+ : cibles 16:9 reconnues, ombres et petites tailles laissées");
+    Check(ReshapedHeight(1920, 1920, 810) == 810 && ReshapedHeight(3840, 3840, 1080) == 1080 &&
+              ReshapedHeight(960, 1920, 810) == 405,
+          "Hor+ : hauteur des cibles remise au ratio du tampon");
+    // Camera projection measured on 27/10/2026 (c0..c3 of the world, 1.6406 and 2.9163): 16:9, and scaled so that the
+    // x scale falls to (16/9) / (1920/810) of its value.
+    float world[16] = {1.6406f, -0.0f, -0.0095467f, -9.5398f, 0.00029406f, 2.9163f, 0.050536f, -182.49f,
+                       0.005819f, -0.01733f, 1.0f, 138.1f, 0.0058179f, -0.017326f, 0.99983f, 141.07f};
+    Check(IsSixteenNineProjection(world), "Hor+ : projection du monde (relevé) reconnue");
+    const float factor = ProjectionXFactor(1920, 810);
+    Check(std::fabs(factor - 0.75f) < 1e-4f, "Hor+ : facteur 0,75 pour 1920x810 (21:9 = 2,370 contre 1,778)");
+    ScaleProjectionX(world, factor);
+    Check(std::fabs(world[0] - 1.6406f * 0.75f) < 1e-5f && std::fabs(world[3] + 9.5398f * 0.75f) < 1e-4f &&
+              world[5] == 2.9163f && world[8] == 0.005819f,
+          "Hor+ : seule la ligne x est modifiée");
+    const float ortho[16] = {2.0f / 1280.0f, 0, 0, -1, 0, -2.0f / 720.0f, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1};
+    Check(IsSixteenNineProjection(ortho), "Hor+ : une projection orthographique 1280x720 est aussi 16:9");
+    const float square[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+    Check(!IsSixteenNineProjection(square), "Hor+ : matrice identité ignorée");
+    // Bare projection and inverse scales measured 27/10/2026 (c222 x4 and c117): both 16:9, not mistaken for screen sizes.
+    const float bare[16] = {1.6407f, 0, 0, 0, 0, 2.9167f, 0, 0, 0, 0, 1.0002f, -3.0006f, 0, 0, 1, 0};
+    Check(IsBareSixteenNineProjection(bare) && !IsBareSixteenNineProjection(square),
+          "Hor+ : projection seule (c222) reconnue, identité refusée");
+    const float inverse[4] = {0.60951f, 0.34285f, 0, 0};
+    Check(IsInverseProjectionScales(inverse), "Hor+ : inverse des échelles de projection (c117) reconnu");
+    const float sizes[4] = {1920.0f, 1080.0f, 0, 0};
+    const float texel[4] = {1.0f / 1920.0f, 1.0f / 1080.0f, 0, 0};
+    Check(!IsInverseProjectionScales(sizes) && !IsInverseProjectionScales(texel),
+          "Hor+ : tailles d'écran et texels non confondus avec l'inverse de la projection");
+    // Measured 27/10/2026 at 1920x1080: pixel to screen constant (c116) and half-pixel offset (c194).
+    const float pixelToScreen[4] = {0.0010417f, -0.0018519f, -960.0f, -540.0f};
+    Check(IsPixelToScreenConstant(pixelToScreen) && !IsPixelToScreenConstant(inverse) && !IsPixelToScreenConstant(sizes),
+          "Hor+ : constante position pixel vers écran (c116) reconnue");
+    const float halfPixel[4] = {-0.00052083f, 0.00092593f, 0, 0};
+    const float halfPixelHalfRes[4] = {-0.0010417f, 0.0018519f, 0, 0};
+    Check(IsHalfPixelOffsetConstant(halfPixel) && IsHalfPixelOffsetConstant(halfPixelHalfRes) &&
+              !IsHalfPixelOffsetConstant(texel),
+          "Hor+ : décalage d'un demi-pixel (c194) reconnu, texel non confondu");
+    Check(std::fabs(HeightFactor(1920, 810) - 4.0f / 3.0f) < 1e-4f,
+          "Hor+ : facteur de hauteur 4/3 pour 1920x810 (1080 -> 810)");
+    // Volumetric light screen scale (c111 and c108 of the 27/10/2026 captures, the latter with a denormal in z).
+    const float screenScale[4] = {0.0005211f, 0.00092678f, 0, 0};
+    const float screenScaleDenormal[4] = {0.0005211f, 0.00092678f, 2.4703e-39f, 0};
+    const float fogParams[4] = {0.00066667f, 1.2f, 1, 0};
+    Check(IsScreenScaleConstant(screenScale) && IsScreenScaleConstant(screenScaleDenormal) &&
+              !IsScreenScaleConstant(fogParams) && !IsScreenScaleConstant(sizes),
+          "Hor+ : échelle écran de la lumière volumétrique (c111) reconnue, autres constantes non confondues");
+}
+
 void TestUiClipItem() {
     using hca::graphics::uiclip::LooksStraightDown;
     // Carte (relevés du 16/10/2026) : caméra verticale, compensée.
@@ -788,6 +878,8 @@ int main() {
     TestDepthEncoding();
     TestJitter();
     TestUiClip();
+    TestClipCopy();
+    TestHorPlus();
     TestUiClipItem();
     TestCameraTuning();
     TestSonyPad();
