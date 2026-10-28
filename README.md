@@ -110,6 +110,7 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Ambient occlusion and its strength |
 | `[Graphics]` | `ShadowResolution=8192` | Shadow map size (2048 originally, 4096 or 8192) |
 | `[Graphics]` | `FilmGrain=100` | Film grain in % (0 = none) |
+| `[Graphics]` | `HorPlus=0` | Wider field of view on screens wider than 16:9 (the launcher checks it from the 21:9 format); `HorPlusEngine=1` lets the engine build its own projection and culling, `ClipFinalCopy=1` fixes the black screen in non 16:9 sizes |
 | `[Graphics]` | `FullScreenUiClip=1` | Map no longer cut off above 720p (0 = original) |
 | `[Audio]` | `ChannelFix=1` | Fixed sound (0 = original sound) |
 | `[Movies]` | `SkipKey=46` | Key to skip cutscenes (46 = Delete, 0 = none) |

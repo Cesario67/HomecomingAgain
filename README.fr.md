@@ -117,6 +117,7 @@ Dans le launcher, ou dans `Bin\HomecomingAgain.ini` :
 | `[Graphics]` | `SSAO`, `SsaoStrength` | Occlusion ambiante et son intensité |
 | `[Graphics]` | `ShadowResolution=8192` | Taille de la carte d'ombres (2048 d'origine, 4096 ou 8192) |
 | `[Graphics]` | `FilmGrain=100` | Grain de pellicule en % (0 = aucun) |
+| `[Graphics]` | `HorPlus=0` | Champ de vision élargi sur les écrans plus larges que 16:9 (le launcher le coche à partir du format 21:9) ; `HorPlusEngine=1` laisse le moteur construire sa projection et son élimination, `ClipFinalCopy=1` corrige l'écran noir hors 16:9 |
 | `[Graphics]` | `FullScreenUiClip=1` | Carte entière au-delà du 720p (0 = d'origine) |
 | `[Audio]` | `ChannelFix=1` | Son corrigé (0 = son d'origine) |
 | `[Movies]` | `SkipKey=46` | Touche pour passer les cinématiques (46 = Suppr, 0 = aucune) |

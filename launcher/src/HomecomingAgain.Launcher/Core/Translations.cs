@@ -84,6 +84,14 @@ public static class Translations
             ["SecDisplay"] = ("Affichage", "Display"),
             ["Mode"] = ("Mode", "Mode"),
             ["Resolution"] = ("Résolution", "Resolution"),
+            ["AspectRatio"] = ("Format de l'image", "Picture format"),
+            ["HorPlus"] = ("Champ de vision élargi (Hor+)", "Wider field of view (Hor+)"),
+            ["HorPlusHint"] = ("Sur un écran plus large que 16:9, le jeu montre plus de décor sur les côtés au lieu de " +
+                               "rogner le haut et le bas. Les menus et le HUD restent centrés en 16:9. Décoché, l'image " +
+                               "est rognée comme dans le jeu d'origine. Disponible à partir du format 21:9.",
+                               "On a screen wider than 16:9, the game shows more of the scene on the sides instead of " +
+                               "cropping the top and bottom. Menus and HUD stay centred in 16:9. Unchecked, the picture " +
+                               "is cropped as in the original game. Available from the 21:9 format."),
             ["ModeBorderless"] = ("Plein écran sans bordure (recommandé)", "Borderless fullscreen (recommended)"),
             ["ModeFullscreen"] = ("Plein écran exclusif", "Exclusive fullscreen"),
             ["ModeWindowed"] = ("Fenêtré", "Windowed"),
