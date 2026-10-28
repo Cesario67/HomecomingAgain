@@ -41,6 +41,11 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
   the whole picture (1080p, 1440p, 4K...) while keeping the map at its original size and place.
 - **Examined items above 720p**: the item just picked up (knife, first aid kit...) was cut off in a corner of the
   screen, or stretched. It is now centred, whole and correctly proportioned, as in 720p.
+- **Ultrawide (21:9)**: pick a picture format (4:3, 16:9, 21:9) and a resolution in the launcher. On a screen
+  wider than 16:9 the original game drew a 16:9 picture and cropped the top and bottom (or showed a black screen).
+  The mod fixes the black screen and, with **Hor+**, widens the field of view instead of cropping: more of the scene
+  on the sides, no stretching, shadows and effects intact, and objects that stay visible up to the edge of the image.
+  Menus and HUD stay centred in 16:9. Tested on a 21:9 picture; wider ratios (32:9) should work the same way but are untested.
 - **DLSS (DLAA, experimental)**: NVIDIA AI anti-aliasing, more stable and sharper than SMAA, at native resolution.
   NVIDIA RTX cards only; the launcher option also installs DXVK (Direct3D 9 on Vulkan). As the game is 32-bit and DLSS
   is 64-bit, a small 64-bit program (`HomecomingAgain.Dlss.exe`) receives the game's images, applies DLSS and hands
@@ -127,6 +132,7 @@ In the launcher, or in `Bin\HomecomingAgain.ini`:
 - Controllers: only XInput controllers (Xbox and compatible) are read by the game. Dead zones, camera sensitivity
   and vibration are still the original ones.
 - DLSS: experimental. Only camera motion is passed on: slight trails are possible on fast-moving characters.
+- Ultrawide: the HUD stays centred in 16:9 (not anchored to the screen edges). Tested on a 21:9 picture only; the map, examined items and DLSS with Hor+ have had little testing.
 
 ## Building
 
