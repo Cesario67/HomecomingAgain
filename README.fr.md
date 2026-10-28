@@ -83,7 +83,8 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Logos de démarrage accélérés** : l'écran titre arrive au bout de 5 s environ au lieu de 23. Les logos (Konami,
   Double Helix, mentions légales) défilent en accéléré ; le jeu a déjà fini de charger pendant qu'ils s'affichent.
 - **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par
-  défaut) et en français.
+  défaut) et en français. L'affichage propose un format d'image (4:3, 16:9, 21:9) dont le choix pilote la liste des
+  résolutions, et la case Hor+.
 
 ## Installation
 

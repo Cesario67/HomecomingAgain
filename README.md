@@ -76,7 +76,8 @@ RTX 5070 Ti) with the Steam version of the game. Research notes: [docs/recherche
   `UnlimitedAmmo=1`). Verified in game.
 - **Faster startup logos**: the title screen appears after about 5 s instead of 23. The logos (Konami, Double Helix,
   legal screen) play fast-forwarded; the game has already finished loading while they show.
-- **Launcher** (`HomecomingAgain.exe`): all settings, install and uninstall, in English (default) and French.
+- **Launcher** (`HomecomingAgain.exe`): all settings, install and uninstall, in English (default) and French. The display
+  settings offer a picture format (4:3, 16:9, 21:9) whose choice drives the list of resolutions, and the Hor+ box.
 
 ## Installation
 
