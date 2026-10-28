@@ -227,21 +227,50 @@ void PatchEngineAspect(unsigned width, unsigned height) noexcept {
         }
     }
     g_engineInverseAspect = static_cast<float>(height) / static_cast<float>(width);
-    const auto address = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&g_engineInverseAspect));
+    // The interface camera uses the same code with an inverse aspect of 1.0 (measured 28/10/2026: its orthographic x scale
+    // fell to 0.42 of its value when every read was redirected, a 810 px wide menu). Only the world cameras (0.5625) must
+    // be redirected, so each read goes through a small stub: load the field, and if it equals 0.5625 use ours instead.
+    //     pushfd ; movss X,[R+94h] ; ucomiss X,[kOriginal] ; jne skip ; jp skip ; movss X,[ours] ; skip: popfd ; ret
+    static const float kOriginalAspect = 0.5625f;
+    auto* stubs = static_cast<uint8_t*>(VirtualAlloc(nullptr, 128, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE));
+    if (stubs == nullptr) {
+        log::Warn("Hor+ moteur : mémoire exécutable indisponible, aucun changement");
+        return;
+    }
+    const auto originalAddress = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&kOriginalAspect));
+    const auto oursAddress = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&g_engineInverseAspect));
+    size_t index = 0;
     for (const AspectRead& read : kReads) {
+        uint8_t* stub = stubs + 32 * index++;
+        const uint8_t load = read.original[3];  // movss X,[R+disp32] : same destination register and base register
+        const uint8_t absolute = read.modrm;    // same destination register, absolute address
+        const uint8_t bytes[] = {0x9C,
+                                 0xF3, 0x0F, 0x10, load, 0x94, 0x00, 0x00, 0x00,
+                                 0x0F, 0x2E, absolute, 0, 0, 0, 0,
+                                 0x75, 0x0A,
+                                 0x7A, 0x08,
+                                 0xF3, 0x0F, 0x10, absolute, 0, 0, 0, 0,
+                                 0x9D,
+                                 0xC3};
+        std::memcpy(stub, bytes, sizeof(bytes));
+        std::memcpy(stub + 12, &originalAddress, sizeof(originalAddress));
+        std::memcpy(stub + 24, &oursAddress, sizeof(oursAddress));
         auto* code = reinterpret_cast<uint8_t*>(base + read.rva);
         DWORD previous = 0;
         if (!VirtualProtect(code, 8, PAGE_EXECUTE_READWRITE, &previous)) {
             log::Warn("Hor+ moteur : VirtualProtect a échoué en g_SilentHill.sgl+0x{:X}", read.rva);
             return;
         }
-        uint8_t patched[8] = {0xF3, 0x0F, 0x10, read.modrm, 0, 0, 0, 0};
-        std::memcpy(patched + 4, &address, sizeof(address));
+        const auto relative = static_cast<int32_t>(reinterpret_cast<uintptr_t>(stub) - (reinterpret_cast<uintptr_t>(code) + 5));
+        uint8_t patched[8] = {0xE8, 0, 0, 0, 0, 0x0F, 0x1F, 0x00};  // call stub ; nop (3 bytes)
+        std::memcpy(patched + 1, &relative, sizeof(relative));
         std::memcpy(code, patched, sizeof(patched));
         VirtualProtect(code, 8, previous, &previous);
         FlushInstructionCache(GetCurrentProcess(), code, 8);
     }
-    log::Info("Hor+ moteur : lectures du ratio de la caméra redirigées, inverse du ratio {:.6f}", g_engineInverseAspect);
+    FlushInstructionCache(GetCurrentProcess(), stubs, 128);
+    log::Info("Hor+ moteur : lectures du ratio des caméras du monde redirigées, inverse du ratio {:.6f}",
+              g_engineInverseAspect);
 }
 
 void SetBackBufferSize(unsigned width, unsigned height) noexcept {
