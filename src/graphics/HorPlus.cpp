@@ -1,6 +1,8 @@
 #include "graphics/HorPlus.h"
 
 #include <atomic>
+#include <cstdint>
+#include <cstring>
 
 #include "core/Config.h"
 #include "core/Hooking.h"
@@ -189,9 +191,43 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
 
 }  // namespace
 
+// The engine camera builds its projection at g_SilentHill.sgl+0x29100 (0x10B29100; found on 28/10/2026 with a hardware
+// write watchpoint on the matrix, then read in the disassembly: verified): m00 = [camera+0x94] / tan, m11 = 1 / tan.
+// [camera+0x94] is the inverse aspect, 0.5625, stored by the camera constructor (0x10B9C530) from the only constant
+// 0x1109615C. Hypothesis, not verified: patching that constant before the cameras are built gives the engine its own
+// Hor+ (projection, culling frustum and the matrices sent to the GPU all agree).
+void PatchEngineAspect(unsigned width, unsigned height) noexcept {
+    constexpr uintptr_t kRva = 0x109615C;
+    constexpr uint32_t kOriginal = 0x3F100000;  // 0.5625f
+    const HMODULE module = GetModuleHandleW(L"g_SilentHill.sgl");
+    if (module == nullptr) {
+        log::Warn("Hor+ moteur : g_SilentHill.sgl introuvable");
+        return;
+    }
+    auto* value = reinterpret_cast<float*>(reinterpret_cast<uintptr_t>(module) + kRva);
+    uint32_t bits = 0;
+    std::memcpy(&bits, value, sizeof(bits));
+    if (bits != kOriginal) {
+        log::Warn("Hor+ moteur : la constante vaut 0x{:08X}, pas 0.5625 : aucun changement", bits);
+        return;
+    }
+    DWORD previous = 0;
+    if (!VirtualProtect(value, sizeof(float), PAGE_READWRITE, &previous)) {
+        log::Warn("Hor+ moteur : VirtualProtect a échoué");
+        return;
+    }
+    *value = static_cast<float>(height) / static_cast<float>(width);
+    VirtualProtect(value, sizeof(float), previous, &previous);
+    log::Info("Hor+ moteur : constante 0.5625 remplacée par {:.6f}", *value);
+}
+
 void SetBackBufferSize(unsigned width, unsigned height) noexcept {
     g_backWidth = static_cast<long>(width);
     g_backHeight = static_cast<long>(height);
+    static std::atomic<bool> patched{false};
+    if (GetConfig().horPlus && GetConfig().horPlusEngine && Active() && !patched.exchange(true)) {
+        PatchEngineAspect(width, height);
+    }
     if (Active() && GetConfig().horPlus) {
         log::Info("Hor+ : tampon arrière {}x{}, facteur x de la projection {:.4f}", width, height,
                   ProjectionXFactor(static_cast<long>(width), static_cast<long>(height)));

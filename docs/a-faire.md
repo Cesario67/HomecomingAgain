@@ -72,6 +72,15 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
     frustum calculé sur le ratio 16:9 ; Hor+ élargit l'image sans élargir ce frustum, donc les objets du bord sont
     éliminés. Il faut trouver dans `g_SilentHill.sgl` où le frustum est construit (champ de vision et ratio) et
     l'élargir comme la projection.
+    **Corrigé le 28/10/2026 (vérifié en jeu en 1920x810)** : un point d'arrêt matériel d'écriture sur la matrice de
+    projection CPU (outil du scratchpad, `DebugActiveProcess` + registres de débogage Wow64) a donné la fonction du
+    moteur qui la construit, `0x10B29100` : `m00 = [caméra+0x94] / tan(...)`, `m11 = 1 / tan(...)`. Le champ
+    `[caméra+0x94]` est l'inverse du ratio (0,5625), copié par le constructeur de la caméra (`0x10B9C530`) depuis la
+    constante unique `0x1109615C`. Remplacer cette constante par H/L du tampon arrière (`[Graphics] HorPlusEngine=1`,
+    défaut) donne au moteur son propre Hor+ : projection, frustum de culling et matrices du GPU cohérents. Le cercle de
+    sauvegarde reste entier même tout au bord de l'image. La correction par constantes (c0 du monde) devient sans objet
+    pour ces caméras (leur ratio n'est plus 16:9) ; les autres corrections (c116, c111, c194, voile de pause, cibles)
+    restent. L'essai du même jour sans mesure de la matrice avait conclu à tort à un échec (jugé sur les cibles).
     Pistes explorées le 28/10/2026 (résultats **vérifiés** sauf mention) : (1) le moteur a un champ `AspectRatio` dans
     un objet caméra (chaîne `AspectRatio` en 0x11080548, sérialiseur en 0x109A5890) et une option `TOption_AspectRatio` ;
     (2) la mémoire du jeu contient, pour la caméra de rendu, une structure avec 0,5625, la taille 1920 / 1080 en flottants

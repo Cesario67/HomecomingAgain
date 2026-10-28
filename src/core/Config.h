@@ -43,6 +43,8 @@ struct Config {
     bool clipFinalCopy = true;
     // Hor+ prototype for back buffers wider than 16:9 (see graphics/HorPlus.h).
     bool horPlus = false;
+    // Hor+: set the engine camera inverse aspect (constant 9/16 read by the camera constructor) to height / width.
+    bool horPlusEngine = true;
     // Perspective de la vue d'inspection des objets rétablie au-delà de 720p (voir graphics/UiClip.h).
     bool objectViewPerspective = true;
     // Jeu exécuté par D3D9On12 (Direct3D 12), préparation du DLSS, expérimental (voir graphics/D3D9On12.h).
