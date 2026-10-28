@@ -72,6 +72,16 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
     frustum calculé sur le ratio 16:9 ; Hor+ élargit l'image sans élargir ce frustum, donc les objets du bord sont
     éliminés. Il faut trouver dans `g_SilentHill.sgl` où le frustum est construit (champ de vision et ratio) et
     l'élargir comme la projection.
+    Pistes explorées le 28/10/2026 (résultats **vérifiés** sauf mention) : (1) le moteur a un champ `AspectRatio` dans
+    un objet caméra (chaîne `AspectRatio` en 0x11080548, sérialiseur en 0x109A5890) et une option `TOption_AspectRatio` ;
+    (2) la mémoire du jeu contient, pour la caméra de rendu, une structure avec 0,5625, la taille 1920 / 1080 en flottants
+    (offset +0x58 / +0x5C avant la matrice) puis la projection CPU (1,64067 et 2,91675), les matrices vue et vue-projection
+    et d'autres (relevé mémoire, adresses variables d'une exécution à l'autre) ; (3) remplacer la constante 0,5625 du
+    moteur (0x1109615C, une seule référence, un constructeur) par H/L ne change pas les cibles : le moteur crée
+    toujours du 1920x1080, donc cette constante ne fixe pas le ratio (essai retiré). Prochaine étape envisagée :
+    un point d'arrêt matériel sur l'écriture de la matrice de projection CPU pour trouver la fonction qui la calcule et
+    celle qui construit le frustum de culling (les appels passent par la surcouche Steam : l'adresse de retour ne donne
+    pas l'appelant du moteur).
     Reste à tester : carte, objets examinés, DLSS, 2560x1080 / 3440x1440 / 3840x1080 sur un vrai écran ultra-large,
     et d'autres constantes à 1080 que le moteur pourrait envoyer en blocs de plusieurs registres.
   - Reste (**hypothèse de conception, non vérifiée**) : Hor+ demande trois changements ensemble : cibles de dessin à la
