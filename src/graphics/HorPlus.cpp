@@ -191,34 +191,57 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
 
 }  // namespace
 
-// The engine camera builds its projection at g_SilentHill.sgl+0x29100 (0x10B29100; found on 28/10/2026 with a hardware
-// write watchpoint on the matrix, then read in the disassembly: verified): m00 = [camera+0x94] / tan, m11 = 1 / tan.
-// [camera+0x94] is the inverse aspect, 0.5625, stored by the camera constructor (0x10B9C530) from the only constant
-// 0x1109615C. Hypothesis, not verified: patching that constant before the cameras are built gives the engine its own
-// Hor+ (projection, culling frustum and the matrices sent to the GPU all agree).
+// The engine camera (g_SilentHill.sgl) keeps its inverse aspect in [camera+0x94] (0.5625 = 1080 / 1920). Verified on
+// 28/10/2026: a hardware write watchpoint on the projection matrix led to 0x10B29100, which builds it (m00 = [camera+0x94]
+// / tan, m11 = 1 / tan), and the disassembly shows the frustum builder at 0x10B2B6E0 reading the same field; a setter
+// (0x10B2952C) rewrites it as height / width of the view rectangle the engine passes (1920x1080), which is why patching
+// the constant 0x1109615C read by the constructor had no effect.
+// The three reads (0x10B29209 and 0x10B292A6 in the projection, 0x10B2B75A in the frustum) are redirected to a value of
+// ours, height / width of the back buffer: the projection, the culling frustum and the matrices sent to the GPU then
+// agree, whenever the camera was built. Each 8-byte `movss xmm,[reg+94h]` becomes `movss xmm,[absolute]`.
+float g_engineInverseAspect = 0.5625f;
+
+struct AspectRead {
+    uintptr_t rva;
+    uint8_t original[8];
+    uint8_t modrm;  // modrm byte of the replacement (absolute address, same destination register)
+};
+
 void PatchEngineAspect(unsigned width, unsigned height) noexcept {
-    constexpr uintptr_t kRva = 0x109615C;
-    constexpr uint32_t kOriginal = 0x3F100000;  // 0.5625f
+    constexpr AspectRead kReads[] = {
+        {0xB29209, {0xF3, 0x0F, 0x10, 0xBE, 0x94, 0x00, 0x00, 0x00}, 0x3D},  // movss xmm7,[esi+94h]
+        {0xB292A6, {0xF3, 0x0F, 0x10, 0xB6, 0x94, 0x00, 0x00, 0x00}, 0x35},  // movss xmm6,[esi+94h]
+        {0xB2B75A, {0xF3, 0x0F, 0x10, 0x93, 0x94, 0x00, 0x00, 0x00}, 0x15},  // movss xmm2,[ebx+94h]
+    };
     const HMODULE module = GetModuleHandleW(L"g_SilentHill.sgl");
     if (module == nullptr) {
         log::Warn("Hor+ moteur : g_SilentHill.sgl introuvable");
         return;
     }
-    auto* value = reinterpret_cast<float*>(reinterpret_cast<uintptr_t>(module) + kRva);
-    uint32_t bits = 0;
-    std::memcpy(&bits, value, sizeof(bits));
-    if (bits != kOriginal) {
-        log::Warn("Hor+ moteur : la constante vaut 0x{:08X}, pas 0.5625 : aucun changement", bits);
-        return;
+    const auto base = reinterpret_cast<uintptr_t>(module);
+    // All three must match before any is changed.
+    for (const AspectRead& read : kReads) {
+        if (std::memcmp(reinterpret_cast<const void*>(base + read.rva), read.original, sizeof(read.original)) != 0) {
+            log::Warn("Hor+ moteur : code inattendu en g_SilentHill.sgl+0x{:X}, aucun changement", read.rva);
+            return;
+        }
     }
-    DWORD previous = 0;
-    if (!VirtualProtect(value, sizeof(float), PAGE_READWRITE, &previous)) {
-        log::Warn("Hor+ moteur : VirtualProtect a échoué");
-        return;
+    g_engineInverseAspect = static_cast<float>(height) / static_cast<float>(width);
+    const auto address = static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&g_engineInverseAspect));
+    for (const AspectRead& read : kReads) {
+        auto* code = reinterpret_cast<uint8_t*>(base + read.rva);
+        DWORD previous = 0;
+        if (!VirtualProtect(code, 8, PAGE_EXECUTE_READWRITE, &previous)) {
+            log::Warn("Hor+ moteur : VirtualProtect a échoué en g_SilentHill.sgl+0x{:X}", read.rva);
+            return;
+        }
+        uint8_t patched[8] = {0xF3, 0x0F, 0x10, read.modrm, 0, 0, 0, 0};
+        std::memcpy(patched + 4, &address, sizeof(address));
+        std::memcpy(code, patched, sizeof(patched));
+        VirtualProtect(code, 8, previous, &previous);
+        FlushInstructionCache(GetCurrentProcess(), code, 8);
     }
-    *value = static_cast<float>(height) / static_cast<float>(width);
-    VirtualProtect(value, sizeof(float), previous, &previous);
-    log::Info("Hor+ moteur : constante 0.5625 remplacée par {:.6f}", *value);
+    log::Info("Hor+ moteur : lectures du ratio de la caméra redirigées, inverse du ratio {:.6f}", g_engineInverseAspect);
 }
 
 void SetBackBufferSize(unsigned width, unsigned height) noexcept {

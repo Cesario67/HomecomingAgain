@@ -75,12 +75,16 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
     **Corrigé le 28/10/2026 (vérifié en jeu en 1920x810)** : un point d'arrêt matériel d'écriture sur la matrice de
     projection CPU (outil du scratchpad, `DebugActiveProcess` + registres de débogage Wow64) a donné la fonction du
     moteur qui la construit, `0x10B29100` : `m00 = [caméra+0x94] / tan(...)`, `m11 = 1 / tan(...)`. Le champ
-    `[caméra+0x94]` est l'inverse du ratio (0,5625), copié par le constructeur de la caméra (`0x10B9C530`) depuis la
-    constante unique `0x1109615C`. Remplacer cette constante par H/L du tampon arrière (`[Graphics] HorPlusEngine=1`,
-    défaut) donne au moteur son propre Hor+ : projection, frustum de culling et matrices du GPU cohérents. Le cercle de
-    sauvegarde reste entier même tout au bord de l'image. La correction par constantes (c0 du monde) devient sans objet
-    pour ces caméras (leur ratio n'est plus 16:9) ; les autres corrections (c116, c111, c194, voile de pause, cibles)
-    restent. L'essai du même jour sans mesure de la matrice avait conclu à tort à un échec (jugé sur les cibles).
+    `[caméra+0x94]` est l'inverse du ratio (0,5625). Il est recalculé par un setter (`0x10B2952C`) comme hauteur / largeur
+    du rectangle de vue que le moteur lui passe (1080 / 1920) : remplacer la constante `0x1109615C` lue par le
+    constructeur de la caméra ne change donc rien (essai retiré). La fonction du frustum (`0x10B2B6E0`) lit le même
+    champ. Le mod redirige les trois lectures (`0x10B29209`, `0x10B292A6` dans la projection, `0x10B2B75A` dans le
+    frustum, octets vérifiés avant d'écrire) vers une valeur à lui, H/L du tampon arrière (`[Graphics] HorPlusEngine=1`,
+    défaut, actif avec `HorPlus=1`) : projection, frustum de culling et matrices du GPU sont cohérents quelle que soit
+    la date de création de la caméra. **Vérifié en jeu en 1920x810** : matrice du moteur mesurée en mémoire m00 = 1,2305,
+    m11 = 2,9167 (ratio 2,37, calculée par le moteur), et le cercle de sauvegarde reste entier au bord de l'image. La
+    correction par constantes du monde (c0) ne s'applique plus à ces caméras (leur ratio n'est plus 16:9) ; les autres
+    corrections (c116, c111, c194, voile de pause, cibles) restent.
     Pistes explorées le 28/10/2026 (résultats **vérifiés** sauf mention) : (1) le moteur a un champ `AspectRatio` dans
     un objet caméra (chaîne `AspectRatio` en 0x11080548, sérialiseur en 0x109A5890) et une option `TOption_AspectRatio` ;
     (2) la mémoire du jeu contient, pour la caméra de rendu, une structure avec 0,5625, la taille 1920 / 1080 en flottants
