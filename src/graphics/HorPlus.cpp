@@ -17,6 +17,7 @@ constexpr size_t kCreateDepthStencilSurfaceIndex = 29;
 constexpr size_t kSetViewportIndex = 47;
 constexpr size_t kSetScissorRectIndex = 75;
 constexpr size_t kSetVertexShaderConstantFIndex = 94;
+constexpr size_t kSetPixelShaderConstantFIndex = 109;
 
 using CreateTextureFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3DDevice9*, UINT, UINT, UINT, DWORD, D3DFORMAT, D3DPOOL,
                                                     IDirect3DTexture9**, HANDLE*);
@@ -32,6 +33,7 @@ CreateSurfaceFn g_createDepthStencilSurface = nullptr;
 SetViewportFn g_setViewport = nullptr;
 SetScissorRectFn g_setScissorRect = nullptr;
 SetVertexShaderConstantFFn g_setVertexShaderConstantF = nullptr;
+SetVertexShaderConstantFFn g_setPixelShaderConstantF = nullptr;  // same signature as the vertex one
 
 std::atomic<long> g_backWidth{0};
 std::atomic<long> g_backHeight{0};
@@ -113,29 +115,54 @@ HRESULT STDMETHODCALLTYPE HookSetScissorRect(IDirect3DDevice9* device, const REC
 
 HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device, UINT start, const float* data,
                                                        UINT count) {
-    if (start == 0 && count >= 4 && data != nullptr && Active() && IsSixteenNineProjection(data)) {
-        float rows[16];
-        for (int i = 0; i < 16; ++i) {
-            rows[i] = data[i];
-        }
-        ScaleProjectionX(rows, ProjectionXFactor(g_backWidth.load(), g_backHeight.load()));
-        if (count == 4) {
-            return g_setVertexShaderConstantF(device, start, rows, count);
-        }
-        // More than four registers: copy everything, change only the x row.
-        float buffer[4 * 32];
-        const UINT floats = count * 4 <= 4 * 32 ? count * 4 : 4 * 32;
-        for (UINT i = 0; i < floats; ++i) {
-            buffer[i] = data[i];
-        }
-        for (int i = 0; i < 4; ++i) {
-            buffer[i] = rows[i];
-        }
-        if (count * 4 <= 4 * 32) {
-            return g_setVertexShaderConstantF(device, start, buffer, count);
-        }
+    if (count == 1 && data != nullptr && Active() && IsHalfPixelOffsetConstant(data)) {
+        const float shifted[4] = {data[0], data[1] * HeightFactor(g_backWidth.load(), g_backHeight.load()), data[2], data[3]};
+        return g_setVertexShaderConstantF(device, start, shifted, count);
     }
-    return g_setVertexShaderConstantF(device, start, data, count);
+    if (count < 4 || data == nullptr || !Active() || count > 32) {
+        return g_setVertexShaderConstantF(device, start, data, count);
+    }
+    // c0 x4: mWorldViewProj of the world camera (any rotation). Elsewhere: only a bare 16:9 projection (c222 x4).
+    const bool world = start == 0 && IsSixteenNineProjection(data);
+    if (!world && !IsBareSixteenNineProjection(data)) {
+        return g_setVertexShaderConstantF(device, start, data, count);
+    }
+    float buffer[4 * 32];
+    for (UINT i = 0; i < count * 4; ++i) {
+        buffer[i] = data[i];
+    }
+    ScaleProjectionX(buffer, ProjectionXFactor(g_backWidth.load(), g_backHeight.load()));
+    return g_setVertexShaderConstantF(device, start, buffer, count);
+}
+
+HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, UINT start, const float* data,
+                                                      UINT count) {
+    if (count == 1 && data != nullptr && Active() && IsScreenScaleConstant(data)) {
+        const float rescaled[4] = {data[0], data[1] * HeightFactor(g_backWidth.load(), g_backHeight.load()), data[2], data[3]};
+        if (g_logCount.fetch_add(1) < 40) {
+            log::Info("Hor+ : constante c{} du pixel shader (échelle écran) {:.7f} -> {:.7f}", start, data[1], rescaled[1]);
+        }
+        return g_setPixelShaderConstantF(device, start, rescaled, count);
+    }
+    if (count == 1 && data != nullptr && Active() && IsPixelToScreenConstant(data)) {
+        const float factor = HeightFactor(g_backWidth.load(), g_backHeight.load());
+        const float rescaled[4] = {data[0], data[1] * factor, data[2], data[3] / factor};
+        if (g_logCount.fetch_add(1) < 40) {
+            log::Info("Hor+ : constante c{} du pixel shader (position pixel vers écran) {:.6f} {:.1f} -> {:.6f} {:.1f}", start,
+                      data[1], data[3], rescaled[1], rescaled[3]);
+        }
+        return g_setPixelShaderConstantF(device, start, rescaled, count);
+    }
+    if (count == 1 && data != nullptr && Active() && IsInverseProjectionScales(data)) {
+        const float factor = ProjectionXFactor(g_backWidth.load(), g_backHeight.load());
+        const float scales[4] = {data[0] / factor, data[1], data[2], data[3]};
+        if (g_logCount.fetch_add(1) < 40) {
+            log::Info("Hor+ : constante c{} du pixel shader (inverse de la projection) {:.5f} -> {:.5f}", start,
+                      data[0], scales[0]);
+        }
+        return g_setPixelShaderConstantF(device, start, scales, count);
+    }
+    return g_setPixelShaderConstantF(device, start, data, count);
 }
 
 }  // namespace
@@ -162,6 +189,8 @@ void Install(IDirect3DDevice9* device) {
     ok &= hooking::PatchVtable(device, kSetScissorRectIndex, &HookSetScissorRect, &g_setScissorRect);
     ok &= hooking::PatchVtable(device, kSetVertexShaderConstantFIndex, &HookSetVertexShaderConstantF,
                                &g_setVertexShaderConstantF);
+    ok &= hooking::PatchVtable(device, kSetPixelShaderConstantFIndex, &HookSetPixelShaderConstantF,
+                               &g_setPixelShaderConstantF);
     if (ok) {
         log::Info("Hor+ (prototype) : installé");
     } else {

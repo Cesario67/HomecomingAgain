@@ -528,6 +528,34 @@ void TestHorPlus() {
     Check(IsSixteenNineProjection(ortho), "Hor+ : une projection orthographique 1280x720 est aussi 16:9");
     const float square[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
     Check(!IsSixteenNineProjection(square), "Hor+ : matrice identité ignorée");
+    // Bare projection and inverse scales measured 27/10/2026 (c222 x4 and c117): both 16:9, not mistaken for screen sizes.
+    const float bare[16] = {1.6407f, 0, 0, 0, 0, 2.9167f, 0, 0, 0, 0, 1.0002f, -3.0006f, 0, 0, 1, 0};
+    Check(IsBareSixteenNineProjection(bare) && !IsBareSixteenNineProjection(square),
+          "Hor+ : projection seule (c222) reconnue, identité refusée");
+    const float inverse[4] = {0.60951f, 0.34285f, 0, 0};
+    Check(IsInverseProjectionScales(inverse), "Hor+ : inverse des échelles de projection (c117) reconnu");
+    const float sizes[4] = {1920.0f, 1080.0f, 0, 0};
+    const float texel[4] = {1.0f / 1920.0f, 1.0f / 1080.0f, 0, 0};
+    Check(!IsInverseProjectionScales(sizes) && !IsInverseProjectionScales(texel),
+          "Hor+ : tailles d'écran et texels non confondus avec l'inverse de la projection");
+    // Measured 27/10/2026 at 1920x1080: pixel to screen constant (c116) and half-pixel offset (c194).
+    const float pixelToScreen[4] = {0.0010417f, -0.0018519f, -960.0f, -540.0f};
+    Check(IsPixelToScreenConstant(pixelToScreen) && !IsPixelToScreenConstant(inverse) && !IsPixelToScreenConstant(sizes),
+          "Hor+ : constante position pixel vers écran (c116) reconnue");
+    const float halfPixel[4] = {-0.00052083f, 0.00092593f, 0, 0};
+    const float halfPixelHalfRes[4] = {-0.0010417f, 0.0018519f, 0, 0};
+    Check(IsHalfPixelOffsetConstant(halfPixel) && IsHalfPixelOffsetConstant(halfPixelHalfRes) &&
+              !IsHalfPixelOffsetConstant(texel),
+          "Hor+ : décalage d'un demi-pixel (c194) reconnu, texel non confondu");
+    Check(std::fabs(HeightFactor(1920, 810) - 4.0f / 3.0f) < 1e-4f,
+          "Hor+ : facteur de hauteur 4/3 pour 1920x810 (1080 -> 810)");
+    // Volumetric light screen scale (c111 and c108 of the 27/10/2026 captures, the latter with a denormal in z).
+    const float screenScale[4] = {0.0005211f, 0.00092678f, 0, 0};
+    const float screenScaleDenormal[4] = {0.0005211f, 0.00092678f, 2.4703e-39f, 0};
+    const float fogParams[4] = {0.00066667f, 1.2f, 1, 0};
+    Check(IsScreenScaleConstant(screenScale) && IsScreenScaleConstant(screenScaleDenormal) &&
+              !IsScreenScaleConstant(fogParams) && !IsScreenScaleConstant(sizes),
+          "Hor+ : échelle écran de la lumière volumétrique (c111) reconnue, autres constantes non confondues");
 }
 
 void TestUiClipItem() {

@@ -55,6 +55,17 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
     Le champ de vision horizontal reste donc celui du 16:9 : un écran ultra-large perd de la hauteur au lieu de
     gagner de la largeur. La projection du monde (mWorldViewProj, c0..c3) a un rapport échelle y / échelle x de 16/9
     (1,6406 et 2,9163 relevés), identique à 1920x810 et à 1920x1080 : le ratio est fixé à 16:9 par le moteur.
+  - Fait (28/10/2026) : prototype Hor+ (`graphics/HorPlus`, `[Graphics] HorPlus`, désactivé par défaut), **vérifié en
+    jeu en 1920x810** (menu, save point, scène de la table de la nouvelle partie : plus d'ombres cassées). Le moteur
+    envoie des constantes pour du 16:9 qu'il faut corriger avec la projection (relevés F11, **vérifié** par
+    élimination avec des réglages de debug, depuis retirés) : projection du monde c0 x4 (ligne x multipliée par
+    (16/9)/(L/H)), projection seule c222 x4, inverse des échelles c117 ([1/sx, 1/sy], pixel shader), conversion
+    position pixel vers écran c116 ([2/L, -2/H, -L/2, -H/2], pixel shader), décalage d'un demi-pixel c194 (vertex
+    shader) et échelle écran c111 ([1/L, 1/H], pixel shader de la lumière volumétrique `ps_1C62CA10`, qui lit la
+    profondeur R32F par `vPos` x c111 et reconstruit la position monde). Sans la correction de c111, des taches noires
+    à bords en escalier apparaissaient sur les personnages (les cibles pleine résolution redimensionnées sans elle).
+    Reste à tester : cinématiques, carte, objets, DLSS, 2560x1080 / 3440x1440 / 3840x1080 sur un vrai écran ultra-large,
+    et d'autres constantes à 1080 que le moteur pourrait envoyer en blocs de plusieurs registres.
   - Reste (**hypothèse de conception, non vérifiée**) : Hor+ demande trois changements ensemble : cibles de dessin à la
     taille du tampon arrière (au lieu de largeur x 9/16), échelle x de la projection du monde multipliée par
     (16/9) / (L/H), et interface limitée à la zone 16:9 centrale. Les modules SMAA, SSAO, vecteurs de mouvement et DLSS
