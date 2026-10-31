@@ -65,6 +65,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         new(AspectRatio.FourByThree, "4:3"),
         new(AspectRatio.SixteenByNine, "16:9"),
         new(AspectRatio.TwentyOneByNine, "21:9"),
+        new(AspectRatio.ThirtyTwoByNine, "32:9"),
     ];
 
     /// <summary>Sizes of the selected format (see <see cref="AspectRatios"/>).</summary>
@@ -256,7 +257,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
 
     /// <summary>
     /// A new format replaces the size list and picks the size whose height is the closest to the previous one. Hor+ is
-    /// checked for 21:9 and unchecked for the other formats (the user can still change it afterwards).
+    /// checked for 21:9 and 32:9 and unchecked for the other formats (the user can still change it afterwards).
     /// </summary>
     partial void OnSelectedAspectRatioChanged(Choice<AspectRatio> value)
     {
@@ -269,7 +270,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         OnPropertyChanged(nameof(Resolutions));
         (int Width, int Height) closest = AspectRatios.Closest(AspectRatios.SizesFor(value.Value), previousHeight);
         SelectedResolution = Resolutions.First(choice => choice.Value == closest);
-        HorPlus = value.Value == AspectRatio.TwentyOneByNine;
+        HorPlus = value.Value is AspectRatio.TwentyOneByNine or AspectRatio.ThirtyTwoByNine;
     }
 
     private static IReadOnlyList<Choice<(int Width, int Height)>> BuildResolutions(AspectRatio ratio, int currentWidth, int currentHeight) =>

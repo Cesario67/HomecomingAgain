@@ -13,7 +13,8 @@ public sealed class AspectRatioTests
     [InlineData(1920, 1200, AspectRatio.SixteenByNine)]  // 16:10 sits with 16:9
     [InlineData(2560, 1080, AspectRatio.TwentyOneByNine)]
     [InlineData(3440, 1440, AspectRatio.TwentyOneByNine)]
-    [InlineData(3840, 1080, AspectRatio.TwentyOneByNine)]  // 32:9 belongs to the widest format
+    [InlineData(3840, 1080, AspectRatio.ThirtyTwoByNine)]
+    [InlineData(5120, 1440, AspectRatio.ThirtyTwoByNine)]
     public void SizesAreClassifiedByTheirRatio(int width, int height, AspectRatio expected) =>
         Assert.Equal(expected, AspectRatios.Classify(width, height));
 
@@ -21,6 +22,7 @@ public sealed class AspectRatioTests
     [InlineData(AspectRatio.FourByThree)]
     [InlineData(AspectRatio.SixteenByNine)]
     [InlineData(AspectRatio.TwentyOneByNine)]
+    [InlineData(AspectRatio.ThirtyTwoByNine)]
     public void EverySizeOfAFormatBelongsToIt(AspectRatio ratio)
     {
         IReadOnlyList<(int Width, int Height)> sizes = AspectRatios.SizesFor(ratio);
@@ -41,6 +43,8 @@ public sealed class AspectRatioTests
     [InlineData(AspectRatio.TwentyOneByNine, 1080, 2560, 1080)]
     [InlineData(AspectRatio.TwentyOneByNine, 1440, 3440, 1440)]
     [InlineData(AspectRatio.TwentyOneByNine, 2160, 5120, 2160)]
+    [InlineData(AspectRatio.ThirtyTwoByNine, 1080, 3840, 1080)]
+    [InlineData(AspectRatio.ThirtyTwoByNine, 1440, 5120, 1440)]
     [InlineData(AspectRatio.SixteenByNine, 1080, 1920, 1080)]
     [InlineData(AspectRatio.SixteenByNine, 1600, 2560, 1440)]
     [InlineData(AspectRatio.FourByThree, 1080, 1400, 1050)]
