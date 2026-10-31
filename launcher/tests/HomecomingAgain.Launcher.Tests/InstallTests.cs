@@ -73,6 +73,22 @@ public sealed class InstallTests : IDisposable
     }
 
     [Fact]
+    public void CleanReinstallDeletesNothingWhenThePackageIsUnusable()
+    {
+        GamePaths paths = new(_root);
+        Directory.CreateDirectory(Path.Combine(paths.ModDataDirectory, "logs"));
+        File.WriteAllText(Path.Combine(paths.LogsDirectory, "a.log"), "log");
+        File.WriteAllText(paths.ModIni, "[Graphics]\nSMAA=0\n");
+        string package = Path.Combine(_root, "paquet-vide");
+        Directory.CreateDirectory(package);
+
+        Assert.Throws<FileNotFoundException>(() => ModInstaller.CleanReinstall(package, paths, null));
+
+        Assert.True(File.Exists(Path.Combine(paths.LogsDirectory, "a.log")));
+        Assert.Equal("[Graphics]\nSMAA=0\n", File.ReadAllText(paths.ModIni));
+    }
+
+    [Fact]
     public void RejectsAFolderWithoutTheGame()
     {
         string empty = Path.Combine(_root, "Engine");

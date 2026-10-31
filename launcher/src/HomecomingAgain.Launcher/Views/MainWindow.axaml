@@ -222,6 +222,7 @@
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Content="{Binding InstallButtonText}" Command="{Binding InstallCommand}" />
               <Button Content="{Binding L[Uninstall]}" Command="{Binding UninstallCommand}" />
+              <Button Content="{Binding L[CleanReinstall]}" Command="{Binding CleanReinstallCommand}" />
             </StackPanel>
             <TextBlock Classes="hint" Text="{Binding L[InstallHint]}" />
 

@@ -71,6 +71,21 @@ public sealed partial class StatusViewModel(MainWindowViewModel main, string pac
         });
     }
 
+    [RelayCommand(CanExecute = nameof(CanInstall))]
+    private async Task CleanReinstallAsync()
+    {
+        if (!await main.ConfirmAsync(Loc.Get("CleanReinstallConfirm")))
+        {
+            return;
+        }
+        main.Run(() =>
+        {
+            IReadOnlyList<string> report = ModInstaller.CleanReinstall(packageDirectory, main.Paths!, Environment.ProcessPath);
+            main.Reload();
+            return string.Join(" ", report);
+        });
+    }
+
     [RelayCommand]
     private void OpenLatestLog() => main.Run(() =>
     {

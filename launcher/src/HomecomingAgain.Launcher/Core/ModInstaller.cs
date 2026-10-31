@@ -176,6 +176,40 @@ public static class ModInstaller
     /// </summary>
     public static IReadOnlyList<string> Uninstall(GamePaths paths, string? packageDirectory = null)
     {
+        List<string> report = UninstallFiles(paths, packageDirectory);
+        report.Add(Loc.Get("UninstallKept"));
+        return report;
+    }
+
+    /// <summary>
+    /// Clean reinstallation: the mod is uninstalled, everything it keeps is deleted (its data folder with logs, captures
+    /// and crash dumps, HomecomingAgain.ini and its .old.ini), then the package is installed again with default settings.
+    /// The game's own settings (vars_pc.cfg), the saves and every other game file are not touched.
+    /// </summary>
+    public static IReadOnlyList<string> CleanReinstall(string packageDirectory, GamePaths paths, string? launcherExecutable)
+    {
+        // Checked first: nothing is deleted when the package cannot be installed afterwards.
+        if (!IsPackageDirectory(packageDirectory))
+        {
+            throw new FileNotFoundException(Loc.Get("InstallDllMissing"), Path.Combine(packageDirectory, GamePaths.ModDllName));
+        }
+        List<string> report = UninstallFiles(paths, packageDirectory);
+        if (Directory.Exists(paths.ModDataDirectory))
+        {
+            Directory.Delete(paths.ModDataDirectory, recursive: true);
+            report.Add(Loc.Get("CleanReinstallDataDeleted"));
+        }
+        foreach (string file in new[] { paths.ModIni, paths.ModIniOld })
+        {
+            File.Delete(file);
+        }
+        report.Add(Loc.Get("CleanReinstallSettingsDeleted"));
+        report.AddRange(Install(packageDirectory, paths, launcherExecutable));
+        return report;
+    }
+
+    private static List<string> UninstallFiles(GamePaths paths, string? packageDirectory)
+    {
         List<string> report = new();
         EnsureGameNotRunning(paths);
         if (packageDirectory is not null)
@@ -206,7 +240,6 @@ public static class ModInstaller
         {
             report.Add(Loc.Get("UninstallBindsRestored"));
         }
-        report.Add(Loc.Get("UninstallKept"));
         return report;
     }
 
