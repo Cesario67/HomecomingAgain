@@ -6,15 +6,17 @@ public enum AspectRatio
     FourByThree,
     SixteenByNine,
     TwentyOneByNine,
+    ThirtyTwoByNine,
 }
 
 /// <summary>Pure rules about picture formats and the resolutions offered for each (tested in AspectRatioTests).</summary>
 public static class AspectRatios
 {
-    // Boundaries on width / height between the formats: 4:3 = 1.33, 16:9 = 1.78, 21:9 = 2.37. Anything wider than
-    // 2.05 (32:9 = 3.56 included) belongs to the widest format, so a saved custom size is never lost.
+    // Boundaries on width / height between the formats: 4:3 = 1.33, 16:9 = 1.78, 21:9 = 2.37, 32:9 = 3.56. Anything
+    // wider than 2.9 belongs to the widest format, so a saved custom size is never lost.
     private const double FourByThreeLimit = 1.55;
     private const double SixteenByNineLimit = 2.05;
+    private const double TwentyOneByNineLimit = 2.9;
 
     // The mod widens the field of view only above 16:9 by more than 1 % (graphics/HorPlusRules.h, same margin).
     private const double WiderThanSixteenByNineMargin = 1.01;
@@ -29,6 +31,10 @@ public static class AspectRatios
     private static readonly (int Width, int Height)[] TwentyOneByNineSizes =
         [(2560, 1080), (3440, 1440), (3840, 1600), (5120, 2160)];
 
+    // Super ultrawide screens: 3840x1080, 5120x1440 and 7680x2160.
+    private static readonly (int Width, int Height)[] ThirtyTwoByNineSizes =
+        [(3840, 1080), (5120, 1440), (7680, 2160)];
+
     /// <summary>Format a size belongs to (the closest one by its width / height ratio).</summary>
     public static AspectRatio Classify(int width, int height)
     {
@@ -39,7 +45,8 @@ public static class AspectRatios
         double ratio = (double)width / height;
         return ratio < FourByThreeLimit ? AspectRatio.FourByThree
              : ratio < SixteenByNineLimit ? AspectRatio.SixteenByNine
-             : AspectRatio.TwentyOneByNine;
+             : ratio < TwentyOneByNineLimit ? AspectRatio.TwentyOneByNine
+             : AspectRatio.ThirtyTwoByNine;
     }
 
     /// <summary>The usual sizes of a format, smallest first.</summary>
@@ -47,7 +54,8 @@ public static class AspectRatios
     {
         AspectRatio.FourByThree => FourByThreeSizes,
         AspectRatio.SixteenByNine => SixteenByNineSizes,
-        _ => TwentyOneByNineSizes,
+        AspectRatio.TwentyOneByNine => TwentyOneByNineSizes,
+        _ => ThirtyTwoByNineSizes,
     };
 
     /// <summary>

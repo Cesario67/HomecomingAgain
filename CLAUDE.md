@@ -42,7 +42,7 @@ Reprise de DPStabilityFix, adaptée (espace de noms `hca`, projet `HomecomingAga
 
 ## État
 
-Version 1.0.0 publiée (28/10/2026), dont l'ultra-large (Hor+, sélecteur de format du launcher). Le mod est installé et testé en jeu à chaque modification : cadence,
+Version 1.0.1 publiée (31/10/2026), dont l'ultra-large (Hor+, sélecteur de format du launcher). Le mod est installé et testé en jeu à chaque modification : cadence,
 sans bordure, son, SMAA, SSAO, ombres 8192, DLSS, manette (menus, icônes, noms des boutons, zoom de la carte, caméra orbitale, manette
 PlayStation sans Steam Input), carte entière et objets examinés au-delà du 720p, logos accélérés, triches (mode dieu,
 munitions illimitées), launcher Linux expérimental (jeu dans Proton) et rapport de bogue en un clic. Plan et points en attente : `docs/a-faire.md`. Les fonctionnalités et

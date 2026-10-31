@@ -303,6 +303,19 @@ public static class Translations
             ["InstallOldLauncherRemoved"] = (
                 "Ancienne copie « Bin/HomecomingAgain » retirée (elle empêchait le mod de démarrer). Si l'option de lancement Steam la citait, recopiez la nouvelle ci-dessous.",
                 "Old copy \"Bin/HomecomingAgain\" removed (it prevented the mod from starting). If your Steam launch options pointed to it, copy the new line below."),
+            ["CleanReinstall"] = ("Réinstallation propre", "Clean reinstall"),
+            ["CleanReinstallConfirm"] = ("Réinstallation propre de Homecoming Again ?\n\nLe mod est désinstallé, puis tout ce qu'il " +
+                                         "a créé est supprimé : réglages (HomecomingAgain.ini), journaux, captures et " +
+                                         "diagnostics de plantage. Il est ensuite réinstallé avec les réglages par défaut.\n\n" +
+                                         "Les réglages du jeu (résolution...), vos sauvegardes et les autres fichiers du jeu " +
+                                         "ne sont pas touchés.",
+                                         "Clean reinstall of Homecoming Again?\n\nThe mod is uninstalled, then everything it " +
+                                         "created is deleted: settings (HomecomingAgain.ini), logs, captures and crash " +
+                                         "dumps. It is then installed again with default settings.\n\nThe game's own settings " +
+                                         "(resolution...), your saves and the other game files are not touched."),
+            ["CleanReinstallDataDeleted"] = ("Dossier du mod supprimé (journaux, captures, diagnostics).",
+                                             "Mod folder deleted (logs, captures, crash dumps)."),
+            ["CleanReinstallSettingsDeleted"] = ("Réglages du mod supprimés.", "Mod settings deleted."),
             ["UninstallDllRemoved"] = ("version.dll retirée.", "version.dll removed."),
             ["UninstallDllRestored"] = ("version.dll d'origine remise en place.", "Original version.dll restored."),
             ["UninstallKept"] = ("Réglages et journaux conservés.", "Settings and logs kept."),

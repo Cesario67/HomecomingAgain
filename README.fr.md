@@ -43,12 +43,12 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
   à toute l'image (1080p, 1440p, 4K...) en gardant la carte à sa taille et à sa place d'origine.
 - **Objets examinés au-delà du 720p** : l'objet qu'on vient de ramasser (couteau, trousse...) était coupé dans le coin
   de l'écran, ou étiré. Il est maintenant centré, entier et bien proportionné, comme en 720p.
-- **Ultra-large (21:9)** : le launcher propose un format d'image (4:3, 16:9, 21:9) et une résolution. Sur un
+- **Ultra-large (21:9)** : le launcher propose un format d'image (4:3, 16:9, 21:9, 32:9) et une résolution. Sur un
   écran plus large que 16:9, le jeu d'origine dessinait une image 16:9 et rognait le haut et le bas (ou affichait un
   écran noir). Le mod corrige l'écran noir et, avec **Hor+**, élargit le champ de vision au lieu de rogner : plus de
   décor sur les côtés, sans étirement, ombres et effets intacts, et des objets qui restent visibles jusqu'au bord de
-  l'image. Les menus et le HUD restent centrés en 16:9. Testé sur une image 21:9 ; les ratios plus larges (32:9)
-  attendent des retours.
+  l'image. Les menus et le HUD restent centrés en 16:9. Testé sur une image 21:9 ; le 32:9, proposé aussi,
+  n'a pas été testé.
 - **DLSS (DLAA, expérimental)** : anticrénelage par l'IA de NVIDIA, plus stable et plus net que le SMAA, à la
   résolution d'origine. Cartes NVIDIA RTX uniquement ; l'option du launcher installe aussi DXVK (Direct3D 9 sur
   Vulkan). Le jeu étant 32 bits et le DLSS 64 bits, un petit programme 64 bits (`HomecomingAgain.Dlss.exe`) reçoit les
@@ -83,13 +83,13 @@ Travail en cours : [docs/a-faire.md](docs/a-faire.md).
 - **Logos de démarrage accélérés** : l'écran titre arrive au bout de 5 s environ au lieu de 23. Les logos (Konami,
   Double Helix, mentions légales) défilent en accéléré ; le jeu a déjà fini de charger pendant qu'ils s'affichent.
 - **Launcher** (`HomecomingAgain.exe`) : tous les réglages, l'installation et la désinstallation, en anglais (par
-  défaut) et en français. L'affichage propose un format d'image (4:3, 16:9, 21:9) dont le choix pilote la liste des
+  défaut) et en français. L'affichage propose un format d'image (4:3, 16:9, 21:9, 32:9) dont le choix pilote la liste des
   résolutions, et la case Hor+.
 
 ## Installation
 
 Lancer `HomecomingAgain.exe`, choisir le dossier du jeu, puis **Installer**. Le launcher copie le mod dans `Bin`,
-applique le patch 4 Go et garde une copie des fichiers modifiés. **Désinstaller** remet tout comme avant.
+applique le patch 4 Go et garde une copie des fichiers modifiés. **Désinstaller** remet tout comme avant, et **Réinstallation propre** supprime aussi les réglages, journaux et captures du mod avant de réinstaller.
 
 ### Linux et Steam Deck (Proton) : expérimental, pas encore testé
 
