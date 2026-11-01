@@ -26,6 +26,18 @@ constexpr bool IsLegacyInterfaceArea(long x, long y, long width, long height) no
     return x == 0 && y == 0 && width == 1280 && height == 720;
 }
 
+// Height of the target the engine believes it draws to, for the fixed 1280x720 interface area (map, examined
+// objects). With Hor+ the engine still sizes everything as a 16:9 picture from the width (3840x2160 for a 3840x1080
+// back buffer) while the real target was reshaped, so the matrices of the area carry the scale of that height:
+// measured 1/11/2026 on the map paper, c0 y scale 3 at 3840x1080 against 1.5 at 1920x1080 (height / 720). The
+// compensation of the area must use it, not the real height (map twice too tall and centred on the bottom edge).
+inline long LegacyAreaBeliefHeight(long width, long height, bool horPlus) noexcept {
+    if (!horPlus || !IsWiderThanSixteenNine(width, height)) {
+        return height;
+    }
+    return std::lround(static_cast<double>(width) * 9.0 / 16.0);
+}
+
 // Height of a 16:9 target of `width` once reshaped to the back buffer's ratio.
 inline long ReshapedHeight(long width, long backWidth, long backHeight) noexcept {
     const long height = std::lround(static_cast<double>(width) * static_cast<double>(backHeight) /

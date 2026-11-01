@@ -40,6 +40,7 @@ std::atomic<bool> g_loggedObject{false};
 std::atomic<bool> g_loggedLight{false};
 long g_targetWidth = 0;
 long g_targetHeight = 0;
+long g_beliefHeight = 0;
 
 // Taille de la cible de dessin 0 ; faux si elle est illisible.
 bool TargetSize(IDirect3DDevice9* device, long& width, long& height) noexcept {
@@ -78,7 +79,11 @@ HRESULT STDMETHODCALLTYPE HookSetViewport(IDirect3DDevice9* device, const D3DVIE
         g_targetWidth = targetWidth;
         g_targetHeight = targetHeight;
         g_scaleX = static_cast<float>(kLegacyWidth) / static_cast<float>(targetWidth);
-        g_scaleY = static_cast<float>(kLegacyHeight) / static_cast<float>(targetHeight);
+        // The matrices of the area are made for the target the engine believes it has (taller than the real one with
+        // Hor+): see horplus::LegacyAreaBeliefHeight.
+        const long beliefHeight = horplus::LegacyAreaBeliefHeight(targetWidth, targetHeight);
+        g_scaleY = static_cast<float>(kLegacyHeight) / static_cast<float>(beliefHeight);
+        g_beliefHeight = beliefHeight;
         D3DVIEWPORT9 expanded = *viewport;
         expanded.Width = static_cast<DWORD>(targetWidth);
         expanded.Height = static_cast<DWORD>(targetHeight);
@@ -112,8 +117,8 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
     if (g_active && data != nullptr && start == 0 && count >= 4) {
         float rows[16];
         std::memcpy(rows, data, sizeof(rows));
-        // The Hor+ engine redirect also reached these cameras: give them back their original aspect first.
-        ScaleXRow(rows, horplus::OriginalAspectRestoreFactor());
+        // Hor+ without the engine redirect: this area's projections were left untouched, widen them here.
+        ScaleXRow(rows, horplus::LegacyAreaXFactor());
         if (LooksStraightDown(data)) {
             CompensateProjection(rows, g_scaleX, g_scaleY);
         } else {
@@ -147,7 +152,7 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
         float rows[64];
         const UINT copied = count < 16 ? count : 16;
         std::memcpy(rows, data, copied * 4 * sizeof(float));
-        if (RestoreInspectionLight(rows, g_targetWidth, g_targetHeight)) {
+        if (RestoreInspectionLight(rows, g_targetWidth, g_beliefHeight)) {
             if (!g_loggedLight.exchange(true)) {
                 log::Info("Interface : projecteur des documents et photos recentré (c20 ramenée à x = y = 0)");
             }

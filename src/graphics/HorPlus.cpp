@@ -204,11 +204,19 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
 // ours, height / width of the back buffer: the projection, the culling frustum and the matrices sent to the GPU then
 // agree, whenever the camera was built. Each 8-byte `movss xmm,[reg+94h]` becomes `movss xmm,[absolute]`.
 float g_engineInverseAspect = 0.5625f;
-constexpr float kOriginalInverseAspect = 0.5625f;
 std::atomic<bool> g_enginePatched{false};
 
-float OriginalAspectRestoreFactor() noexcept {
-    return g_enginePatched.load() ? kOriginalInverseAspect / g_engineInverseAspect : 1.0f;
+float LegacyAreaXFactor() noexcept {
+    // With the engine redirect the camera x scale already carries the aspect; without it the area's projections reach
+    // the interface fix untouched (this module skips them), so the factor is applied there.
+    if (!GetConfig().horPlus || g_enginePatched.load() || !Active()) {
+        return 1.0f;
+    }
+    return ProjectionXFactor(g_backWidth.load(), g_backHeight.load());
+}
+
+long LegacyAreaBeliefHeight(long targetWidth, long targetHeight) noexcept {
+    return LegacyAreaBeliefHeight(targetWidth, targetHeight, GetConfig().horPlus);
 }
 
 struct AspectRead {
