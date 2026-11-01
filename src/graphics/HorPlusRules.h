@@ -19,6 +19,13 @@ constexpr bool IsSixteenNineTarget(long width, long height) noexcept {
     return width >= 640 && height * 16 == width * 9;
 }
 
+// The fixed 1280x720 area the game sets before drawing the map and the examined objects (see UiClip.h). It must reach
+// the interface fix unchanged: reshaped here to 1280 x (1280 * backHeight / backWidth), it cut the map to a strip
+// (reported on a 32:9 screen, 31/10/2026: map clipped at 1280 px wide and 360 px high).
+constexpr bool IsLegacyInterfaceArea(long x, long y, long width, long height) noexcept {
+    return x == 0 && y == 0 && width == 1280 && height == 720;
+}
+
 // Height of a 16:9 target of `width` once reshaped to the back buffer's ratio.
 inline long ReshapedHeight(long width, long backWidth, long backHeight) noexcept {
     const long height = std::lround(static_cast<double>(width) * static_cast<double>(backHeight) /

@@ -90,7 +90,8 @@ HRESULT STDMETHODCALLTYPE HookCreateDepthStencilSurface(IDirect3DDevice9* device
 }
 
 HRESULT STDMETHODCALLTYPE HookSetViewport(IDirect3DDevice9* device, const D3DVIEWPORT9* viewport) {
-    if (viewport != nullptr && Active() && viewport->X == 0 && viewport->Y == 0) {
+    if (viewport != nullptr && Active() && viewport->X == 0 && viewport->Y == 0 &&
+        !(GetConfig().fullScreenUiClip && IsLegacyInterfaceArea(0, 0, viewport->Width, viewport->Height))) {
         const UINT newHeight = TargetHeight(viewport->Width, viewport->Height);
         if (newHeight != viewport->Height) {
             D3DVIEWPORT9 reshaped = *viewport;
@@ -102,7 +103,8 @@ HRESULT STDMETHODCALLTYPE HookSetViewport(IDirect3DDevice9* device, const D3DVIE
 }
 
 HRESULT STDMETHODCALLTYPE HookSetScissorRect(IDirect3DDevice9* device, const RECT* rect) {
-    if (rect != nullptr && Active() && rect->left == 0 && rect->top == 0) {
+    if (rect != nullptr && Active() && rect->left == 0 && rect->top == 0 &&
+        !(GetConfig().fullScreenUiClip && IsLegacyInterfaceArea(0, 0, rect->right, rect->bottom))) {
         const UINT width = static_cast<UINT>(rect->right);
         const UINT height = static_cast<UINT>(rect->bottom);
         const UINT newHeight = TargetHeight(width, height);

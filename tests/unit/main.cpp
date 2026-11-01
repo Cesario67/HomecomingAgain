@@ -510,6 +510,9 @@ void TestHorPlus() {
     Check(IsSixteenNineTarget(1920, 1080) && IsSixteenNineTarget(3840, 2160) && !IsSixteenNineTarget(1024, 1024) &&
               !IsSixteenNineTarget(320, 180),
           "Hor+ : cibles 16:9 reconnues, ombres et petites tailles laissées");
+    Check(IsLegacyInterfaceArea(0, 0, 1280, 720) && !IsLegacyInterfaceArea(0, 0, 1920, 1080) &&
+              !IsLegacyInterfaceArea(10, 0, 1280, 720) && !IsLegacyInterfaceArea(0, 0, 1280, 360),
+          "Hor+ : zone 1280x720 fixe de l'interface laissée au correctif de la carte");
     Check(ReshapedHeight(1920, 1920, 810) == 810 && ReshapedHeight(3840, 3840, 1080) == 1080 &&
               ReshapedHeight(960, 1920, 810) == 405,
           "Hor+ : hauteur des cibles remise au ratio du tampon");
