@@ -19,4 +19,10 @@ void Install(IDirect3DDevice9* device);
 // Back buffer size requested by the game (CreateDevice and Reset). Must be known before the targets are created.
 void SetBackBufferSize(unsigned width, unsigned height) noexcept;
 
+// Factor that brings the x row of a projection built by the engine camera back to the value it had before the engine
+// aspect redirect (original inverse aspect 0.5625 / ours): 1 when the redirect is not applied. The map and the examined
+// objects are world cameras drawn in the fixed 1280x720 interface area; their layout assumes the original 16:9 aspect
+// (measured 1/11/2026: with the redirect the map projection had x = 0.28125 instead of 0.5625 at 3840x1080).
+float OriginalAspectRestoreFactor() noexcept;
+
 }  // namespace hca::graphics::horplus

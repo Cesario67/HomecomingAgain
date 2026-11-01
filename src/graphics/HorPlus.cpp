@@ -8,6 +8,7 @@
 #include "core/Hooking.h"
 #include "core/Log.h"
 #include "graphics/HorPlusRules.h"
+#include "graphics/UiClip.h"
 
 namespace hca::graphics::horplus {
 
@@ -147,7 +148,8 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
     }
     // c0 x4: mWorldViewProj of the world camera (any rotation). Elsewhere: only a bare 16:9 projection (c222 x4).
     const bool world = start == 0 && IsSixteenNineProjection(data);
-    if (world && BoundTextureIsOverlay(device)) {
+    // Inside the fixed 1280x720 area (map, examined objects) the layout is the interface fix's business (UiClip).
+    if (world && (uiclip::LegacyAreaActive() || BoundTextureIsOverlay(device))) {
         return g_setVertexShaderConstantF(device, start, data, count);
     }
     if (!world && !IsBareSixteenNineProjection(data)) {
@@ -202,6 +204,12 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
 // ours, height / width of the back buffer: the projection, the culling frustum and the matrices sent to the GPU then
 // agree, whenever the camera was built. Each 8-byte `movss xmm,[reg+94h]` becomes `movss xmm,[absolute]`.
 float g_engineInverseAspect = 0.5625f;
+constexpr float kOriginalInverseAspect = 0.5625f;
+std::atomic<bool> g_enginePatched{false};
+
+float OriginalAspectRestoreFactor() noexcept {
+    return g_enginePatched.load() ? kOriginalInverseAspect / g_engineInverseAspect : 1.0f;
+}
 
 struct AspectRead {
     uintptr_t rva;
@@ -271,6 +279,7 @@ void PatchEngineAspect(unsigned width, unsigned height) noexcept {
         FlushInstructionCache(GetCurrentProcess(), code, 8);
     }
     FlushInstructionCache(GetCurrentProcess(), stubs, 128);
+    g_enginePatched = true;
     log::Info("Hor+ moteur : lectures du ratio des caméras du monde redirigées, inverse du ratio {:.6f}",
               g_engineInverseAspect);
 }

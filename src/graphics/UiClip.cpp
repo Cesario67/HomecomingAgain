@@ -7,6 +7,7 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "graphics/HorPlus.h"
 
 namespace hca::graphics::uiclip {
 
@@ -111,6 +112,8 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
     if (g_active && data != nullptr && start == 0 && count >= 4) {
         float rows[16];
         std::memcpy(rows, data, sizeof(rows));
+        // The Hor+ engine redirect also reached these cameras: give them back their original aspect first.
+        ScaleXRow(rows, horplus::OriginalAspectRestoreFactor());
         if (LooksStraightDown(data)) {
             CompensateProjection(rows, g_scaleX, g_scaleY);
         } else {
@@ -159,6 +162,19 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
 }
 
 }  // namespace
+
+bool LegacyAreaActive() noexcept {
+    return g_active;
+}
+
+void ScaleXRow(float* rows, float factor) noexcept {
+    if (factor == 1.0f) {
+        return;
+    }
+    for (int i = 0; i < 4; ++i) {
+        rows[i] *= factor;
+    }
+}
 
 bool ExpandLegacyRect(long x, long y, long& width, long& height, long targetWidth, long targetHeight) noexcept {
     if (x != 0 || y != 0 || width != kLegacyWidth || height != kLegacyHeight) {

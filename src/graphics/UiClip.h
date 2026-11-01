@@ -24,7 +24,13 @@ namespace hca::graphics::uiclip {
 // Désactivable : `[Graphics] FullScreenUiClip=0`.
 void Install(IDirect3DDevice9* device);
 
+// Is the fixed 1280x720 area extended right now (render thread only)? Other fixes leave its projections alone.
+bool LegacyAreaActive() noexcept;
+
 // Fonctions pures (testées par tests/unit).
+// Multiplies the x output row (the first 4 floats of 16) by `factor`: brings a projection built with another aspect
+// back to the aspect the interface layout was made for.
+void ScaleXRow(float* rows, float factor) noexcept;
 // La zone x, y, largeur, hauteur est-elle la zone 720p fixe du jeu, sur une cible plus grande ? Si oui, `width` et
 // `height` reçoivent la taille de la cible.
 bool ExpandLegacyRect(long x, long y, long& width, long& height, long targetWidth, long targetHeight) noexcept;

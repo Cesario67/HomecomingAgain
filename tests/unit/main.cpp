@@ -587,6 +587,12 @@ void TestUiClipItem() {
 
 void TestUiClip() {
     using hca::graphics::uiclip::ExpandLegacyRect;
+    // Map camera at 3840x1080 with the Hor+ engine redirect (capture of 1/11/2026): x scale 0.28125 instead of 0.5625.
+    float redirected[16] = {0.28125f, 0, 0, 109.86f, 0, 0, 1, -152.3f, 0, -1, 0, 49.062f, 0, -1, 0, 50.062f};
+    hca::graphics::uiclip::ScaleXRow(redirected, 0.5625f / 0.28125f);
+    Check(std::fabs(redirected[0] - 0.5625f) < 1e-6f && std::fabs(redirected[3] - 219.72f) < 1e-3f &&
+              redirected[6] == 1.0f && redirected[13] == -1.0f,
+          "Carte : ratio d'origine rendu à la ligne x de la projection (les autres lignes inchangées)");
     long w = 1280;
     long h = 720;
     const bool expanded = ExpandLegacyRect(0, 0, w, h, 1920, 1080) && w == 1920 && h == 1080;
