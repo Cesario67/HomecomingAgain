@@ -37,6 +37,10 @@ public sealed record PatchSettings
     // really is wider than 16:9 (the mod does nothing otherwise).
     public bool HorPlus { get; init; }
 
+    // Widest picture shown for the pre-rendered videos ([Graphics] MovieAspect = 16:9, 21:9 or 32:9, the rest stays
+    // black). Only those three values are valid; anything else is read as 16:9.
+    public AspectRatio MovieAspect { get; init; } = AspectRatio.SixteenByNine;
+
     // --- DLSS ([DLSS]) : ShareFrames, Jitter et Apply ensemble. Désactivé par défaut (NVIDIA RTX et DXVK nécessaires).
     public bool Dlss { get; init; }
 
@@ -110,6 +114,7 @@ public sealed record PatchSettings
             FullScreenUiClip = mod.GetBool("Graphics", "FullScreenUiClip", defaults.FullScreenUiClip),
             ObjectViewPerspective = mod.GetBool("Graphics", "ObjectViewPerspective", defaults.ObjectViewPerspective),
             HorPlus = mod.GetBool("Graphics", "HorPlus", defaults.HorPlus),
+            MovieAspect = AspectRatios.ParseMovieAspect(mod.Get("Graphics", "MovieAspect")),
             Dlss = mod.GetBool("DLSS", "ShareFrames", false) && mod.GetBool("DLSS", "Apply", false),
             ButtonIcons = Math.Clamp(mod.GetInt("Input", "ButtonIcons", 0), 0, 3),
             CameraFix = mod.GetBool("Camera", "CameraFix", defaults.CameraFix),
@@ -153,6 +158,7 @@ public sealed record PatchSettings
         mod.SetBool("Graphics", "FullScreenUiClip", FullScreenUiClip);
         mod.SetBool("Graphics", "ObjectViewPerspective", ObjectViewPerspective);
         mod.SetBool("Graphics", "HorPlus", HorPlus && AspectRatios.IsWiderThanSixteenByNine(Width, Height));
+        mod.Set("Graphics", "MovieAspect", AspectRatios.MovieAspectText(MovieAspect));
         mod.SetBool("DLSS", "ShareFrames", Dlss);
         mod.SetInt("DLSS", "Jitter", Dlss ? 1 : 0);
         mod.SetBool("DLSS", "Apply", Dlss);

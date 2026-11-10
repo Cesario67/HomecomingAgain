@@ -121,6 +121,7 @@ add_library(HomecomingAgain SHARED
     src/graphics/SceneHooks.cpp
     src/graphics/ClipCopy.cpp
     src/graphics/HorPlus.cpp
+    src/graphics/MovieBars.cpp
     src/graphics/Dxt3.cpp
     src/graphics/FlashIconArt.cpp
     src/graphics/FlashIcons.cpp

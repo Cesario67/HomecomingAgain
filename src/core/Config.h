@@ -44,6 +44,10 @@ struct Config {
     bool fullScreenUiClip = true;
     // Clips the engine's final StretchRect rectangle to the surface (non 16:9 resolutions: black screen).
     bool clipFinalCopy = true;
+    // Pre-rendered videos centred in 16:9 with black bars on a wider back buffer (see graphics/MovieBars.h).
+    bool movieBars = true;
+    // Widest picture shown for those videos: 16:9 (default), 21:9 or 32:9, as a width / height ratio.
+    float movieAspect = 16.0f / 9.0f;
     // Hor+ prototype for back buffers wider than 16:9 (see graphics/HorPlus.h).
     bool horPlus = false;
     // Hor+: set the engine camera inverse aspect (constant 9/16 read by the camera constructor) to height / width.

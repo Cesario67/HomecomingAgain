@@ -68,6 +68,17 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         new(AspectRatio.ThirtyTwoByNine, "32:9"),
     ];
 
+    /// <summary>Widest picture for the pre-rendered videos (the labels are the same in every language).</summary>
+    public IReadOnlyList<Choice<AspectRatio>> MovieAspectChoices { get; } =
+    [
+        new(AspectRatio.SixteenByNine, "16:9"),
+        new(AspectRatio.TwentyOneByNine, "21:9"),
+        new(AspectRatio.ThirtyTwoByNine, "32:9"),
+    ];
+
+    [ObservableProperty]
+    public partial Choice<AspectRatio> SelectedMovieAspect { get; set; }
+
     /// <summary>Sizes of the selected format (see <see cref="AspectRatios"/>).</summary>
     public IReadOnlyList<Choice<(int Width, int Height)>> Resolutions { get; private set; } = BuildResolutions(AspectRatio.SixteenByNine, 1920, 1080);
 
@@ -185,6 +196,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedShadowResolution = ShadowResolutions[^1];
         SelectedFilmGrain = FilmGrainLevels[^1];
         SelectedButtonIcons = ButtonIconSets[0];
+        SelectedMovieAspect = MovieAspectChoices[0];
         Loc.Instance.LanguageChanged += RefreshLabels;
     }
 
@@ -214,6 +226,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedSsaoStrength = SsaoStrengths.LastOrDefault(choice => choice.Value <= settings.SsaoStrength) ?? SsaoStrengths[0];
         SelectedShadowResolution = ShadowResolutions.LastOrDefault(choice => choice.Value <= settings.ShadowResolution) ?? ShadowResolutions[0];
         SelectedFilmGrain = FilmGrainLevels.LastOrDefault(choice => choice.Value <= settings.FilmGrain) ?? FilmGrainLevels[0];
+        SelectedMovieAspect = MovieAspectChoices.FirstOrDefault(choice => choice.Value == settings.MovieAspect) ?? MovieAspectChoices[0];
         SelectedButtonIcons = ButtonIconSets.FirstOrDefault(choice => choice.Value == settings.ButtonIcons) ?? ButtonIconSets[0];
         CameraFix = settings.CameraFix;
         CameraOrbit = settings.CameraOrbit;
@@ -251,6 +264,7 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         FullScreenUiClip = FullScreenUiClip,
         ObjectViewPerspective = ObjectViewPerspective,
         HorPlus = HorPlus && HorPlusAvailable,
+        MovieAspect = SelectedMovieAspect.Value,
         HighQualityShaders = HighQualityShaders,
         FullResolutionTextures = FullResolutionTextures,
     };

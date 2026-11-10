@@ -35,6 +35,22 @@ public static class AspectRatios
     private static readonly (int Width, int Height)[] ThirtyTwoByNineSizes =
         [(3840, 1080), (5120, 1440), (7680, 2160)];
 
+    /// <summary>Reads `[Graphics] MovieAspect` (same rule as the DLL, graphics/MovieBarsRules.h): 21:9 or 32:9, else 16:9.</summary>
+    public static AspectRatio ParseMovieAspect(string? text) => text?.Trim() switch
+    {
+        "21:9" => AspectRatio.TwentyOneByNine,
+        "32:9" => AspectRatio.ThirtyTwoByNine,
+        _ => AspectRatio.SixteenByNine,
+    };
+
+    /// <summary>Text written for a video format; 4:3 and unknown values give 16:9.</summary>
+    public static string MovieAspectText(AspectRatio ratio) => ratio switch
+    {
+        AspectRatio.TwentyOneByNine => "21:9",
+        AspectRatio.ThirtyTwoByNine => "32:9",
+        _ => "16:9",
+    };
+
     /// <summary>Format a size belongs to (the closest one by its width / height ratio).</summary>
     public static AspectRatio Classify(int width, int height)
     {

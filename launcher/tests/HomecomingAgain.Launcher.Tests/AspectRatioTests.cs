@@ -103,6 +103,30 @@ public sealed class AspectRatioTests
         Assert.Equal(written, mod.Get("Graphics", "HorPlus"));
     }
 
+    [Theory]
+    [InlineData("16:9", AspectRatio.SixteenByNine, "16:9")]
+    [InlineData("21:9", AspectRatio.TwentyOneByNine, "21:9")]
+    [InlineData("32:9", AspectRatio.ThirtyTwoByNine, "32:9")]
+    [InlineData("4:3", AspectRatio.SixteenByNine, "16:9")]   // same fallback as the DLL
+    [InlineData("", AspectRatio.SixteenByNine, "16:9")]
+    public void MovieAspectIsReadAndWrittenLikeTheDll(string text, AspectRatio expected, string written)
+    {
+        PatchSettings settings = PatchSettings.Read(IniDocument.Parse($"[Graphics]\nMovieAspect={text}\n"), KeyValueDocument.Parse(""));
+        Assert.Equal(expected, settings.MovieAspect);
+        IniDocument mod = IniDocument.Parse("");
+        settings.WriteMod(mod);
+        Assert.Equal(written, mod.Get("Graphics", "MovieAspect"));
+    }
+
+    [Fact]
+    public void MovieAspectChoiceRoundTripsThroughTheViewModel()
+    {
+        var graphics = new GraphicsViewModel();
+        graphics.Load(new PatchSettings { MovieAspect = AspectRatio.ThirtyTwoByNine });
+        Assert.Equal(AspectRatio.ThirtyTwoByNine, graphics.SelectedMovieAspect.Value);
+        Assert.Equal(AspectRatio.ThirtyTwoByNine, graphics.ApplyTo(new PatchSettings()).MovieAspect);
+    }
+
     [Fact]
     public void HorPlusIsReadFromTheIni()
     {
