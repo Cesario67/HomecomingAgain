@@ -305,6 +305,10 @@ void SetBackBufferSize(unsigned width, unsigned height) noexcept {
     }
 }
 
+bool SsaoSuppressed() noexcept {
+    return IsSsaoSuppressed(GetConfig().horPlus, g_backWidth.load(), g_backHeight.load(), GetConfig().ssaoWithHorPlus);
+}
+
 void Install(IDirect3DDevice9* device) {
     if (!GetConfig().horPlus) {
         return;

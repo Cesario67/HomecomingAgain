@@ -54,6 +54,7 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.shadowResolution =
         ReadInt(iniPath, L"Graphics", L"ShadowResolution", defaults.shadowResolution, 2048, 8192);
     config.ssao = ReadBool(iniPath, L"Graphics", L"SSAO", defaults.ssao);
+    config.ssaoWithHorPlus = ReadBool(iniPath, L"Graphics", L"SsaoWithHorPlus", defaults.ssaoWithHorPlus);
     config.ssaoRadius = ReadFloat(iniPath, L"Graphics", L"SsaoRadius", defaults.ssaoRadius, 0.05f, 100.0f);
     config.ssaoStrength = ReadInt(iniPath, L"Graphics", L"SsaoStrength", defaults.ssaoStrength, 10, 400);
     config.ssaoFadeStart = ReadFloat(iniPath, L"Graphics", L"SsaoFadeStart", defaults.ssaoFadeStart, 0.0f, 100000.0f);

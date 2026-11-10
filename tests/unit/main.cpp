@@ -532,6 +532,9 @@ void TestHorPlus() {
     Check(IsLegacyInterfaceArea(0, 0, 1280, 720) && !IsLegacyInterfaceArea(0, 0, 1920, 1080) &&
               !IsLegacyInterfaceArea(10, 0, 1280, 720) && !IsLegacyInterfaceArea(0, 0, 1280, 360),
           "Hor+ : zone 1280x720 fixe de l'interface laissée au correctif de la carte");
+    Check(IsSsaoSuppressed(true, 1920, 810, false) && IsSsaoSuppressed(true, 3840, 1080, false) && !IsSsaoSuppressed(true, 1920, 1080, false) &&
+              !IsSsaoSuppressed(false, 1920, 810, false) && !IsSsaoSuppressed(true, 1920, 810, true),
+          "Hor+ : SSAO suspendue en ultra-large seulement (sauf SsaoWithHorPlus ou Hor+ coupé)");
     Check(ReshapedHeight(1920, 1920, 810) == 810 && ReshapedHeight(3840, 3840, 1080) == 1080 &&
               ReshapedHeight(960, 1920, 810) == 405,
           "Hor+ : hauteur des cibles remise au ratio du tampon");

@@ -45,6 +45,14 @@ inline long ReshapedHeight(long width, long backWidth, long backHeight) noexcept
     return height < 1 ? 1 : height;
 }
 
+// Is the SSAO held back? With Hor+ on an ultrawide screen the SSAO reads in the engine depth texture a silhouette of the
+// player that is not in the picture (seen 10/11/2026 with SsaoDebug=1 on the title screen and the intro: a standing
+// Alex and his occlusion halo, which showed as a ghost over the image; gone with the SSAO off, with Hor+ off, at
+// 1920x1080). The cause is not found yet: until then the SSAO is skipped in that case unless `forced`.
+constexpr bool IsSsaoSuppressed(bool horPlus, long backWidth, long backHeight, bool forced) noexcept {
+    return horPlus && !forced && IsWiderThanSixteenNine(backWidth, backHeight);
+}
+
 // Factor applied to the x output row of a projection so that a 16:9 picture covers a wider target without stretching:
 // (16/9) / (backWidth / backHeight).
 inline float ProjectionXFactor(long backWidth, long backHeight) noexcept {

@@ -30,6 +30,9 @@ struct Config {
     // Occlusion ambiante en espace écran (voir graphics/Ssao.h). Rayon en unités du jeu, intensité en %, fondu
     // entre deux distances (unités du jeu), mode de réglage qui affiche l'occlusion seule.
     bool ssao = true;
+    // SSAO kept on although Hor+ runs on an ultrawide screen (it shows a ghost of the player there, see
+    // graphics/HorPlusRules.h, IsSsaoSuppressed). Off by default.
+    bool ssaoWithHorPlus = false;
     float ssaoRadius = 1.5f;  // le jeu ne mesure pas en centimètres : une pièce est à 25-30 unités (relevé 10/10/2026)
     int ssaoStrength = 100;
     float ssaoFadeStart = 150.0f;
