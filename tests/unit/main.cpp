@@ -94,6 +94,25 @@ void TestBorderless() {
     const DWORD exResult = hca::graphics::BorderlessExStyle(ex);
     Check((exResult & (WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE)) == 0 && (exResult & WS_EX_TOPMOST) != 0, "bords étendus retirés, TOPMOST conservé");
     Check(!hca::graphics::ApplyBorderless(nullptr), "handle nul ignoré");
+
+    // Window rectangle for the back buffer ratio (reported 10/11/2026: 1920x810 enlarged on a 1920x1080 screen).
+    using hca::graphics::FitWindowToMonitor;
+    const RECT screen{0, 0, 1920, 1080};
+    const RECT ultrawide = FitWindowToMonitor(screen, 1920, 810);
+    Check(ultrawide.left == 0 && ultrawide.right == 1920 && ultrawide.top == 135 && ultrawide.bottom == 945,
+          "fenêtre : 1920x810 sur 1920x1080 centré (bandes en haut et en bas)");
+    const RECT wider = FitWindowToMonitor(screen, 2560, 1080);
+    Check(wider.left == 0 && wider.right == 1920 && wider.top == 135 && wider.bottom == 945,
+          "fenêtre : 2560x1080 réduit à 1920x810 centré");
+    const RECT narrow = FitWindowToMonitor(screen, 1440, 1080);
+    Check(narrow.left == 240 && narrow.right == 1680 && narrow.top == 0 && narrow.bottom == 1080,
+          "fenêtre : 4:3 centré (bandes sur les côtés)");
+    const RECT same = FitWindowToMonitor(screen, 1280, 720);
+    const RECT unknown = FitWindowToMonitor(screen, 0, 0);
+    const RECT offset = FitWindowToMonitor(RECT{1920, 0, 3840, 1080}, 1920, 810);
+    Check(same.right == 1920 && same.bottom == 1080 && unknown.right == 1920 && unknown.bottom == 1080 &&
+              offset.left == 1920 && offset.top == 135 && offset.right == 3840 && offset.bottom == 945,
+          "fenêtre : même ratio ou taille inconnue = tout le moniteur, second écran respecté");
 }
 
 void TestFramePeriod() {
