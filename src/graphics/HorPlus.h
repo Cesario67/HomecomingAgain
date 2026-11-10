@@ -19,4 +19,14 @@ void Install(IDirect3DDevice9* device);
 // Back buffer size requested by the game (CreateDevice and Reset). Must be known before the targets are created.
 void SetBackBufferSize(unsigned width, unsigned height) noexcept;
 
+// Is the SSAO skipped because of Hor+ (see IsSsaoSuppressed in HorPlusRules.h)?
+bool SsaoSuppressed() noexcept;
+
+// The map and the examined objects are world cameras drawn in the fixed 1280x720 interface area, handled by UiClip.
+// Factor for the x row of their projection when only the Direct3D part of Hor+ runs (1 with the engine redirect, which
+// already scales it: measured 1/11/2026, the redirected map is 1037 px wide at 3840x1080, as at 1920x1080).
+float LegacyAreaXFactor() noexcept;
+// Height the engine believes the target has in that area (see HorPlusRules.h).
+long LegacyAreaBeliefHeight(long targetWidth, long targetHeight) noexcept;
+
 }  // namespace hca::graphics::horplus

@@ -1,9 +1,11 @@
 #include "graphics/Ssao.h"
 
+#include <atomic>
 #include <cmath>
 
 #include "core/Config.h"
 #include "core/Log.h"
+#include "graphics/HorPlus.h"
 #include "graphics/InternalDraw.h"
 
 // Shaders compilés par fxc pendant la compilation (voir CMakeLists.txt).
@@ -159,7 +161,13 @@ void Ssao::OnSetRenderTarget(IDirect3DDevice9* device, DWORD index, IDirect3DSur
         current->Release();
     }
     sceneReady_ = true;
-    if (GetConfig().ssao && !failed_) {
+    if (GetConfig().ssao && horplus::SsaoSuppressed()) {
+        static std::atomic<bool> loggedSuppressed{false};
+        if (!loggedSuppressed.exchange(true)) {
+            log::Info("SSAO : suspendu avec Hor+ en ultra-large (fantôme du joueur, SsaoWithHorPlus=1 pour la forcer)");
+        }
+    }
+    if (GetConfig().ssao && !failed_ && !horplus::SsaoSuppressed()) {
         Apply(device);
     }
 }

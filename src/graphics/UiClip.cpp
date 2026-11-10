@@ -7,6 +7,8 @@
 #include "core/Config.h"
 #include "core/Hooking.h"
 #include "core/Log.h"
+#include "graphics/HorPlus.h"
+#include "graphics/HorPlusRules.h"
 
 namespace hca::graphics::uiclip {
 
@@ -37,8 +39,11 @@ std::atomic<bool> g_logged{false};
 std::atomic<bool> g_loggedPartial{false};
 std::atomic<bool> g_loggedObject{false};
 std::atomic<bool> g_loggedLight{false};
+std::atomic<bool> g_loggedPickup{false};
 long g_targetWidth = 0;
 long g_targetHeight = 0;
+long g_beliefHeight = 0;
+float g_projectionX = 0.0f;
 
 // Taille de la cible de dessin 0 ; faux si elle est illisible.
 bool TargetSize(IDirect3DDevice9* device, long& width, long& height) noexcept {
@@ -77,7 +82,11 @@ HRESULT STDMETHODCALLTYPE HookSetViewport(IDirect3DDevice9* device, const D3DVIE
         g_targetWidth = targetWidth;
         g_targetHeight = targetHeight;
         g_scaleX = static_cast<float>(kLegacyWidth) / static_cast<float>(targetWidth);
-        g_scaleY = static_cast<float>(kLegacyHeight) / static_cast<float>(targetHeight);
+        // The matrices of the area are made for the target the engine believes it has (taller than the real one with
+        // Hor+): see horplus::LegacyAreaBeliefHeight.
+        const long beliefHeight = horplus::LegacyAreaBeliefHeight(targetWidth, targetHeight);
+        g_scaleY = static_cast<float>(kLegacyHeight) / static_cast<float>(beliefHeight);
+        g_beliefHeight = beliefHeight;
         D3DVIEWPORT9 expanded = *viewport;
         expanded.Width = static_cast<DWORD>(targetWidth);
         expanded.Height = static_cast<DWORD>(targetHeight);
@@ -109,8 +118,11 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
     // La carte (vue de dessus) garde ses pixels 720p ; l'objet examiné, dessiné dans la même zone, est recentré à
     // l'échelle de toute l'image (voir UiClip.h).
     if (g_active && data != nullptr && start == 0 && count >= 4) {
+        g_projectionX = data[0];  // as sent by the engine, read by the pickup view fix (sent right after)
         float rows[16];
         std::memcpy(rows, data, sizeof(rows));
+        // Hor+ without the engine redirect: this area's projections were left untouched, widen them here.
+        ScaleXRow(rows, horplus::LegacyAreaXFactor());
         if (LooksStraightDown(data)) {
             CompensateProjection(rows, g_scaleX, g_scaleY);
         } else {
@@ -128,6 +140,33 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
         const HRESULT first = g_setVertexShaderConstantF(device, 0, rows, 4);
         return FAILED(first) ? first : g_setVertexShaderConstantF(device, 4, data + 16, count - 4);
     }
+    // View matrix of the pickup notification model (c4 x3, see RestorePickupViewOffset).
+    // The skinned model also gets one 3x4 matrix per bone (c14, c17... c47 in the F11 capture of 10/11/2026), each
+    // carrying the same translation: every 3-register block of a call is checked on its own.
+    constexpr UINT kFirstBlockRegister = 4;
+    constexpr UINT kLastBlockRegister = 64;
+    constexpr UINT kMaxBlocks = 20;
+    if (g_active && data != nullptr && start >= kFirstBlockRegister && start < kLastBlockRegister && count >= 3 &&
+        count % 3 == 0 && count <= kMaxBlocks * 3 && GetConfig().objectViewPerspective) {
+        float rows[kMaxBlocks * 12];
+        std::memcpy(rows, data, count * 4 * sizeof(float));
+        bool changed = false;
+        // Two separate paths: standard 16:9 targets (formula verified in game) and Hor+ ultrawide targets.
+        const bool ultrawide = GetConfig().horPlus && horplus::IsWiderThanSixteenNine(g_targetWidth, g_targetHeight);
+        for (UINT block = 0; block < count / 3; ++block) {
+            float* matrix = rows + block * 12;
+            changed = (ultrawide ? RestorePickupViewOffsetUltrawide(matrix, g_targetWidth, g_beliefHeight, g_projectionX)
+                                 : RestorePickupViewOffset(matrix, g_targetWidth, g_targetHeight)) ||
+                      changed;
+        }
+        if (changed) {
+            if (!g_loggedPickup.exchange(true)) {
+                log::Info("Interface : position de l'objet ramassé recentrée (translation des matrices c{} x{} corrigée)",
+                          start, count);
+            }
+            return g_setVertexShaderConstantF(device, start, rows, count);
+        }
+    }
     if (g_active && data != nullptr && start < 4 && !g_loggedPartial.exchange(true)) {
         log::Warn("Interface : projection envoyée en partie (c{} x{}), non compensée", start, count);
     }
@@ -144,7 +183,7 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
         float rows[64];
         const UINT copied = count < 16 ? count : 16;
         std::memcpy(rows, data, copied * 4 * sizeof(float));
-        if (RestoreInspectionLight(rows, g_targetWidth, g_targetHeight)) {
+        if (RestoreInspectionLight(rows, g_targetWidth, g_beliefHeight)) {
             if (!g_loggedLight.exchange(true)) {
                 log::Info("Interface : projecteur des documents et photos recentré (c20 ramenée à x = y = 0)");
             }
@@ -159,6 +198,19 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
 }
 
 }  // namespace
+
+bool LegacyAreaActive() noexcept {
+    return g_active;
+}
+
+void ScaleXRow(float* rows, float factor) noexcept {
+    if (factor == 1.0f) {
+        return;
+    }
+    for (int i = 0; i < 4; ++i) {
+        rows[i] *= factor;
+    }
+}
 
 bool ExpandLegacyRect(long x, long y, long& width, long& height, long targetWidth, long targetHeight) noexcept {
     if (x != 0 || y != 0 || width != kLegacyWidth || height != kLegacyHeight) {
@@ -237,6 +289,42 @@ bool RestoreInspectionLight(float* position, long targetWidth, long targetHeight
     }
     position[0] = 0.0f;
     position[1] = 0.0f;
+    return true;
+}
+
+bool RestorePickupViewOffset(float* rows, long targetWidth, long targetHeight) noexcept {
+    // 16:9 targets only (verified in game at 1920x1080): 36 = measured constant (640 / 17.778 and 360 / 10).
+    constexpr float kPixelsPerUnit = 36.0f;
+    const float extraX = static_cast<float>(targetWidth - kLegacyWidth) / kPixelsPerUnit;
+    const float extraY = -static_cast<float>(targetHeight - kLegacyHeight) / kPixelsPerUnit;
+    if (extraX <= 0.01f || extraY >= -0.01f) {
+        return false;
+    }
+    if (std::fabs(rows[3] - extraX) > 0.01f * extraX) {
+        return false;
+    }
+    rows[3] -= extraX;
+    rows[7] -= extraY;
+    return true;
+}
+
+bool RestorePickupViewOffsetUltrawide(float* rows, long targetWidth, long believedHeight, float projectionX) noexcept {
+    // 20: measured world units for a shift of one full 1280x720 area, see UiClip.h.
+    constexpr float kAreaUnits = 20.0f;
+    if (projectionX <= 0.0f) {
+        return false;
+    }
+    const float extraX = static_cast<float>(targetWidth - kLegacyWidth) / static_cast<float>(kLegacyWidth) * kAreaUnits /
+                         projectionX;
+    const float extraY = -static_cast<float>(believedHeight - kLegacyHeight) / static_cast<float>(kLegacyHeight) * kAreaUnits;
+    if (extraX <= 0.01f || extraY >= -0.01f) {
+        return false;
+    }
+    if (std::fabs(rows[3] - extraX) > 0.01f * extraX) {
+        return false;
+    }
+    rows[3] -= extraX;
+    rows[7] -= extraY;
     return true;
 }
 

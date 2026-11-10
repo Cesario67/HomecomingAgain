@@ -49,6 +49,16 @@ non destructif, et corriger ce qu'il laisse de côté**. Chaque ligne = un objec
     1920x810. Cause **vérifiée** : la dernière copie du moteur (`StretchRect` de la cible de scène vers le tampon
     arrière) vise le rectangle (0,-135,1920,945) qui dépasse le tampon 1920x810 ; Direct3D 9 répond
     `D3DERR_INVALIDCALL`. Le mod rogne la destination et la source de la même quantité.
+  - Fait (10/11/2026) : fantôme du joueur en ultra-large avec Hor+ (silhouette d'Alex en transparence sur l'écran
+    titre, les menus, la carte et les cinématiques). Cause directe **vérifiée** : la SSAO du mod. Avec `SsaoDebug=1`
+    (occlusion seule), le tampon d'occlusion contient un corps d'Alex que la profondeur du moteur porte alors qu'il
+    n'est pas dans l'image. Absent avec la SSAO coupée, avec `HorPlus=0` (image rognée) et en 1920x1080 ; présent avec
+    `HorPlusEngine=0` et quand le SMAA est coupé. Essais sans effet sur la silhouette : exclure de Hor+ les cibles
+    960x540 et 640x360, exclure la cible 1280x720 de l'interface. Ne pas redimensionner la profondeur seule a figé le
+    jeu (un essai). **Cause de la profondeur non trouvée** (reste d'un rendu non effacé, ou personnage dessiné dans la
+    pré-passe : non établi). Contournement : la SSAO est suspendue avec Hor+ en ultra-large (`SsaoWithHorPlus=1` la
+    force). Méthode : captures de la fenêtre du jeu prises par le script juste après le lancement, F11 envoyé par
+    le script (le relevé de dessins ne montre pas les pixels).
   - Mesures **vérifiées** (relevés F11 du 27/10/2026, menu principal, 1920x810 et 1920x1080) : le moteur dessine
     tout (monde 3D et interface) dans des cibles 16:9 de largeur égale à la résolution (1920x1080 ; 3840x2160 pour un
     tampon 3840x1080), viewport plein cible, puis centre cette image sur le tampon arrière en rognant haut et bas.

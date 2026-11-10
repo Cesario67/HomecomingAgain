@@ -130,7 +130,8 @@ HRESULT STDMETHODCALLTYPE HookReset(IDirect3DDevice9* device, D3DPRESENT_PARAMET
         // Un Reset (changement de mode) peut rendre son cadre à la fenêtre.
         D3DDEVICE_CREATION_PARAMETERS creation{};
         if (SUCCEEDED(device->GetCreationParameters(&creation))) {
-            ApplyBorderless(params->hDeviceWindow != nullptr ? params->hDeviceWindow : creation.hFocusWindow);
+            ApplyBorderless(params->hDeviceWindow != nullptr ? params->hDeviceWindow : creation.hFocusWindow,
+                            params->BackBufferWidth, params->BackBufferHeight);
         }
     }
     if (SUCCEEDED(result)) {
@@ -208,7 +209,8 @@ HRESULT STDMETHODCALLTYPE HookCreateDevice(IDirect3D9* direct3d, UINT adapter, D
         LogPresentParameters("CreateDevice demandé", *params);
         // En mode fenêtré, la fenêtre existe déjà : on la rend sans bordure avant la création du périphérique.
         if (params->Windowed && GetConfig().borderless) {
-            ApplyBorderless(params->hDeviceWindow != nullptr ? params->hDeviceWindow : window);
+            ApplyBorderless(params->hDeviceWindow != nullptr ? params->hDeviceWindow : window, params->BackBufferWidth,
+                            params->BackBufferHeight);
         }
     }
     // Le moteur crée le périphérique sans D3DCREATE_MULTITHREADED (comportement 0x40) mais l'utilise depuis deux

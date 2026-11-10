@@ -8,6 +8,7 @@
 #include "core/Hooking.h"
 #include "core/Log.h"
 #include "graphics/HorPlusRules.h"
+#include "graphics/UiClip.h"
 
 namespace hca::graphics::horplus {
 
@@ -90,7 +91,8 @@ HRESULT STDMETHODCALLTYPE HookCreateDepthStencilSurface(IDirect3DDevice9* device
 }
 
 HRESULT STDMETHODCALLTYPE HookSetViewport(IDirect3DDevice9* device, const D3DVIEWPORT9* viewport) {
-    if (viewport != nullptr && Active() && viewport->X == 0 && viewport->Y == 0) {
+    if (viewport != nullptr && Active() && viewport->X == 0 && viewport->Y == 0 &&
+        !(GetConfig().fullScreenUiClip && IsLegacyInterfaceArea(0, 0, viewport->Width, viewport->Height))) {
         const UINT newHeight = TargetHeight(viewport->Width, viewport->Height);
         if (newHeight != viewport->Height) {
             D3DVIEWPORT9 reshaped = *viewport;
@@ -102,7 +104,8 @@ HRESULT STDMETHODCALLTYPE HookSetViewport(IDirect3DDevice9* device, const D3DVIE
 }
 
 HRESULT STDMETHODCALLTYPE HookSetScissorRect(IDirect3DDevice9* device, const RECT* rect) {
-    if (rect != nullptr && Active() && rect->left == 0 && rect->top == 0) {
+    if (rect != nullptr && Active() && rect->left == 0 && rect->top == 0 &&
+        !(GetConfig().fullScreenUiClip && IsLegacyInterfaceArea(0, 0, rect->right, rect->bottom))) {
         const UINT width = static_cast<UINT>(rect->right);
         const UINT height = static_cast<UINT>(rect->bottom);
         const UINT newHeight = TargetHeight(width, height);
@@ -145,7 +148,8 @@ HRESULT STDMETHODCALLTYPE HookSetVertexShaderConstantF(IDirect3DDevice9* device,
     }
     // c0 x4: mWorldViewProj of the world camera (any rotation). Elsewhere: only a bare 16:9 projection (c222 x4).
     const bool world = start == 0 && IsSixteenNineProjection(data);
-    if (world && BoundTextureIsOverlay(device)) {
+    // Inside the fixed 1280x720 area (map, examined objects) the layout is the interface fix's business (UiClip).
+    if (world && (uiclip::LegacyAreaActive() || BoundTextureIsOverlay(device))) {
         return g_setVertexShaderConstantF(device, start, data, count);
     }
     if (!world && !IsBareSixteenNineProjection(data)) {
@@ -200,6 +204,20 @@ HRESULT STDMETHODCALLTYPE HookSetPixelShaderConstantF(IDirect3DDevice9* device, 
 // ours, height / width of the back buffer: the projection, the culling frustum and the matrices sent to the GPU then
 // agree, whenever the camera was built. Each 8-byte `movss xmm,[reg+94h]` becomes `movss xmm,[absolute]`.
 float g_engineInverseAspect = 0.5625f;
+std::atomic<bool> g_enginePatched{false};
+
+float LegacyAreaXFactor() noexcept {
+    // With the engine redirect the camera x scale already carries the aspect; without it the area's projections reach
+    // the interface fix untouched (this module skips them), so the factor is applied there.
+    if (!GetConfig().horPlus || g_enginePatched.load() || !Active()) {
+        return 1.0f;
+    }
+    return ProjectionXFactor(g_backWidth.load(), g_backHeight.load());
+}
+
+long LegacyAreaBeliefHeight(long targetWidth, long targetHeight) noexcept {
+    return LegacyAreaBeliefHeight(targetWidth, targetHeight, GetConfig().horPlus);
+}
 
 struct AspectRead {
     uintptr_t rva;
@@ -269,6 +287,7 @@ void PatchEngineAspect(unsigned width, unsigned height) noexcept {
         FlushInstructionCache(GetCurrentProcess(), code, 8);
     }
     FlushInstructionCache(GetCurrentProcess(), stubs, 128);
+    g_enginePatched = true;
     log::Info("Hor+ moteur : lectures du ratio des caméras du monde redirigées, inverse du ratio {:.6f}",
               g_engineInverseAspect);
 }
@@ -284,6 +303,10 @@ void SetBackBufferSize(unsigned width, unsigned height) noexcept {
         log::Info("Hor+ : tampon arrière {}x{}, facteur x de la projection {:.4f}", width, height,
                   ProjectionXFactor(static_cast<long>(width), static_cast<long>(height)));
     }
+}
+
+bool SsaoSuppressed() noexcept {
+    return IsSsaoSuppressed(GetConfig().horPlus, g_backWidth.load(), g_backHeight.load(), GetConfig().ssaoWithHorPlus);
 }
 
 void Install(IDirect3DDevice9* device) {

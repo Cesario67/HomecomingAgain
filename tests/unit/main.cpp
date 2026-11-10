@@ -94,6 +94,25 @@ void TestBorderless() {
     const DWORD exResult = hca::graphics::BorderlessExStyle(ex);
     Check((exResult & (WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE)) == 0 && (exResult & WS_EX_TOPMOST) != 0, "bords étendus retirés, TOPMOST conservé");
     Check(!hca::graphics::ApplyBorderless(nullptr), "handle nul ignoré");
+
+    // Window rectangle for the back buffer ratio (reported 10/11/2026: 1920x810 enlarged on a 1920x1080 screen).
+    using hca::graphics::FitWindowToMonitor;
+    const RECT screen{0, 0, 1920, 1080};
+    const RECT ultrawide = FitWindowToMonitor(screen, 1920, 810);
+    Check(ultrawide.left == 0 && ultrawide.right == 1920 && ultrawide.top == 135 && ultrawide.bottom == 945,
+          "fenêtre : 1920x810 sur 1920x1080 centré (bandes en haut et en bas)");
+    const RECT wider = FitWindowToMonitor(screen, 2560, 1080);
+    Check(wider.left == 0 && wider.right == 1920 && wider.top == 135 && wider.bottom == 945,
+          "fenêtre : 2560x1080 réduit à 1920x810 centré");
+    const RECT narrow = FitWindowToMonitor(screen, 1440, 1080);
+    Check(narrow.left == 240 && narrow.right == 1680 && narrow.top == 0 && narrow.bottom == 1080,
+          "fenêtre : 4:3 centré (bandes sur les côtés)");
+    const RECT same = FitWindowToMonitor(screen, 1280, 720);
+    const RECT unknown = FitWindowToMonitor(screen, 0, 0);
+    const RECT offset = FitWindowToMonitor(RECT{1920, 0, 3840, 1080}, 1920, 810);
+    Check(same.right == 1920 && same.bottom == 1080 && unknown.right == 1920 && unknown.bottom == 1080 &&
+              offset.left == 1920 && offset.top == 135 && offset.right == 3840 && offset.bottom == 945,
+          "fenêtre : même ratio ou taille inconnue = tout le moniteur, second écran respecté");
 }
 
 void TestFramePeriod() {
@@ -510,6 +529,12 @@ void TestHorPlus() {
     Check(IsSixteenNineTarget(1920, 1080) && IsSixteenNineTarget(3840, 2160) && !IsSixteenNineTarget(1024, 1024) &&
               !IsSixteenNineTarget(320, 180),
           "Hor+ : cibles 16:9 reconnues, ombres et petites tailles laissées");
+    Check(IsLegacyInterfaceArea(0, 0, 1280, 720) && !IsLegacyInterfaceArea(0, 0, 1920, 1080) &&
+              !IsLegacyInterfaceArea(10, 0, 1280, 720) && !IsLegacyInterfaceArea(0, 0, 1280, 360),
+          "Hor+ : zone 1280x720 fixe de l'interface laissée au correctif de la carte");
+    Check(IsSsaoSuppressed(true, 1920, 810, false) && IsSsaoSuppressed(true, 3840, 1080, false) && !IsSsaoSuppressed(true, 1920, 1080, false) &&
+              !IsSsaoSuppressed(false, 1920, 810, false) && !IsSsaoSuppressed(true, 1920, 810, true),
+          "Hor+ : SSAO suspendue en ultra-large seulement (sauf SsaoWithHorPlus ou Hor+ coupé)");
     Check(ReshapedHeight(1920, 1920, 810) == 810 && ReshapedHeight(3840, 3840, 1080) == 1080 &&
               ReshapedHeight(960, 1920, 810) == 405,
           "Hor+ : hauteur des cibles remise au ratio du tampon");
@@ -584,6 +609,28 @@ void TestUiClipItem() {
 
 void TestUiClip() {
     using hca::graphics::uiclip::ExpandLegacyRect;
+    // Map paper (captures of 1/11/2026, c0 x4 of the 50-vertex draw): 1920x1080 and 3840x1080 with Hor+. The engine
+    // believes it draws 3840x2160 in the second case, so its y scale is 3 instead of 1.5.
+    using hca::graphics::horplus::LegacyAreaBeliefHeight;
+    Check(LegacyAreaBeliefHeight(3840, 1080, true) == 2160 && LegacyAreaBeliefHeight(1920, 810, true) == 1080 &&
+              LegacyAreaBeliefHeight(3840, 1080, false) == 1080 && LegacyAreaBeliefHeight(1920, 1080, true) == 1080,
+          "Carte : hauteur supposée par le moteur avec Hor+ (largeur x 9 / 16), réelle sinon");
+    {
+        // Paper centre line: model point (mx = 0, z = 0) with translation tx / ty of each capture, w = 50.
+        auto centre = [](float scaleX, float scaleY, float tx, float ty, float& ndcX, float& ndcY) {
+            float rows[16] = {0, 0, 0, tx, 0, 0, 0, ty, 0, 0, 0, 50.0f, 0, 0, 0, 50.0f};
+            hca::graphics::uiclip::CompensateProjection(rows, scaleX, scaleY);
+            ndcX = rows[3] / rows[15];
+            ndcY = rows[7] / rows[15];
+        };
+        float x16 = 0, y16 = 0, xWide = 0, yWide = 0;
+        centre(1280.0f / 1920.0f, 720.0f / 1080.0f, 25.0f, -25.0f, x16, y16);
+        centre(1280.0f / 3840.0f, 720.0f / 2160.0f, 100.0f, -100.0f, xWide, yWide);
+        Check(std::fabs(x16) < 1e-6f && std::fabs(y16) < 1e-6f && std::fabs(xWide) < 1e-6f && std::fabs(yWide) < 1e-6f,
+              "Carte : plan centré à 1920x1080 et à 3840x1080 (échelle verticale de la hauteur supposée)");
+        centre(1280.0f / 3840.0f, 720.0f / 1080.0f, 100.0f, -100.0f, xWide, yWide);
+        Check(std::fabs(yWide + 1.0f) < 1e-6f, "Carte : avec la hauteur réelle, plan centré sur le bord bas (défaut mesuré)");
+    }
     long w = 1280;
     long h = 720;
     const bool expanded = ExpandLegacyRect(0, 0, w, h, 1920, 1080) && w == 1920 && h == 1080;
@@ -658,6 +705,28 @@ void TestUiClip() {
     Check(!RestoreInspectionLight(light720, 1280, 720) && !RestoreInspectionLight(lightOther, 1920, 1080) &&
               lightOther[0] == -3.0f && lightOther[1] == 2.0f,
           "photos : 720p et autre lumière intacts");
+
+    // Pickup notification, F11 captures of 10/11/2026: view translation (c4 x3) at 1080p and at 720p.
+    using hca::graphics::uiclip::RestorePickupViewOffset;
+    using hca::graphics::uiclip::RestorePickupViewOffsetUltrawide;
+    float view1080[12] = {-1.0f, 0.0f, -1.51e-07f, 17.778f, 0.0f, 1.0f, 0.0f, -20.015f, 1.51e-07f, 0.0f, -1.0f, 20.283f};
+    float view720[12] = {-1.0f, 0.0f, -1.51e-07f, -4.3412e-07f, 0.0f, 1.0f, 0.0f, -10.015f, 1.51e-07f, 0.0f, -1.0f, 20.283f};
+    float other[12] = {1.0f, 0.0f, 0.0f, 3.0f, 0.0f, 1.0f, 0.0f, -2.0f, 0.0f, 0.0f, 1.0f, 5.0f};
+    float otherCopy[12];
+    std::memcpy(otherCopy, other, sizeof(other));
+    float view2560[12] = {-1.0f, 0.0f, -1.51e-07f, 47.407f, 0.0f, 1.0f, 0.0f, -30.015f, 1.51e-07f, 0.0f, -1.0f, 20.283f};
+    const bool fixedView = RestorePickupViewOffset(view1080, 1920, 1080);
+    Check(fixedView && std::fabs(view1080[3]) < 0.01f && std::fabs(view1080[7] - (-10.015f)) < 0.01f &&
+              view1080[11] == 20.283f && view1080[0] == -1.0f,
+          "objet ramassé : translation de la vue ramenée à celle du 720p en 1080p (z et rotation intacts)");
+    // 21:9 with Hor+, capture of 10/11/2026: 2560x1080 real, 1440 believed height, c0 x scale 0.42188.
+    const bool fixed2560 = RestorePickupViewOffsetUltrawide(view2560, 2560, 1440, 0.42188f);
+    Check(fixed2560 && std::fabs(view2560[3]) < 0.01f && std::fabs(view2560[7] - (-10.015f)) < 0.01f,
+          "objet ramassé : translation de la vue ramenée à celle du 720p en 2560x1080 (Hor+)");
+    Check(!RestorePickupViewOffset(view720, 1920, 1080) && !RestorePickupViewOffset(other, 1920, 1080) &&
+              std::memcmp(other, otherCopy, sizeof(other)) == 0 && !RestorePickupViewOffset(view720, 1280, 720) &&
+              !RestorePickupViewOffsetUltrawide(view720, 1920, 1080, 0.0f),
+          "objet ramassé : 720p, autre matrice et échelle absente intacts");
 }
 
 void TestJitter() {
