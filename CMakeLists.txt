@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(HomecomingAgain VERSION 1.0.1 LANGUAGES C CXX RC)
+project(HomecomingAgain VERSION 1.1.0 LANGUAGES C CXX RC)
 
 if(NOT MSVC)
     message(FATAL_ERROR "HomecomingAgain se compile avec MSVC (Build Tools for Visual Studio).")
@@ -121,6 +121,7 @@ add_library(HomecomingAgain SHARED
     src/graphics/SceneHooks.cpp
     src/graphics/ClipCopy.cpp
     src/graphics/HorPlus.cpp
+    src/graphics/MovieBars.cpp
     src/graphics/Dxt3.cpp
     src/graphics/FlashIconArt.cpp
     src/graphics/FlashIcons.cpp

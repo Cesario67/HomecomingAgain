@@ -103,6 +103,70 @@ public sealed class AspectRatioTests
         Assert.Equal(written, mod.Get("Graphics", "HorPlus"));
     }
 
+    [Theory]
+    [InlineData("16:9", AspectRatio.SixteenByNine, "16:9")]
+    [InlineData("21:9", AspectRatio.TwentyOneByNine, "21:9")]
+    [InlineData("32:9", AspectRatio.ThirtyTwoByNine, "32:9")]
+    [InlineData("4:3", AspectRatio.SixteenByNine, "16:9")]   // same fallback as the DLL
+    [InlineData("", AspectRatio.SixteenByNine, "16:9")]
+    public void MovieAspectIsReadAndWrittenLikeTheDll(string text, AspectRatio expected, string written)
+    {
+        PatchSettings settings = PatchSettings.Read(IniDocument.Parse($"[Graphics]\nMovieAspect={text}\n"),
+                                                  KeyValueDocument.Parse("ScreenResWidth=3840\nScreenResHeight=1080\n"));
+        Assert.Equal(expected, settings.MovieAspect);
+        IniDocument mod = IniDocument.Parse("");
+        settings.WriteMod(mod);
+        Assert.Equal(written, mod.Get("Graphics", "MovieAspect"));
+    }
+
+    [Theory]
+    [InlineData(3840, 1080, "16:9,21:9,32:9")]
+    [InlineData(5120, 1440, "16:9,21:9,32:9")]
+    [InlineData(2560, 1080, "16:9,21:9")]
+    [InlineData(3440, 1440, "16:9,21:9")]
+    [InlineData(1920, 1080, "16:9")]
+    [InlineData(1280, 960, "16:9")]   // 4:3 also only offers 16:9
+    public void MovieAspectsFollowTheSizeFormat(int width, int height, string expected) =>
+        Assert.Equal(expected, string.Join(",", AspectRatios.MovieAspectsFor(width, height).Select(AspectRatios.MovieAspectText)));
+
+    [Theory]
+    [InlineData(AspectRatio.ThirtyTwoByNine, 2560, 1080, AspectRatio.TwentyOneByNine)]
+    [InlineData(AspectRatio.ThirtyTwoByNine, 1920, 1080, AspectRatio.SixteenByNine)]
+    [InlineData(AspectRatio.TwentyOneByNine, 3840, 1080, AspectRatio.TwentyOneByNine)]
+    public void MovieAspectIsLoweredToWhatTheSizeAllows(AspectRatio wanted, int width, int height, AspectRatio expected)
+    {
+        Assert.Equal(expected, AspectRatios.ClampMovieAspect(wanted, width, height));
+        IniDocument mod = IniDocument.Parse("");
+        (new PatchSettings { Width = width, Height = height, MovieAspect = wanted }).WriteMod(mod);
+        Assert.Equal(AspectRatios.MovieAspectText(expected), mod.Get("Graphics", "MovieAspect"));
+    }
+
+    [Fact]
+    public void MovieAspectChoiceRoundTripsThroughTheViewModel()
+    {
+        var graphics = new GraphicsViewModel();
+        graphics.Load(new PatchSettings { Width = 3840, Height = 1080, MovieAspect = AspectRatio.ThirtyTwoByNine });
+        Assert.Equal(AspectRatio.ThirtyTwoByNine, graphics.SelectedMovieAspect.Value);
+        Assert.Equal(AspectRatio.ThirtyTwoByNine, graphics.ApplyTo(new PatchSettings()).MovieAspect);
+    }
+
+    [Fact]
+    public void MovieAspectChoicesFollowTheSelectedResolution()
+    {
+        var graphics = new GraphicsViewModel();
+        graphics.Load(new PatchSettings { Width = 3840, Height = 1080, MovieAspect = AspectRatio.ThirtyTwoByNine });
+        Assert.Equal(3, graphics.MovieAspectChoices.Count);
+
+        // Switching the picture format to 21:9 lowers the video format, which 21:9 cannot show wider than itself.
+        graphics.SelectedAspectRatio = graphics.AspectRatioChoices.First(choice => choice.Value == AspectRatio.TwentyOneByNine);
+        Assert.Equal(2, graphics.MovieAspectChoices.Count);
+        Assert.Equal(AspectRatio.TwentyOneByNine, graphics.SelectedMovieAspect.Value);
+
+        graphics.SelectedAspectRatio = graphics.AspectRatioChoices.First(choice => choice.Value == AspectRatio.SixteenByNine);
+        Assert.Single(graphics.MovieAspectChoices);
+        Assert.Equal(AspectRatio.SixteenByNine, graphics.SelectedMovieAspect.Value);
+    }
+
     [Fact]
     public void HorPlusIsReadFromTheIni()
     {

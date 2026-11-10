@@ -86,6 +86,15 @@ public static class Translations
             ["Resolution"] = ("Résolution", "Resolution"),
             ["AspectRatio"] = ("Format de l'image", "Picture format"),
             ["HorPlus"] = ("Champ de vision élargi (Hor+)", "Wider field of view (Hor+)"),
+            ["MovieAspect"] = ("Format des vidéos", "Video format"),
+            ["MovieAspectHint"] = ("Largeur maximale de l'image des cinématiques préenregistrées sur un écran plus large que " +
+                                   "16:9 : le reste de l'écran reste noir. 16:9 garde l'image d'origine, 21:9 et 32:9 " +
+                                   "l'étirent (déformée) jusqu'à ce format. Les formats proposés vont jusqu'à celui de la " +
+                                   "résolution choisie (disponible à partir du 21:9).",
+                                   "Widest picture for the pre-rendered cutscenes on a screen wider than 16:9: the rest of " +
+                                   "the screen stays black. 16:9 keeps the original picture, 21:9 and 32:9 stretch it " +
+                                   "(distorted) up to that format. The formats offered go up to the chosen size's own " +
+                                   "format (available from 21:9)."),
             ["HorPlusHint"] = ("Sur un écran plus large que 16:9, le jeu montre plus de décor sur les côtés au lieu de " +
                                "rogner le haut et le bas. Les menus et le HUD restent centrés en 16:9. Décoché, l'image " +
                                "est rognée comme dans le jeu d'origine. Disponible à partir du format 21:9.",

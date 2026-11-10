@@ -2,6 +2,7 @@
 
 #include "audio/AudioProbe.h"
 #include "core/Strings.h"
+#include "graphics/MovieBarsRules.h"
 
 #include <windows.h>
 
@@ -63,6 +64,12 @@ bool LoadConfig(const std::wstring& iniPath) {
     config.filmGrain = ReadInt(iniPath, L"Graphics", L"FilmGrain", defaults.filmGrain, 0, 100);
     config.fullScreenUiClip = ReadBool(iniPath, L"Graphics", L"FullScreenUiClip", defaults.fullScreenUiClip);
     config.clipFinalCopy = ReadBool(iniPath, L"Graphics", L"ClipFinalCopy", defaults.clipFinalCopy);
+    config.movieBars = ReadBool(iniPath, L"Graphics", L"MovieBars", defaults.movieBars);
+    {
+        wchar_t aspect[16]{};
+        GetPrivateProfileStringW(L"Graphics", L"MovieAspect", L"16:9", aspect, 16, iniPath.c_str());
+        config.movieAspect = graphics::moviebars::ParseMovieAspect(aspect);
+    }
     config.horPlus = ReadBool(iniPath, L"Graphics", L"HorPlus", defaults.horPlus);
     config.horPlusEngine = ReadBool(iniPath, L"Graphics", L"HorPlusEngine", defaults.horPlusEngine);
     config.objectViewPerspective =

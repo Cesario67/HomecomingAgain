@@ -29,6 +29,7 @@
 #include "graphics/MotionVectors.h"
 #include "graphics/ClipCopy.h"
 #include "graphics/HorPlus.h"
+#include "graphics/MovieBars.h"
 #include "graphics/SceneHooks.h"
 #include "graphics/UiClip.h"
 #include "graphics/Ssao.h"
@@ -196,6 +197,7 @@ void PatchDevice(IDirect3DDevice9* device) {
     // Before the frame capture, which chains to whatever StretchRect it finds.
     clipcopy::Install(device);
     horplus::Install(device);
+    moviebars::Install(device);
     if (GetConfig().frameCapture) {
         capture::Install(device);
     }

@@ -35,6 +35,41 @@ public static class AspectRatios
     private static readonly (int Width, int Height)[] ThirtyTwoByNineSizes =
         [(3840, 1080), (5120, 1440), (7680, 2160)];
 
+    /// <summary>Reads `[Graphics] MovieAspect` (same rule as the DLL, graphics/MovieBarsRules.h): 21:9 or 32:9, else 16:9.</summary>
+    public static AspectRatio ParseMovieAspect(string? text) => text?.Trim() switch
+    {
+        "21:9" => AspectRatio.TwentyOneByNine,
+        "32:9" => AspectRatio.ThirtyTwoByNine,
+        _ => AspectRatio.SixteenByNine,
+    };
+
+    /// <summary>Text written for a video format; 4:3 and unknown values give 16:9.</summary>
+    public static string MovieAspectText(AspectRatio ratio) => ratio switch
+    {
+        AspectRatio.TwentyOneByNine => "21:9",
+        AspectRatio.ThirtyTwoByNine => "32:9",
+        _ => "16:9",
+    };
+
+    /// <summary>
+    /// Video formats a size allows: from 16:9 up to the size's own format (a 32:9 size offers 16:9, 21:9 and 32:9; a 21:9
+    /// size 16:9 and 21:9; a 16:9 or 4:3 size only 16:9). A video wider than the screen would make no sense.
+    /// </summary>
+    public static IReadOnlyList<AspectRatio> MovieAspectsFor(int width, int height)
+    {
+        AspectRatio widest = Classify(width, height);
+        return new[] { AspectRatio.SixteenByNine, AspectRatio.TwentyOneByNine, AspectRatio.ThirtyTwoByNine }
+            .Where(ratio => ratio <= widest || ratio == AspectRatio.SixteenByNine)
+            .ToList();
+    }
+
+    /// <summary>The wanted video format, lowered to the widest one the size allows.</summary>
+    public static AspectRatio ClampMovieAspect(AspectRatio wanted, int width, int height)
+    {
+        IReadOnlyList<AspectRatio> allowed = MovieAspectsFor(width, height);
+        return allowed.Contains(wanted) ? wanted : allowed[^1];
+    }
+
     /// <summary>Format a size belongs to (the closest one by its width / height ratio).</summary>
     public static AspectRatio Classify(int width, int height)
     {

@@ -27,6 +27,7 @@
 #include "graphics/Jitter.h"
 #include "graphics/ClipCopyRules.h"
 #include "graphics/HorPlusRules.h"
+#include "graphics/MovieBarsRules.h"
 #include "graphics/UiClip.h"
 #include "graphics/SceneEnd.h"
 #include "crash/HangClock.h"
@@ -923,7 +924,32 @@ void TestQteHold() {
           "QTE : cadence bornée");
 }
 
+void TestMovieBars() {
+    using namespace hca::graphics::moviebars;
+    Span span;
+    const float k16 = 16.0f / 9.0f;
+    // 32:9 target of the 10/11/2026 capture (1920x540): 16:9 picture 960 wide, centred.
+    Check(CentredPicture(1920, 540, k16, span) && span.width == 960 && span.x == 480,
+          "Vidéos : 1920x540 donne une image 16:9 de 960 centrée (x 480)");
+    Check(CentredPicture(3840, 1080, k16, span) && span.width == 1920 && span.x == 960,
+          "Vidéos : 3840x1080 donne 1920 de large, x 960");
+    Check(!CentredPicture(1920, 1080, k16, span) && !CentredPicture(1920, 1075, k16, span),
+          "Vidéos : 16:9 (à 1 % près) laissé tel quel");
+    Check(CentredPicture(3840, 1080, ParseMovieAspect(L"21:9"), span) && span.width == 2520 && span.x == 660,
+          "Vidéos : 21:9 sur 3840x1080 donne 2520 de large, x 660");
+    Check(!CentredPicture(3840, 1080, ParseMovieAspect(L"32:9"), span) && !CentredPicture(2560, 1080, ParseMovieAspect(L"32:9"), span),
+          "Vidéos : 32:9 sur un tampon de 32:9 ou moins large : rien à centrer");
+    Check(ParseMovieAspect(L"16:9") == k16 && ParseMovieAspect(L"autre") == k16 && ParseMovieAspect(nullptr) == k16 &&
+              ParseMovieAspect(L"32:9") > 3.5f,
+          "Vidéos : MovieAspect inconnu donne 16:9");
+    Check(!CentredPicture(0, 540, k16, span) && !CentredPicture(1920, 0, k16, span), "Vidéos : cible invalide ignorée");
+    Check(IsLumaPlane(1280, 720, 50) && !IsLumaPlane(1280, 720, 21) && !IsLumaPlane(640, 360, 50),
+          "Vidéos : plan de luminance 1280x720 L8");
+    Check(IsChromaPlane(640, 360, 50) && !IsChromaPlane(1280, 720, 50), "Vidéos : plan de chrominance 640x360 L8");
+}
+
 int main() {
+    TestMovieBars();
     TestHangClock();
     TestStrings();
     TestEnsureDirectory();
