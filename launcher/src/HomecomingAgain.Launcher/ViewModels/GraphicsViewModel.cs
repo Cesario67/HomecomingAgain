@@ -68,13 +68,11 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         new(AspectRatio.ThirtyTwoByNine, "32:9"),
     ];
 
-    /// <summary>Widest picture for the pre-rendered videos (the labels are the same in every language).</summary>
-    public IReadOnlyList<Choice<AspectRatio>> MovieAspectChoices { get; } =
-    [
-        new(AspectRatio.SixteenByNine, "16:9"),
-        new(AspectRatio.TwentyOneByNine, "21:9"),
-        new(AspectRatio.ThirtyTwoByNine, "32:9"),
-    ];
+    /// <summary>
+    /// Widest picture for the pre-rendered videos (the labels are the same in every language). Follows the size chosen:
+    /// 16:9 up to that size's own format (see <see cref="AspectRatios.MovieAspectsFor"/>).
+    /// </summary>
+    public IReadOnlyList<Choice<AspectRatio>> MovieAspectChoices { get; private set; } = BuildMovieAspects(1920, 1080);
 
     [ObservableProperty]
     public partial Choice<AspectRatio> SelectedMovieAspect { get; set; }
@@ -226,7 +224,8 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedSsaoStrength = SsaoStrengths.LastOrDefault(choice => choice.Value <= settings.SsaoStrength) ?? SsaoStrengths[0];
         SelectedShadowResolution = ShadowResolutions.LastOrDefault(choice => choice.Value <= settings.ShadowResolution) ?? ShadowResolutions[0];
         SelectedFilmGrain = FilmGrainLevels.LastOrDefault(choice => choice.Value <= settings.FilmGrain) ?? FilmGrainLevels[0];
-        SelectedMovieAspect = MovieAspectChoices.FirstOrDefault(choice => choice.Value == settings.MovieAspect) ?? MovieAspectChoices[0];
+        AspectRatio movieAspect = AspectRatios.ClampMovieAspect(settings.MovieAspect, settings.Width, settings.Height);
+        SelectedMovieAspect = MovieAspectChoices.First(choice => choice.Value == movieAspect);
         SelectedButtonIcons = ButtonIconSets.FirstOrDefault(choice => choice.Value == settings.ButtonIcons) ?? ButtonIconSets[0];
         CameraFix = settings.CameraFix;
         CameraOrbit = settings.CameraOrbit;
@@ -286,6 +285,21 @@ public sealed partial class GraphicsViewModel : LocalizedViewModel
         SelectedResolution = Resolutions.First(choice => choice.Value == closest);
         HorPlus = value.Value is AspectRatio.TwentyOneByNine or AspectRatio.ThirtyTwoByNine;
     }
+
+    /// <summary>A new size changes the video formats offered; the current choice is kept, lowered if it is no longer allowed.</summary>
+    partial void OnSelectedResolutionChanged(Choice<(int Width, int Height)> value)
+    {
+        AspectRatio wanted = (object?)SelectedMovieAspect is null ? AspectRatio.SixteenByNine : SelectedMovieAspect.Value;
+        MovieAspectChoices = BuildMovieAspects(value.Value.Width, value.Value.Height);
+        OnPropertyChanged(nameof(MovieAspectChoices));
+        AspectRatio kept = AspectRatios.ClampMovieAspect(wanted, value.Value.Width, value.Value.Height);
+        SelectedMovieAspect = MovieAspectChoices.First(choice => choice.Value == kept);
+    }
+
+    private static IReadOnlyList<Choice<AspectRatio>> BuildMovieAspects(int width, int height) =>
+        AspectRatios.MovieAspectsFor(width, height)
+                    .Select(ratio => new Choice<AspectRatio>(ratio, AspectRatios.MovieAspectText(ratio)))
+                    .ToList();
 
     private static IReadOnlyList<Choice<(int Width, int Height)>> BuildResolutions(AspectRatio ratio, int currentWidth, int currentHeight) =>
         AspectRatios.SizesIncluding(ratio, currentWidth, currentHeight)

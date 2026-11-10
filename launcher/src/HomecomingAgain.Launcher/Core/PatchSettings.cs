@@ -158,7 +158,7 @@ public sealed record PatchSettings
         mod.SetBool("Graphics", "FullScreenUiClip", FullScreenUiClip);
         mod.SetBool("Graphics", "ObjectViewPerspective", ObjectViewPerspective);
         mod.SetBool("Graphics", "HorPlus", HorPlus && AspectRatios.IsWiderThanSixteenByNine(Width, Height));
-        mod.Set("Graphics", "MovieAspect", AspectRatios.MovieAspectText(MovieAspect));
+        mod.Set("Graphics", "MovieAspect", AspectRatios.MovieAspectText(AspectRatios.ClampMovieAspect(MovieAspect, Width, Height)));
         mod.SetBool("DLSS", "ShareFrames", Dlss);
         mod.SetInt("DLSS", "Jitter", Dlss ? 1 : 0);
         mod.SetBool("DLSS", "Apply", Dlss);
