@@ -68,4 +68,20 @@ bool RestoreObjectPerspective(float* rows, float scale) noexcept;
 // y back to 0 (the 720p value). Returns true if the position was changed.
 bool RestoreInspectionLight(float* position, long targetWidth, long targetHeight) noexcept;
 
+// Item pickup notification ("J'ai le jouet Robbie"): the model sits at the bottom right instead of the centre above
+// 720p. F11 captures of 10/11/2026 (verified), same draw (1081 vertices, 1566 primitives), same projection in c0, only
+// the translation column of the view matrix (c4..c6, 3 rows of 4 floats) differs: (-4e-07, -10.015, 20.283) at
+// 1280x720 against (17.778, -20.015, 20.283) at 1920x1080 (c0 x scale 0.5625) and (47.407, -30.015, 20.283) at
+// 2560x1080 with Hor+ (c0 x scale 0.42188, real target 2560x1080, height believed by the engine 1440; capture of
+// the same day, verified). The engine shifts the model by one 1280x720-area fraction towards the centre of the target
+// it believes it has: extra x = (W - 1280) / 1280 * 20 / (c0 x scale), extra y = -(Hb - 720) / 720 * 20, with W the
+// real width and Hb the believed height. Fits the three captures; 20 is a measured constant, not understood.
+// If the x translation carries exactly that extra (within 1 %), removes it from x and y. `rows` = the 12 floats
+// sent to c4..c6, `projectionX` = first float of the c0 projection sent just before. Returns true if changed.
+// Standard 16:9 targets (verified in game at 1920x1080): extra = (+(W - 1280) / 36, -(H - 720) / 36), removed from x
+// and y when the x translation carries it (within 1 %). Same `rows` as below. Returns true if changed.
+bool RestorePickupViewOffset(float* rows, long targetWidth, long targetHeight) noexcept;
+// Hor+ ultrawide targets (wider than 16:9), kept apart so that the verified 16:9 path cannot be affected by it.
+bool RestorePickupViewOffsetUltrawide(float* rows, long targetWidth, long believedHeight, float projectionX) noexcept;
+
 }  // namespace hca::graphics::uiclip

@@ -683,6 +683,28 @@ void TestUiClip() {
     Check(!RestoreInspectionLight(light720, 1280, 720) && !RestoreInspectionLight(lightOther, 1920, 1080) &&
               lightOther[0] == -3.0f && lightOther[1] == 2.0f,
           "photos : 720p et autre lumière intacts");
+
+    // Pickup notification, F11 captures of 10/11/2026: view translation (c4 x3) at 1080p and at 720p.
+    using hca::graphics::uiclip::RestorePickupViewOffset;
+    using hca::graphics::uiclip::RestorePickupViewOffsetUltrawide;
+    float view1080[12] = {-1.0f, 0.0f, -1.51e-07f, 17.778f, 0.0f, 1.0f, 0.0f, -20.015f, 1.51e-07f, 0.0f, -1.0f, 20.283f};
+    float view720[12] = {-1.0f, 0.0f, -1.51e-07f, -4.3412e-07f, 0.0f, 1.0f, 0.0f, -10.015f, 1.51e-07f, 0.0f, -1.0f, 20.283f};
+    float other[12] = {1.0f, 0.0f, 0.0f, 3.0f, 0.0f, 1.0f, 0.0f, -2.0f, 0.0f, 0.0f, 1.0f, 5.0f};
+    float otherCopy[12];
+    std::memcpy(otherCopy, other, sizeof(other));
+    float view2560[12] = {-1.0f, 0.0f, -1.51e-07f, 47.407f, 0.0f, 1.0f, 0.0f, -30.015f, 1.51e-07f, 0.0f, -1.0f, 20.283f};
+    const bool fixedView = RestorePickupViewOffset(view1080, 1920, 1080);
+    Check(fixedView && std::fabs(view1080[3]) < 0.01f && std::fabs(view1080[7] - (-10.015f)) < 0.01f &&
+              view1080[11] == 20.283f && view1080[0] == -1.0f,
+          "objet ramassé : translation de la vue ramenée à celle du 720p en 1080p (z et rotation intacts)");
+    // 21:9 with Hor+, capture of 10/11/2026: 2560x1080 real, 1440 believed height, c0 x scale 0.42188.
+    const bool fixed2560 = RestorePickupViewOffsetUltrawide(view2560, 2560, 1440, 0.42188f);
+    Check(fixed2560 && std::fabs(view2560[3]) < 0.01f && std::fabs(view2560[7] - (-10.015f)) < 0.01f,
+          "objet ramassé : translation de la vue ramenée à celle du 720p en 2560x1080 (Hor+)");
+    Check(!RestorePickupViewOffset(view720, 1920, 1080) && !RestorePickupViewOffset(other, 1920, 1080) &&
+              std::memcmp(other, otherCopy, sizeof(other)) == 0 && !RestorePickupViewOffset(view720, 1280, 720) &&
+              !RestorePickupViewOffsetUltrawide(view720, 1920, 1080, 0.0f),
+          "objet ramassé : 720p, autre matrice et échelle absente intacts");
 }
 
 void TestJitter() {
